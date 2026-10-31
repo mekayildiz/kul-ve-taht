@@ -31,6 +31,8 @@ ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
 ```bash
 npm run verify   # lint + typecheck + build + test + 0 TL denetimi (zorunlu)
 npx vitest run <dosya>   # tek test dosyası
+npm run gen:assets       # görsel varlıkları yerel üret (deterministik SVG→WebP)
+npm run rehearsal:load-restore  # yük/kota + yedek/geri yükleme provası
 npm run dev:api          # yerel Worker (Miniflare; hesap gerekmez, ücretsiz)
 npm run db:migrate:local # yerel D1'e migration uygula
 npm run deploy:api       # üretim Worker yayını (ücretsiz katman)
@@ -43,7 +45,8 @@ Yayın adımları: `docs/yayin-kilavuzu.md`.
 
 - **Test edilmeyen görev "tamamlandı" işaretlenmez.**
 - Her özellik sunucuda doğrulanır; istemciden gelen para/eşya/sahiplik yok sayılır.
-- Yalnızca ücretsiz lisanslı görseller (CC0, CC-BY) kullanılır.
+- Görseller yerel üretilir (`scripts/gen-assets.mjs`), CC0/self lisanslıdır;
+  harici indirme veya atıf zorunluluğu yoktur.
 - Kota aşımı 429/202/503 ile karşılanır; **402/ödeme üretilmez**.
 - İlerleme `docs/gorev-panosu.md` panosunda ve `docs/yedekleme-durumu.md`'de izlenir.
 
