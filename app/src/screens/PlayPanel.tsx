@@ -341,6 +341,25 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         </ul>
       )}
 
+      {play.health.diseases.length > 0 && (
+        <ul className="kvt-diseases">
+          {play.health.diseases.map((d) => (
+            <li key={d.id}>
+              <span>
+                {t.play.treatDisease}: {d.name} ({d.severity})
+              </span>
+              <button
+                type="button"
+                onClick={() => act({ action: "treatDisease", diseaseId: d.id, quality: 60 }, t.play.committed)}
+                disabled={!play.health.alive}
+              >
+                {t.play.treatDisease}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {state.message && <p className="kvt-ok">{state.message}</p>}
       {state.error && (
         <p className="kvt-error" role="alert">

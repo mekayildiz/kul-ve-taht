@@ -269,3 +269,11 @@ body {
 .kvt-notifications button {
   margin-top: 6px;
 }
+
+.kvt-diseases li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}

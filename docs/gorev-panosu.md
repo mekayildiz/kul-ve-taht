@@ -177,6 +177,6 @@ doğrulanır (belge 20 teslim kriteri). Ayrıca statik görseller arayüze bağl
 - [x] E9.21 Mülk arayüzü (belge 9.3): kiraya verme, haciz, tapu uyuşmazlığı açma/çözme, vergi haczi; tapu uyuşmazlığı listesi — `PlayPanel.tsx` (mülk paneli)
 - [x] E9.22 Şirket arayüzü (belge 20): ortak ekleme ve devralma (birleşme/satın alma) düğmeleri — `PlayPanel.tsx` (şirket paneli)
 - [x] E9.23 Çok oyunculu ve siyaset arayüzü (belge 11, 16): takas teklifi, ittifak oluşturma/katılma, savaş ilanı/barış, konsey önergesi, makamdan çekilme — `PlayPanel.tsx`, krallık ilişkileri ve önerge listeleri
-- [x] E9.24 Yaşam, aile ve grup arayüzü (belge 7.3, 10): yemek, seyahat, çocuk kaydı, ölüm kaydı, gruba katılma — `PlayPanel.tsx`
+- [x] E9.24 Yaşam, aile ve grup arayüzü (belge 7.3, 10): yemek, seyahat, hastalık tedavisi, çocuk kaydı, ölüm kaydı, gruba katılma — `PlayPanel.tsx`
 - [x] E9.25 Görsel varlık tüketimi — oyun içi (belge 17): portre (karakter kimliğine göre havuzdan), envanter eşya ikonları, veri tasarrufu anahtarı (96/64px türev) — `PlayPanel.tsx`, `scripts/sync-assets.mjs` (assets/ → app/public/assets/), `app/src/styles.css`
 - [x] E9.26 Bildirim geçmişi iyileştirmesi (belge 19): arka plan olay başlığı + tümünü okundu işaretle — `PlayPanel.tsx`
