@@ -252,6 +252,7 @@ export const tr = {
     eat: "Ye",
     travel: "Seyahat Et",
     treatDisease: "Hastalığı Tedavi Et",
+    personality: "Kişilik",
     joinGroup: "Gruba Katıl",
     openEscrow: "Emanet Aç",
     peerLoan: "Kredi Ver/Al",

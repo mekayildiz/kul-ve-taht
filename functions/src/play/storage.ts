@@ -11,6 +11,7 @@ import type { SqlDatabase } from "../db/client";
 import { execute, queryOne } from "../db/client";
 import { itemDef } from "../inventory/items";
 import { decayDay, monopolyPriceFactor, storageOverflow, runBudgetMonth, auditCorruption, marketIntervention, type Perishability, type StockEntry, type StorageDef } from "../economy/extras";
+import { collectTax } from "../economy/market";
 import type { InventoryEntry } from "../inventory/items";
 
 /** Envanter deposu: yaya 80 birim; binek/at ile artar (belge 10.4). */
@@ -141,27 +142,43 @@ async function currentDay(db: SqlDatabase): Promise<number> {
  * gider odenir, yetmezse borclanir. Idempotent degildir; aylik turda cagrilir.
  */
 export async function runKingdomBudget(db: SqlDatabase, kingdomId: string): Promise<{ treasury: number; debt: number; debtCrisis: boolean } | null> {
-  const kingdom = await queryOne<{ treasury: number; debt: number; population: number; corruption: number }>(
+  const kingdom = await queryOne<{ treasury: number; debt: number; population: number; corruption: number; tax_compliance: number; unrest: number }>(
     db,
     `SELECT k.treasury, k.debt, COALESCE(SUM(s.population), 0) AS population,
-            COALESCE(k.corruption, 0.1) AS corruption
+            COALESCE(k.corruption, 0.1) AS corruption,
+            COALESCE(k.tax_compliance, 0.8) AS tax_compliance,
+            COALESCE(k.unrest, 0) AS unrest
      FROM kingdoms k LEFT JOIN settlements s ON s.kingdom_id = k.id
      WHERE k.id = ? GROUP BY k.id`,
     kingdomId,
   );
   if (!kingdom) return null;
   const population = kingdom.population ?? 0;
-  const revenue = Math.round(population * 0.02);
+  const due = Math.round(population * 0.02);
   const expense = Math.round(population * 0.015);
-  // Saf butce kurali (economy/extras) tek kaynaktir.
+  // Vergi toplama (belge 9.7-9.8): uyum oranina gore tahsil edilir; eksik kalan
+  // kısım huzursuzluk uretir. Saf kural `economy/market.collectTax` tek kaynaktir.
+  const tax = collectTax(0, due, kingdom.tax_compliance);
+  const unrest = (kingdom.unrest ?? 0) + tax.unrest;
+  // Butce ayi: tahsil edilen gelir uzerinden yolsuzluk ayrica dusulur.
   const month = runBudgetMonth({
     treasury: kingdom.treasury,
     debt: kingdom.debt,
-    monthlyRevenue: revenue,
+    monthlyRevenue: tax.treasury,
     monthlyExpense: expense,
     corruption: kingdom.corruption ?? 0.1,
   });
-  await execute(db, "UPDATE kingdoms SET treasury = ?, debt = ? WHERE id = ?", month.treasury, month.debt, kingdomId);
+  // Uyum, huzursuzluga gore yumusak sekilde geri beslenir (0.5-1.0).
+  const nextCompliance = Math.max(0.5, Math.min(1, kingdom.tax_compliance - unrest / 500));
+  await execute(
+    db,
+    "UPDATE kingdoms SET treasury = ?, debt = ?, tax_compliance = ?, unrest = ? WHERE id = ?",
+    month.treasury,
+    month.debt,
+    Math.round(nextCompliance * 100) / 100,
+    unrest,
+    kingdomId,
+  );
   return { treasury: month.treasury, debt: month.debt, debtCrisis: month.debtCrisis };
 }
 

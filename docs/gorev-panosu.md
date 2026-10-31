@@ -180,3 +180,18 @@ doğrulanır (belge 20 teslim kriteri). Ayrıca statik görseller arayüze bağl
 - [x] E9.24 Yaşam, aile ve grup arayüzü (belge 7.3, 10): yemek, seyahat, hastalık tedavisi, çocuk kaydı, ölüm kaydı, gruba katılma — `PlayPanel.tsx`
 - [x] E9.25 Görsel varlık tüketimi — oyun içi (belge 17): portre (karakter kimliğine göre havuzdan), envanter eşya ikonları, veri tasarrufu anahtarı (96/64px türev) — `PlayPanel.tsx`, `scripts/sync-assets.mjs` (assets/ → app/public/assets/), `app/src/styles.css`
 - [x] E9.26 Bildirim geçmişi iyileştirmesi (belge 19): arka plan olay başlığı + tümünü okundu işaretle — `PlayPanel.tsx`
+
+### P5 – Saf fonksiyonların gerçek sistemlere bağlanması (belge 9, 12, 14, 16)
+
+Modül olarak var olan ancak hiçbir akıştan çağrılmayan fonksiyonlar gerçek
+sistemlere bağlandı; her biri entegrasyon testiyle doğrulanır.
+
+- [x] E9.27 PvP/duello kuralı (belge 16.5): `isPvpAllowed` güvenli şehir + savaş durumu + rıza ile `duelAllowed`'a bağlandı — `play/systems.ts`
+- [x] E9.28 Vergi toplama ve uyum (belge 9.7-9.8): `collectTax` krallık bütçesine (`runKingdomBudget`) bağlandı; tahsilat, huzursuzluk ve uyum geri beslemesi — `play/storage.ts`, `db/migrations/0019_kingdom_tax_and_personality.sql`
+- [x] E9.29 Lonca kazancı (belge 14.4): `guildBenefits` çalışma kazancına kidem bonusu olarak bağlandı — `play/service.ts`
+- [x] E9.30 Varis belirleme (belge 7.6): `heirOf` varis çözümüyle hizalandı — `play/succession.ts`
+- [x] E9.31 Kıtlık riski (belge 9.9): `famineRisk` dünya simülasyonunda günlük olayı kıtlığa çevirir — `play/world-sim.ts`
+- [x] E9.32 Görev hedef ilerletme (belge 12.2): `advanceObjective` görev ilerlemesine bağlandı — `play/quests.ts`
+- [x] E9.33 Kişilik kayması (belge 12.4): `applyPersonalityShift` görev sonucuyla kalıcı kişiliğe bağlandı + oyuncu arayüzü — `play/personality.ts`, `PlayPanel.tsx`, i18n TR+EN
+- [x] E9.34 Yaralanma yönetimi (belge 6.4): `addInjury` tüm yaralanma oluşturma noktalarına bağlandı — `play/service.ts`, `play/systems.ts`
+- [x] E9.35 Tedavi kalitesi (belge 6.5): `treatmentQuality` yara/hastalık tedavisine bağlandı (malzeme + yerleşim ortamı) — `play/service.ts`

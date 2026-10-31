@@ -9,8 +9,9 @@
 
 import type { SqlDatabase } from "../db/client";
 import { execute, queryAll, queryOne } from "../db/client";
-import { completeQuest, type CharacterQuest, type Quest, type QuestObjective } from "../quests/system";
+import { advanceObjective, completeQuest, type CharacterQuest, type Quest, type QuestObjective } from "../quests/system";
 import { loadState, saveState, type PlayResult } from "./service";
+import { applyEffectToPersonality } from "./personality";
 
 /** Bir gorev hedefi: ilerleme etiketi (orn. 'explore:forest') ve gereken miktar. */
 export interface CatalogObjective extends QuestObjective {
@@ -216,11 +217,12 @@ export async function advanceQuestByTag(
     if (!quest) continue;
     const matching = quest.objectives.filter((o) => o.tag === tag || o.tag === tag.split(":")[0] + ":any");
     if (matching.length === 0) continue;
-    const progress = parseProgress(row.progress_json);
+    let cq: CharacterQuest = { characterId, questId: row.quest_id, status: "active", progress: parseProgress(row.progress_json) };
     for (const objective of matching) {
-      progress[objective.id] = Math.min(objective.required, (progress[objective.id] ?? 0) + amount);
+      cq = advanceObjective(cq, objective.id, amount);
+      cq = { ...cq, progress: { ...cq.progress, [objective.id]: Math.min(objective.required, cq.progress[objective.id] ?? 0) } };
     }
-    await writeProgress(db, characterId, row.quest_id, progress, day);
+    await writeProgress(db, characterId, row.quest_id, cq.progress, day);
     advanced += 1;
   }
   void nowMs;
@@ -281,9 +283,11 @@ export async function claimQuestReward(
   );
   state.gold += outcome.gold;
   await saveState(db, state, nowMs);
+  // Uzun vadeli sonuc kalici kisiligi de degistirir (belge 12.4).
+  const personalityShift = await applyEffectToPersonality(db, characterId, outcome.effect, day);
   return {
     ok: true,
     state,
-    detail: { questId, gold: outcome.gold, longTermEffect: outcome.effect },
+    detail: { questId, gold: outcome.gold, longTermEffect: outcome.effect, personalityShift },
   };
 }

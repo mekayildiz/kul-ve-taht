@@ -29,6 +29,7 @@ import {
   type PeerLoanDto,
   type PlayAction,
   type PlayerSummaryDto,
+  type PersonalityDto,
   type PlayStateDto,
   type PrisonDto,
   type PropertyDto,
@@ -77,6 +78,7 @@ interface State {
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   directory: PlayerSummaryDto[];
+  personality: PersonalityDto;
   target: string;
   dataSaver: boolean;
   quests: QuestLogEntryDto[];
@@ -112,6 +114,15 @@ function iconSrc(icon: string, dataSaver: boolean): string {
   return `${ASSET_BASE}/icons/${icon}${dataSaver ? "-64" : ""}.webp`;
 }
 
+const PERSONALITY_KEYS: (keyof PersonalityDto)[] = [
+  "courage",
+  "mercy",
+  "ambition",
+  "loyalty",
+  "discipline",
+  "patience",
+];
+
 export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.Element {
   const [state, setState] = useState<State>({
     play: null,
@@ -143,6 +154,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     storage: null,
     diplomacy: [],
     directory: [],
+    personality: { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
     target: "",
     dataSaver: false,
     quests: [],
@@ -197,6 +209,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           storage: res.storage,
           diplomacy: res.diplomacy,
           directory: res.directory ?? [],
+          personality: res.personality ?? { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
           quests: quests?.log ?? [],
           questCatalog: quests?.catalog ?? [],
           auctions: auctions?.auctions ?? [],
@@ -322,6 +335,19 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           {t.play.deadBanner}
         </p>
       )}
+
+      <div className="kvt-personality" aria-label={t.play.personality}>
+        <h3>{t.play.personality}</h3>
+        <ul>
+          {PERSONALITY_KEYS.map((key) => (
+            <li key={key}>
+              <span>{key}</span>
+              <progress max={100} value={state.personality[key]} />
+              <strong>{state.personality[key]}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {play.health.injuries.length > 0 && (
         <ul className="kvt-injuries">

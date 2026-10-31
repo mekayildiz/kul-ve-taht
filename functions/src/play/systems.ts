@@ -25,9 +25,10 @@ import {
   type Relation,
 } from "../military/army";
 import { canIssueLoan, accrueInterest, taxDue, type Loan } from "../economy/market";
+import { addInjury } from "../health/state";
 import { businessIncome, propertyTax, type PropertyType } from "../economy/property";
 import { arrestChance, sentence, attemptEscape, escapeChance, CRIME_SEVERITY, type CrimeType, type Crime, type LegalProfile } from "../justice/system";
-import { resolveCombat, canDuel, type CombatantStats, type Terrain, TERRAIN_BONUS } from "../combat/resolve";
+import { resolveCombat, canDuel, isPvpAllowed, type CombatantStats, type Terrain, TERRAIN_BONUS } from "../combat/resolve";
 import { SETTLEMENTS } from "../world/settlements";
 import { KINGDOMS } from "../world/kingdoms";
 import {
@@ -59,6 +60,26 @@ async function currentSettlement(db: SqlDatabase, characterId: string): Promise<
 async function gameDay(db: SqlDatabase): Promise<number> {
   const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
   return clock?.game_day ?? 1;
+}
+
+/**
+ * PvP kurali (belge 16.5): guvenli sehirde (baskent/sehir) saldiri yalnizca
+ * krallik savas halindeyken mumkundur; diger yerlesimlerde PvP bolgesi veya
+ * savas gerekir. Kural SUNUCUDA uygulanir; istemci karari etkilemez.
+ */
+async function pvpAllowedHere(db: SqlDatabase, characterId: string): Promise<boolean> {
+  const settlementId = await currentSettlement(db, characterId);
+  const kind = SETTLEMENTS.find((s) => s.id === settlementId)?.kind ?? "village";
+  const home = SETTLEMENTS.find((s) => s.id === settlementId)?.kingdomId;
+  const relations = await queryAll<{ stance: string }>(
+    db,
+    "SELECT stance FROM kingdom_relations WHERE (from_kingdom_id = ? OR to_kingdom_id = ?) AND stance = 'war' LIMIT 1",
+    home ?? "",
+    home ?? "",
+  );
+  const atWar = relations.length > 0;
+  const inPvpZone = kind !== "capital" && kind !== "city";
+  return isPvpAllowed(kind, inPvpZone, atWar);
 }
 
 function settlementSecurity(settlementId: string | null): number {
@@ -704,7 +725,6 @@ export async function performFight(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   if (!state.health.alive) return { ok: false, error: "dead" };
-
   const weaponType = state.weapon === "unarmed" ? "unarmed" : "sword";
   const attacker: CombatantStats = {
     attributes: { ...emptyAttributes(), strength: state.strength, endurance: state.strength, agility: state.strength },
@@ -734,22 +754,19 @@ export async function performFight(
   }
   if (result.attackerInjured) {
     const severity = Math.max(5, Math.round(100 - result.attackerHpRemaining));
-    state.health = {
-      ...state.health,
-      health: Math.max(1, state.health.health - Math.round(severity / 3)),
-      injuries: [
-        ...state.health.injuries,
-        {
-          id: crypto.randomUUID(),
-          kind: "cut",
-          severity,
-          bleeding: Math.round(severity / 10),
-          infection: 0,
-          treated: false,
-          occurredGameDay: 0,
-        },
-      ],
-    };
+    const injured = addInjury(
+      { ...state.health, health: Math.max(1, state.health.health - Math.round(severity / 3)) },
+      {
+        id: crypto.randomUUID(),
+        kind: "cut",
+        severity,
+        bleeding: Math.round(severity / 10),
+        infection: 0,
+        treated: false,
+        occurredGameDay: 0,
+      },
+    );
+    state.health = injured;
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { winner: result.winner, rounds: result.rounds.length, injured: result.attackerInjured } };
@@ -760,7 +777,10 @@ export async function duelAllowed(db: SqlDatabase, characterId: string, bothCons
   const settlement = await currentSettlement(db, characterId);
   const kind = SETTLEMENTS.find((s) => s.id === settlement)?.kind ?? "village";
   const safeCity = kind === "capital" || kind === "city";
-  return { allowed: canDuel(safeCity, bothConsented), safeCity };
+  // Guvenli sehirde PvP yalnizca krallik savasindayken serbesttir; aksi halde
+  // karsilikli riza gerekir (belge 16.5). Kural SUNUCUDA uygulanir.
+  const pvp = await pvpAllowedHere(db, characterId);
+  return { allowed: canDuel(safeCity, bothConsented) || pvp, safeCity };
 }
 
 // --- Sosyal baglantilar (belge 16.3-16.4) ---

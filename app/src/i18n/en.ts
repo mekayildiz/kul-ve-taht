@@ -254,6 +254,7 @@ export const en: typeof tr = {
     eat: "Eat",
     travel: "Travel",
     treatDisease: "Treat Disease",
+    personality: "Personality",
     joinGroup: "Join Group",
     openEscrow: "Open Escrow",
     peerLoan: "Lend/Borrow",

@@ -23,6 +23,8 @@ import {
   type NpcTier,
 } from "../npc/model";
 import { disruptionImpact, type DisruptionKind } from "../economy/extras";
+import { famineRisk } from "../livelihood/production";
+import { seasonFor } from "../time/world-clock";
 import type { WorldEventType } from "../quests/system";
 
 /** Ekonomi bozulmasi ile dunya olayi turu arasindaki esleme (belge 12.4). */
@@ -239,19 +241,30 @@ export async function runWorldSimulation(db: SqlDatabase, gameDay: number, nowMs
   await assignNpcOffices(db, gameDay);
 
   const events: string[] = [];
-  // Ayni gun icin ikinci kez olay uretilmez.
+  const settlements = await queryAll<{ id: string }>(db, "SELECT id FROM settlements ORDER BY id LIMIT 130");
   const already = await queryOne<{ n: number }>(
     db,
     "SELECT COUNT(*) AS n FROM world_event_log WHERE game_day = ?",
     gameDay,
   );
-  if ((already?.n ?? 0) === 0) {
-    const settlements = await queryAll<{ id: string }>(db, "SELECT id FROM settlements ORDER BY id LIMIT 130");
-    if (settlements.length > 0) {
-      const target = settlements[gameDay % settlements.length]!;
-      const kind = disruptionFor(gameDay);
-      events.push(await applyWorldDisruption(db, gameDay, target.id, kind, nowMs));
-    }
+  // Gunluk olay: ayni gun icin ikinci kez uretilmez (idempotent). Tahil stoku
+  // nufusa yetmiyorsa kitlik riski (belge 9.9) olayi kitlige cevirir; aksi
+  // halde siradan bozulma turu uygulanir. Saf kural livelihood/production.
+  if ((already?.n ?? 0) === 0 && settlements.length > 0) {
+    const target = settlements[gameDay % settlements.length]!;
+    const grain = await queryOne<{ supply: number }>(
+      db,
+      "SELECT supply FROM market_state WHERE settlement_id = ? AND item_id = 'wheat'",
+      target.id,
+    );
+    const pop = await queryOne<{ population: number }>(
+      db,
+      "SELECT population FROM settlements WHERE id = ?",
+      target.id,
+    );
+    const risk = famineRisk(seasonFor(gameDay), grain?.supply ?? 0, pop?.population ?? 0);
+    const kind: DisruptionKind = risk >= 0.6 ? "famine" : disruptionFor(gameDay);
+    events.push(await applyWorldDisruption(db, gameDay, target.id, kind, nowMs));
   }
   return { gameDay, processed, events };
 }

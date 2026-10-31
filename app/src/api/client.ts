@@ -420,6 +420,15 @@ export interface PlayerSummaryDto {
   generation: number;
 }
 
+export interface PersonalityDto {
+  courage: number;
+  mercy: number;
+  ambition: number;
+  loyalty: number;
+  discipline: number;
+  patience: number;
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
   items: ItemDefDto[];
@@ -449,6 +458,7 @@ export interface PlayStateResponse {
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
   directory: PlayerSummaryDto[];
+  personality: PersonalityDto;
 }
 
 export interface StorageDto {

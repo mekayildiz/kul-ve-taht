@@ -9,8 +9,8 @@
 
 import type { SqlDatabase } from "../db/client";
 import { execute, queryOne } from "../db/client";
-import { healthyState, advanceDay, advanceHunger, eat, rest, type HealthState } from "../health/state";
-import { treatInjury, treatDisease } from "../health/treatment";
+import { healthyState, advanceDay, advanceHunger, eat, rest, addInjury, type HealthState } from "../health/state";
+import { treatInjury, treatDisease, treatmentQuality } from "../health/treatment";
 import { addItem, removeItem, type InventoryEntry, itemDef, carryCapacity } from "../inventory/items";
 import { applyMarketTrade } from "./market-state";
 import { decayInventory, storageFor, storageSummary } from "./storage";
@@ -22,7 +22,7 @@ import { buyPrice, sellPrice, type MarketState } from "../economy/market";
 import { SETTLEMENTS } from "../world/settlements";
 import { KINGDOMS } from "../world/kingdoms";
 import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, type CropId, type Season, type Weather } from "../livelihood/production";
-import { GUILDS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
+import { GUILDS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
 import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
 
 export interface PlayState {
@@ -233,12 +233,23 @@ export async function performTreat(
 ): Promise<PlayResult> {
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
-  const result = treatInjury(state.health, state.inventory, { injuryId, method, quality });
+  // Tedavi kalitesi (belge 6.5): sifaci becerisi + malzeme + temiz ortam.
+  // Girdi beceridir; malzeme envanterden, ortam yerlesimden SUNUCUDA belirlenir.
+  const supplies = state.inventory.some((e) => e.itemId === "healing-herb" && e.quantity > 0);
+  const settlementId = (await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  ))?.current_settlement;
+  const kind = SETTLEMENTS.find((s) => s.id === settlementId)?.kind ?? "village";
+  const cleanEnvironment = kind === "capital" || kind === "city";
+  const effectiveQuality = treatmentQuality(quality, supplies, cleanEnvironment);
+  const result = treatInjury(state.health, state.inventory, { injuryId, method, quality: effectiveQuality });
   if (!result.ok) return { ok: false, error: "invalid_action" };
   state.health = result.state!;
   state.inventory = result.entries!;
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { permanent: result.permanent ?? false } };
+  return { ok: true, state, detail: { permanent: result.permanent ?? false, quality: effectiveQuality } };
 }
 
 export async function performTreatDisease(
@@ -250,12 +261,21 @@ export async function performTreatDisease(
 ): Promise<PlayResult> {
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
-  const result = treatDisease(state.health, state.inventory, diseaseId, quality);
+  // Tedavi kalitesi SUNUCUDA belirlenir (malzeme + yerlesim ortami).
+  const supplies = state.inventory.some((e) => e.itemId === "healing-herb" && e.quantity > 0);
+  const settlementId = (await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  ))?.current_settlement;
+  const kind = SETTLEMENTS.find((s) => s.id === settlementId)?.kind ?? "village";
+  const effectiveQuality = treatmentQuality(quality, supplies, kind === "capital" || kind === "city");
+  const result = treatDisease(state.health, state.inventory, diseaseId, effectiveQuality);
   if (!result.ok) return { ok: false, error: "invalid_action" };
   state.health = result.state!;
   state.inventory = result.entries!;
   await saveState(db, state, nowMs);
-  return { ok: true, state };
+  return { ok: true, state, detail: { quality: effectiveQuality } };
 }
 
 export async function performCraft(
@@ -296,10 +316,22 @@ export async function performWork(db: SqlDatabase, characterId: string, professi
   if (!state) return { ok: false, error: "character_not_found" };
   if (!state.health.alive) return { ok: false, error: "dead" };
   const safeHours = Math.max(1, Math.min(12, Math.floor(hours)));
-  const income = workIncome(profession, state.weaponMastery, safeHours);
+  // Lonca uyeligi (belge 14.4): kidem arttikca calisma kazanci artar.
+  const guildRow = await queryOne<{ guild_id: string; joined_at: number }>(
+    db,
+    "SELECT guild_id, joined_at FROM character_guilds WHERE character_id = ?",
+    characterId,
+  );
+  let bonus = 0;
+  if (guildRow) {
+    const memberDays = Math.max(0, Math.floor((nowMs - guildRow.joined_at) / 86_400_000));
+    bonus = guildBenefits(guildRow.guild_id, memberDays).workBonus;
+  }
+  const base = workIncome(profession, state.weaponMastery, safeHours);
+  const income = Math.round(base * (1 + bonus));
   state.gold += income;
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { income } };
+  return { ok: true, state, detail: { income, guildBonus: bonus } };
 }
 
 export async function performTravel(
@@ -357,21 +389,15 @@ export async function performExplore(
   }
   state.gold += result.gold;
   if (result.injury) {
-    state.health = {
-      ...state.health,
-      injuries: [
-        ...state.health.injuries,
-        {
-          id: crypto.randomUUID(),
-          kind: result.injury.kind,
-          severity: result.injury.severity,
-          bleeding: result.injury.bleeding,
-          infection: 0,
-          treated: false,
-          occurredGameDay: 0,
-        },
-      ],
-    };
+    state.health = addInjury(state.health, {
+      id: crypto.randomUUID(),
+      kind: result.injury.kind,
+      severity: result.injury.severity,
+      bleeding: result.injury.bleeding,
+      infection: 0,
+      treated: false,
+      occurredGameDay: 0,
+    });
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { site, gold: result.gold, items: result.items, injury: result.injury } };
@@ -550,21 +576,15 @@ export async function performHunt(
     }
   }
   if (result.injury) {
-    state.health = {
-      ...state.health,
-      injuries: [
-        ...state.health.injuries,
-        {
-          id: crypto.randomUUID(),
-          kind: result.injury.kind,
-          severity: result.injury.severity,
-          bleeding: Math.round(result.injury.severity / 10),
-          infection: 0,
-          treated: false,
-          occurredGameDay: 0,
-        },
-      ],
-    };
+    state.health = addInjury(state.health, {
+      id: crypto.randomUUID(),
+      kind: result.injury.kind,
+      severity: result.injury.severity,
+      bleeding: Math.round(result.injury.severity / 10),
+      infection: 0,
+      treated: false,
+      occurredGameDay: 0,
+    });
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { animal, success: result.success, loot: result.loot, injury: result.injury } };
