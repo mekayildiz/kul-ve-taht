@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canMarry, childStage, DAYS_TO_ADULTHOOD, childDevelopmentBonus, distributeInheritance, adjustReputation, recordDeath, MARRIAGE_MIN_AGE, type Family } from "./dynasty";
+import { canMarry, childStage, DAYS_TO_ADULTHOOD, childDevelopmentBonus, distributeInheritance, adjustReputation, recordDeath, assignPropertyToHeirs, MARRIAGE_MIN_AGE, type Family } from "./dynasty";
 
 function family(): Family {
   return {
@@ -78,5 +78,26 @@ describe("miras ve kusaklar (belge 7.6)", () => {
     const f = recordDeath(family(), "p1", "Kael öldü", 100);
     expect(f.members.find((m) => m.id === "p1")?.alive).toBe(false);
     expect(f.chronicle.length).toBe(1);
+  });
+});
+
+describe("Nesiller arasi mulk aktarimi (E6.5, belge 7.6)", () => {
+  it("en degerli mulk en buyuk payli varise gider", () => {
+    const properties = [
+      { id: "house", value: 500 },
+      { id: "farm", value: 2000 },
+      { id: "ship", value: 1000 },
+    ];
+    const heirs = [
+      { memberId: "buyuk", share: 0.7 },
+      { memberId: "kucuk", share: 0.3 },
+    ];
+    const out = assignPropertyToHeirs(properties, heirs);
+    expect(out[0]).toEqual({ propertyId: "farm", heirId: "buyuk" });
+    expect(out[1]).toEqual({ propertyId: "ship", heirId: "kucuk" });
+  });
+
+  it("varis yoksa mulk dagitilmaz", () => {
+    expect(assignPropertyToHeirs([{ id: "p", value: 10 }], [])).toEqual([]);
   });
 });

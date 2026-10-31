@@ -44,7 +44,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E4.2 Kervan + deniz ticareti + filo — `military/army.ts` (filo/gemi sınıfları), `travel/travel.ts` (kervan hız/tehlike)
 - [x] E4.3 Bankacılık, kredi, faiz, borç, iflas — `economy/market.ts` (teminat/itibar, faiz, iflas)
 - [x] E4.4 Vergi, hazine, krizler — `economy/market.ts` (gelir+mülk vergisi, hazine, huzursuzluk)
-- [ ] E4.5 Mülk, işletme, ortaklık, şirket birleşme/devralma — şema hazır; hizmet katmanı bekliyor
+- [x] E4.5 Mülk, işletme, ortaklık, şirket birleşme/devralma — `economy/property.ts` (devir, vergi, gelir, ortaklık payı, kontrol eşiği, birleşme)
 
 ## E5 – Askerî ve siyasi sistemler
 - [x] E5.1 Birlikler, komuta, ikmal, kara savaşları — `military/army.ts` (ordu gücü, muharebe, ikmal)
@@ -58,7 +58,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E6.2 Binlerce NPC katmanlı simülasyon — `npc/model.ts` (önemli 1g / yerel 7g / arka plan 30g)
 - [x] E6.3 Evlilik/çocuk/ölüm/miras/kuşaklar — `family/dynasty.ts` (onaylı gelişim evreleri, miras, aile itibarı)
 - [x] E6.4 Sohbet, PM, arkadaşlık, grup, lonca, PvP, ittifak — `social/social.ts` (kanal erişimi, lonca/grup, duello)
-- [ ] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` miras çekirdeği hazır; mülk devri E4.5 ile bağlanacak
+- [x] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` (`assignPropertyToHeirs`; E4.5 devir ilkesiyle bağlı)
 
 ## E7 – Görsel, test ve yayın
 - [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, R2 kimliği, atıf listesi; `/api/assets/catalog`)

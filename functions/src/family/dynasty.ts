@@ -111,6 +111,34 @@ export function adjustReputation(family: Family, delta: number): Family {
   return { ...family, reputation: Math.max(0, Math.min(100, family.reputation + delta)) };
 }
 
+export interface PropertyLike {
+  id: string;
+  value: number;
+}
+
+export interface PropertyAssignment {
+  propertyId: string;
+  heirId: string;
+}
+
+/**
+ * Nesiller arasi mulk aktarimi (belge 7.6, E6.5): olen kisinin mulkleri
+ * miras payina gore varislere dagitilir. En degerli mulk en buyuk payli
+ * varise gider; boylece bolunme azalir. Mulkiyet ilkeli E4.5 ile aynidir.
+ */
+export function assignPropertyToHeirs(
+  properties: readonly PropertyLike[],
+  heirs: readonly { memberId: string; share: number }[],
+): PropertyAssignment[] {
+  if (heirs.length === 0) return [];
+  const sortedHeirs = [...heirs].sort((a, b) => b.share - a.share);
+  const sortedProperties = [...properties].sort((a, b) => b.value - a.value);
+  return sortedProperties.map((property, index) => ({
+    propertyId: property.id,
+    heirId: sortedHeirs[index % sortedHeirs.length]!.memberId,
+  }));
+}
+
 /** Olum sonrasi aile gecmisine kayit (kusaklar arasi aktarim). */
 export function recordDeath(family: Family, memberId: string, note: string, gameDay: number): Family {
   const members = family.members.map((m) => (m.id === memberId ? { ...m, alive: false } : m));
