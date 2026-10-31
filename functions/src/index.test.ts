@@ -2,6 +2,9 @@ import { describe, expect, it, beforeEach } from "vitest";
 import worker, { type Env } from "./index";
 import { createTestDb } from "./test-support/sqlite-harness";
 import { createSessionToken } from "./auth/session";
+import { registerAccount } from "./auth/service";
+import { seedWorld } from "./world/seed";
+import { emptyAttributes } from "./character/attributes";
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return { DB: createTestDb(), SESSION_SECRET: "test-secret-degistir", ...overrides };
@@ -71,6 +74,50 @@ describe("Worker uctan uca", () => {
     );
     const res = await call("/api/me", env, { headers: { authorization: `Bearer ${token}` } });
     expect(res.status).toBe(401);
+  });
+
+  it("oturumsuz karakter olusturma 401 doner", async () => {
+    const res = await call("/api/characters", env, { method: "POST", body: "{}" });
+    expect(res.status).toBe(401);
+  });
+
+  it("oyuncu dunya tohumlayamaz (yetki yukseltme engeli)", async () => {
+    const token = await createSessionToken(
+      { accountId: "acc-1", role: "player", issuedAt: Date.now(), expiresAt: Date.now() + 10_000 },
+      env.SESSION_SECRET,
+    );
+    const res = await call("/api/admin/seed-world", env, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("oturumlu oyuncu karakter olusturur ve listeler", async () => {
+    const reg = await registerAccount(env.DB, { email: "oyun@valedorn.tr", password: "cok-guclu-parola-1" });
+    if (!reg.ok) throw new Error("kayit basarisiz");
+    await seedWorld(env.DB);
+    const token = await createSessionToken(
+      { accountId: reg.accountId, role: "player", issuedAt: Date.now(), expiresAt: Date.now() + 10_000 },
+      env.SESSION_SECRET,
+    );
+
+    const create = await call("/api/characters", env, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        givenName: "Kael",
+        surname: "Veyr",
+        birthSettlement: "varkhenn-drahkmar",
+        attributes: emptyAttributes(),
+      }),
+    });
+    expect(create.status).toBe(201);
+
+    const list = await call("/api/characters", env, { headers: { authorization: `Bearer ${token}` } });
+    const body = (await list.json()) as { characters: { given_name: string }[] };
+    expect(body.characters).toHaveLength(1);
+    expect(body.characters[0]?.given_name).toBe("Kael");
   });
 
   it("bilinmeyen yol 404 doner", async () => {

@@ -105,3 +105,42 @@ yükseltme yalnızca yönetici işlemiyle ve `audit_log` kaydıyla yapılır.
 Askıya alınmış hesapların girişi `suspended` hatasıyla engellenir.
 
 **Sonuç:** İstemci rolü dayatamaz; ayrıcalık yükseltme denetim altındadır.
+
+## ADR-015 — Şema nitelik sütunu belgeye uyduruldu
+
+**Bağlam:** `0001_core_schema.sql` içinde `character_attributes.willpower`
+bulunuyordu. Tasarım belgesi 5.5 YEDİ niteliği açıkça sayar ve yedincisi
+**Liderlik**'tir (Güç, Dayanıklılık, Çeviklik, Zekâ, Algı, Karizma,
+Liderlik). Şans ayrı bir nitelik değildir.
+
+**Karar:** `0002_character_and_world.sql` ile sütun `leadership` olarak
+yeniden adlandırıldı; `character_appearance`, `character_background`,
+`character_reputation` tabloları eklendi (belge 5.3/5.4/5.9).
+
+**Sonuç:** Şema ile tasarım belgesi arasındaki gerçek tutarsızlık kapandı;
+görünüş editörü ve geçmiş katmanları nihai kapsamda.
+
+## ADR-016 — İstemci asla oyun otoritesi değildir
+
+**Bağlam:** Nitelik puanları, meslekler, uzmanlık yolları ve doğum yeri
+istemciden gelir. Kötü niyetli istemci 20/20/20 nitelik veya sınırsız
+uzmanlık gönderebilir.
+
+**Karar:** Tüm doğrulama `character/service.ts` içinde SUNUCUDA yapılır:
+puan havuzu (56), aralık (1-20), en fazla 2 başlangıç uzmanlığı ve 2 meslek,
+doğum yerinin `settlements` tablosunda var olması. Hesap kimliği istemciden
+değil, oturumdan alınır.
+
+**Sonuç:** Yetki yükseltme ve hile denemeleri reddedilir; testlerle
+doğrulanmıştır.
+
+## ADR-017 — Dünya tohumlama idempotenttir
+
+**Bağlam:** Dünya verisi (5 krallık, 130 yerleşim) D1'e bir kez yüklenmeli;
+yeniden çalıştırma oyuncu verisini bozmamalı.
+
+**Karar:** `seedWorld` `INSERT OR IGNORE` kullanır; dünya saati yalnızca
+başlatılmamışsa (`last_tick_real_ms <= 0`) güncellenir. Tohumlama yalnızca
+`admin:any` yetkisiyle çalışır.
+
+**Sonuç:** Tohumlama güvenle tekrarlanabilir; test edilmiştir.

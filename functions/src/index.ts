@@ -15,6 +15,8 @@ import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES } from 
 import { advanceWorldTime, seasonFor } from "./time/world-clock";
 import { queryOne, execute, type SqlDatabase } from "./db/client";
 import { registerAccount, loginAccount } from "./auth/service";
+import { createCharacter, type CreateCharacterInput } from "./character/service";
+import { seedWorld } from "./world/seed";
 
 export { PasswordHashGate } from "./durable/password-hash-gate";
 export { BackupWorkflow } from "./workflows/backup-workflow";
@@ -124,6 +126,47 @@ router.get("/api/me", async ({ request, env }: Ctx) => {
   const decision = authorize({ session, action: "profile:read" });
   if (!decision.allowed) return error("unauthorized", "Gecerli oturum yok.", 401);
   return json({ accountId: session?.accountId, role: session?.role });
+});
+
+router.post("/api/admin/seed-world", async ({ request, env }: Ctx) => {
+  // Tohumlama idempotenttir; yalnizca yonetici oturumu ile calistirilir.
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const decision = authorize({ session, action: "admin:any" });
+  if (!decision.allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const result = await seedWorld(env.DB);
+  return json(result);
+});
+
+router.get("/api/characters", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const decision = authorize({ session, action: "profile:read" });
+  if (!decision.allowed || !session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const rows = await env.DB.prepare(
+    "SELECT id, given_name, surname, birth_settlement, current_settlement, age_years, generation FROM characters WHERE account_id = ? ORDER BY created_at DESC",
+  )
+    .bind(session.accountId)
+    .all<{ id: string; given_name: string; surname: string }>();
+  return json({ characters: rows.results });
+});
+
+router.post("/api/characters", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const decision = authorize({ session, action: "profile:write" });
+  if (!decision.allowed || !session) return error("unauthorized", "Gecerli oturum yok.", 401);
+
+  const body = (await request.json().catch(() => null)) as Omit<CreateCharacterInput, "accountId"> | null;
+  if (!body) return error("invalid_body", "Gecerli bir govde gerekli.", 400);
+
+  // Hesap kimligi istemciden DEGIL oturumdan alinir (yetki yukseltme engeli).
+  const result = await createCharacter(env.DB, { ...body, accountId: session.accountId });
+  if (!result.ok) {
+    const status = result.error === "invalid_birth_settlement" ? 404 : 400;
+    return json({ error: { code: result.error, message: "Karakter olusturulamadi." }, problems: result.problems ?? [] }, status);
+  }
+  return json({ characterId: result.characterId }, 201);
 });
 
 function readQuotaState(env: Env | undefined): QuotaState {

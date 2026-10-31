@@ -28,9 +28,9 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi
 - [x] E2.2 **130 yerleşim/yapı** tam veri seti (E1.13'te tamamlandı)
 - [ ] E2.3 Harita verisi + statik illüstrasyon + bilgi paneli
-- [ ] E2.4 Karakter oluşturma (doğum yeri, geçmiş, aile)
-- [ ] E2.5 Kapsamlı görünüş editörü (ertelenmiş → nihai kapsam)
-- [ ] E2.6 7 nitelik, kişilik, uzmanlık, meslek, itibar
+- [x] E2.4 Karakter oluşturma (doğum yeri, geçmiş, aile) — servis + `/api/characters` uçları, 12 test
+- [x] E2.5 Kapsamlı görünüş editörü (ertelenmiş → nihai kapsam) — `character_appearance` şeması + servis desteği
+- [x] E2.6 7 nitelik, kişilik, uzmanlık, meslek, itibar — modüller + doğrulama (şema `willpower`→`leadership` düzeltildi)
 
 ## E3 – Oynanış ve yaşam
 - [ ] E3.1 Keşif, görevler, dinamik olaylar, yaratıklar
