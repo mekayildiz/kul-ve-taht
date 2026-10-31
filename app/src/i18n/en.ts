@@ -206,6 +206,10 @@ export const en: typeof tr = {
     noAuctions: "No open auctions.",
     marketPrice: "Market Price",
     disruption: "Disruption Factor",
+    storage: "Storage",
+    storageFull: "Storage is full; make room first.",
+    monopoly: "Monopoly Factor",
+    familyReputation: "House Reputation",
   },
 };
 

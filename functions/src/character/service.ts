@@ -80,7 +80,12 @@ export async function createCharacter(
   const givenName = input.givenName.trim();
   const surname = input.surname.trim();
   if (givenName.length < 2 || surname.length < 2) {
-    return { ok: false, error: "invalid_name" };
+    // Istemci hatanin NEDENINI gosterebilsin diye problems doldurulur.
+    return {
+      ok: false,
+      error: "invalid_name",
+      problems: ["Ad ve soyad en az 2 karakter olmalidir"],
+    };
   }
 
   const settlement = await queryOne<{ id: string }>(

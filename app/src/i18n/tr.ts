@@ -204,6 +204,10 @@ export const tr = {
     noAuctions: "Açık artırma yok.",
     marketPrice: "Pazar Fiyatı",
     disruption: "Bozulma Çarpanı",
+    storage: "Depo",
+    storageFull: "Depo dolu; önce yer açın.",
+    monopoly: "Tekel Çarpanı",
+    familyReputation: "Hane İtibarı",
   },
 };
 

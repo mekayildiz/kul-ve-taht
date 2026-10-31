@@ -9,6 +9,7 @@ import {
   type ChatMessageDto,
   type DiplomacyDto,
   type FamilyDto,
+  type StorageDto,
   type ItemDefDto,
   type MarketQuoteDto,
   type OfficeDto,
@@ -44,6 +45,7 @@ interface State {
   social: SocialDto[];
   office: OfficeDto | null;
   family: FamilyDto | null;
+  storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
   questCatalog: QuestCatalogEntryDto[];
@@ -72,6 +74,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     social: [],
     office: null,
     family: null,
+    storage: null,
     diplomacy: [],
     quests: [],
     questCatalog: [],
@@ -107,6 +110,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           social: res.social,
           office: res.office,
           family: res.family,
+          storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
           questCatalog: quests?.catalog ?? [],
@@ -189,7 +193,21 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           <strong>{play.gold}</strong>
           <span>{t.play.gold}</span>
         </div>
+        {state.storage && (
+          <div>
+            <strong>
+              {state.storage.used}/{state.storage.capacity}
+            </strong>
+            <span>{t.play.storage}</span>
+          </div>
+        )}
       </div>
+
+      {state.storage && state.storage.overflow > 0 && (
+        <p className="kvt-error" role="alert">
+          {t.play.storageFull}
+        </p>
+      )}
 
       {!play.health.alive && (
         <p className="kvt-error" role="alert">
@@ -267,8 +285,22 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         {state.items.slice(0, 6).map((item) => (
           <li key={item.id}>
             <span>
-              {item.name} — {item.baseValue} {t.play.gold}
+              {item.name} — {state.marketQuote?.itemId === item.id ? state.marketQuote.buy : item.baseValue} {t.play.gold}
+              {state.marketQuote?.itemId === item.id && (state.marketQuote.monopoly ?? 1) > 1
+                ? ` · ${t.play.monopoly} ×${state.marketQuote.monopoly}`
+                : ""}
             </span>
+            <button
+              type="button"
+              onClick={() =>
+                client
+                  .market(item.id, character.current_settlement ?? undefined)
+                  .then((quote) => setState((prev) => ({ ...prev, marketQuote: quote })))
+                  .catch(() => undefined)
+              }
+            >
+              {t.play.marketPrice}
+            </button>
             <button
               type="button"
               onClick={() => act({ action: "trade", itemId: item.id, quantity: 1, side: "buy" }, t.play.bought)}

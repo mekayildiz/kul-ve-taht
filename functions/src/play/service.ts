@@ -13,6 +13,8 @@ import { healthyState, advanceDay, advanceHunger, eat, rest, type HealthState } 
 import { treatInjury, treatDisease } from "../health/treatment";
 import { addItem, removeItem, type InventoryEntry, itemDef, carryCapacity } from "../inventory/items";
 import { applyMarketTrade } from "./market-state";
+import { decayInventory, storageFor, storageSummary } from "./storage";
+import { settleDeath } from "./succession";
 import { craft, recipeById, workIncome } from "../inventory/crafting";
 import { planTravel, lodgingCost, type TravelConditions } from "../travel/travel";
 import { explore, type ExplorationSite, EXPLORATION_SITES } from "../quests/system";
@@ -78,6 +80,7 @@ export async function loadState(db: SqlDatabase, characterId: string, nowMs: num
     energy: number;
     magic_paths_json: string;
     underworld_rep: number;
+    inventory_decay_day: number;
   }>(db, "SELECT * FROM character_state WHERE character_id = ?", characterId);
 
   if (!row) {
@@ -108,16 +111,34 @@ export async function loadState(db: SqlDatabase, characterId: string, nowMs: num
     "SELECT strength FROM character_attributes WHERE character_id = ?",
     characterId,
   );
+  const strength = attr?.strength ?? 8;
+  let inventory = JSON.parse(row.inventory_json) as InventoryEntry[];
+
+  // Depolama/bozulma (belge 9.3): dunya gunu ilerlediyse gida ve ilac
+  // bozulur. Ayni gun icin TEKRAR uygulanmaz (idempotent).
+  const dayRow = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
+  const gameDay = dayRow?.game_day ?? 1;
+  if (gameDay > (row.inventory_decay_day ?? 0)) {
+    inventory = decayInventory(inventory, storageFor(strength, hasMount(inventory), false), gameDay - (row.inventory_decay_day ?? 0));
+    await execute(
+      db,
+      "UPDATE character_state SET inventory_json = ?, inventory_decay_day = ? WHERE character_id = ?",
+      JSON.stringify(inventory),
+      gameDay,
+      characterId,
+    );
+  }
+
   return {
     characterId,
     health: JSON.parse(row.health_json) as HealthState,
-    inventory: JSON.parse(row.inventory_json) as InventoryEntry[],
+    inventory,
     gold: row.gold,
     debts: row.debts,
     reputation: row.reputation,
     weapon: row.weapon,
     weaponMastery: row.weapon_mastery,
-    strength: attr?.strength ?? 8,
+    strength,
     magicLevel: row.magic_level ?? 0,
     energy: row.energy ?? 100,
     magicPaths: JSON.parse(row.magic_paths_json ?? "[]") as MagicPath[],
@@ -188,9 +209,16 @@ export async function performRest(db: SqlDatabase, characterId: string, hours: n
 export async function advanceCharacterDay(db: SqlDatabase, characterId: string, nowMs = Date.now()): Promise<PlayResult> {
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
+  const wasAlive = state.health.alive;
   state.health = advanceDay(advanceHunger(state.health, 1), 1);
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { alive: state.health.alive } };
+  // Olum kalicidir; miras ve kusak devri islenir (belge 7.6).
+  let succession: Awaited<ReturnType<typeof settleDeath>> = null;
+  if (wasAlive && !state.health.alive) {
+    const day = await gameDayNumber(db);
+    succession = await settleDeath(db, characterId, "Karakter hayatini kaybetti.", day);
+  }
+  return { ok: true, state, detail: { alive: state.health.alive, succession } };
 }
 
 export async function performTreat(
@@ -296,8 +324,13 @@ export async function performTravel(
   if (plan.blocked) return { ok: false, error: "invalid_action", state, detail: { blocked: true } };
 
   await execute(db, "UPDATE characters SET current_settlement = ? WHERE id = ?", to.id, characterId);
+  const wasAlive = state.health.alive;
   state.health = advanceDay(advanceHunger(state.health, Math.max(1, Math.ceil(plan.gameDays))), 1);
   await saveState(db, state, nowMs);
+  // Yolda olum: miras islenir (belge 7.6).
+  if (wasAlive && !state.health.alive) {
+    await settleDeath(db, characterId, "Yolculukta hayatini kaybetti.", await gameDayNumber(db));
+  }
   return { ok: true, state, detail: { ...plan, to: to.id } };
 }
 
@@ -371,12 +404,17 @@ export async function performTrade(
   if (side === "buy") {
     const cost = unitPrice * qty;
     if (state.gold < cost) return { ok: false, error: "not_enough_gold" };
+    // Depolama kapasitesi (belge 9.3): agirlik disinda birim bazli sinir vardir.
+    const storage = await storageSummary(db, characterId, state.inventory, state.strength, hasMount(state.inventory));
+    if (storage.used + qty > storage.capacity) {
+      return { ok: false, error: "invalid_action", state, detail: { reason: "storage_full", used: storage.used, capacity: storage.capacity } };
+    }
     const added = addItem(state.inventory, itemId, qty, capacity, state.strength, hasMount(state.inventory));
-    if (!added.ok) return { ok: false, error: "invalid_action" };
+    if (!added.ok) return { ok: false, error: "invalid_action", detail: { reason: "over_capacity" } };
     state.inventory = added.entries!;
     state.gold -= cost;
     await saveState(db, state, nowMs);
-    return { ok: true, state, detail: { cost, price: unitPrice } };
+    return { ok: true, state, detail: { cost, price: unitPrice, storageUsed: storage.used + qty, storageCapacity: storage.capacity } };
   }
 
   const removed = removeItem(state.inventory, itemId, qty);

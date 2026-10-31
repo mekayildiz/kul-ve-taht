@@ -212,7 +212,15 @@ export interface PlayStateResponse {
   social: SocialDto[];
   office: OfficeDto | null;
   family: FamilyDto | null;
+  storage: StorageDto;
   diplomacy: DiplomacyDto[];
+}
+
+export interface StorageDto {
+  used: number;
+  capacity: number;
+  overflow: number;
+  preservationFactor: number;
 }
 
 export interface QuestObjectiveDto {
@@ -265,6 +273,8 @@ export interface MarketQuoteDto {
   supply?: number;
   demand?: number;
   disruption?: number;
+  /** Bolgesel tekel carpani (belge 9.4); 1 ise tekel yok. */
+  monopoly?: number;
 }
 
 export type PlayAction =

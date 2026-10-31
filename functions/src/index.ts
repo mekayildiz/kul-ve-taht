@@ -46,6 +46,7 @@ import {
   type PlayResult,
 } from "./play/service";
 import { quoteMarket } from "./play/market-state";
+import { storageSummary, monopolyFactor, runKingdomBudget, interveneMarket } from "./play/storage";
 import { startQuest, claimQuestReward, questLog, advanceQuestByTag, QUEST_CATALOG } from "./play/quests";
 import { createAuction, bidAuction, listAuctions, settleDueAuctions } from "./play/auctions";
 import { ITEMS } from "./inventory/items";
@@ -282,6 +283,28 @@ router.get("/api/me", async ({ request, env }: Ctx) => {
   return json({ accountId: session?.accountId, role: session?.role });
 });
 
+/** Krallik butcesini elle isletir (belge 9.7-9.9). Yalnizca yonetici. */
+router.post("/api/admin/budget/run", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { kingdomId?: string } | null;
+  if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
+  const result = await runKingdomBudget(env.DB, body.kingdomId);
+  return result ? json(result) : error("not_found", "Krallik bulunamadi.", 404);
+});
+
+/** Devlet piyasa mudahalesi: hazineden tahil surerek fiyati baskir (belge 9.4, 9.9). */
+router.post("/api/admin/market/intervene", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { kingdomId?: string; grainAmount?: number; unitCost?: number } | null;
+  if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
+  const result = await interveneMarket(env.DB, body.kingdomId, body.grainAmount ?? 100, body.unitCost ?? 2);
+  return result.ok ? json(result) : error("not_enough_gold", "Hazine yetersiz.", 400);
+});
+
 router.post("/api/admin/seed-world", async ({ request, env }: Ctx) => {
   // Tohumlama idempotenttir; yalnizca yonetici oturumu ile calistirilir.
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
@@ -360,6 +383,13 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   }
   const state = await getPlayState(env.DB, params.characterId!);
   if (!state) return error("not_found", "Karakter bulunamadi.", 404);
+  const storage = await storageSummary(
+    env.DB,
+    params.characterId!,
+    state.inventory,
+    state.strength,
+    state.inventory.some((e) => e.itemId === "pack-horse"),
+  );
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
@@ -383,6 +413,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     social,
     office,
     family,
+    storage,
     diplomacy: await diplomacyStances(),
   });
 });
@@ -393,7 +424,10 @@ router.get("/api/market/:itemId", async ({ params, url, env }: Ctx) => {
   const quote = settlementId
     ? await quoteMarket(env.DB, settlementId, params.itemId!)
     : marketQuote(params.itemId!);
-  return quote ? json(quote) : error("not_found", "Esya bulunamadi.", 404);
+  if (!quote) return error("not_found", "Esya bulunamadi.", 404);
+  // Bolgesel tekel: pazar payi esigi asilirsa fiyat carpani uygulanir (belge 9.4).
+  const monopoly = settlementId ? await monopolyFactor(env.DB, settlementId, params.itemId!) : 1;
+  return json({ ...quote, monopoly, buy: Math.round(quote.buy * monopoly), sell: Math.round(quote.sell * monopoly) });
 });
 
 router.get("/api/lodging", ({ url }: Ctx) => {
@@ -786,6 +820,14 @@ export default {
     }
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
     await settleDueAuctions(env.DB).catch(() => undefined);
+    // Aylik devlet butcesi (belge 9.7-9.9): her 30 oyun gununde bir vergi
+    // toplanir, gider odenir, yetmezse borclanilir. Partili calisir.
+    if (advanced.advancedDays > 0 && advanced.gameDay % 30 === 0) {
+      const kingdoms = await queryAll<{ id: string }>(env.DB, "SELECT id FROM kingdoms ORDER BY id");
+      for (const kingdom of kingdoms) {
+        await runKingdomBudget(env.DB, kingdom.id).catch(() => undefined);
+      }
+    }
   },
 
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

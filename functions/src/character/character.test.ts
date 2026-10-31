@@ -153,7 +153,11 @@ describe("karakter olusturma servisi", () => {
       birthSettlement: "varkhenn-drahkmar",
       attributes: attrs,
     });
-    expect(result).toEqual({ ok: false, error: "invalid_name" });
+    expect(result).toEqual({
+      ok: false,
+      error: "invalid_name",
+      problems: ["Ad ve soyad en az 2 karakter olmalidir"],
+    });
   });
 });
 

@@ -516,4 +516,93 @@ describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
     expect(disrupted.buy).toBeGreaterThan(base.buy);
     expect(disrupted.disruption).toBeGreaterThan(1);
   });
+
+  it("depolama kapasitesi ve bozulma durumu durumda doner (belge 9.3)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const state = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state.storage).toMatchObject({ capacity: expect.any(Number), used: expect.any(Number) });
+    expect(state.storage.capacity).toBeGreaterThan(0);
+  });
+
+  it("depo dolunca alim reddedilir (belge 9.3)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 100000);
+    // Kapasiteyi asiri stokla doldur.
+    await env.DB.prepare("UPDATE character_state SET inventory_json = ? WHERE character_id = ?")
+      .bind(JSON.stringify([{ itemId: "bread", quantity: 5000, condition: 1 }]), characterId)
+      .run();
+    const res = await act(env, token, characterId, { action: "trade", itemId: "bread", quantity: 1, side: "buy" });
+    expect(res.status).toBe(400);
+    expect((await readBody(res)).error.reason).toBe("storage_full");
+  });
+
+  it("pazar tekel carpani pay ile artar (belge 9.4)", async () => {
+    await setupPlayer(env);
+    // Bir yerlesime toplam arzin cogunu yig: pay esigi asilir.
+    await env.DB.prepare(
+      "INSERT INTO market_state (settlement_id, item_id, supply, demand, updated_day) VALUES ('varkhenn-drahkmar','bread',300,100,1)",
+    ).run();
+    await env.DB.prepare(
+      "INSERT INTO market_state (settlement_id, item_id, supply, demand, updated_day) VALUES ('aurelith-velmora','bread',20,100,1)",
+    ).run();
+    const quote = await readBody(await call("/api/market/bread?settlementId=varkhenn-drahkmar", env));
+    expect(quote.monopoly).toBeGreaterThan(1);
+  });
+
+  it("krallik butcesi islenir ve yonetici ucu korumali (belge 9.7-9.9)", async () => {
+    const { token } = await setupPlayer(env);
+    // Yonetici olmayan oyuncu butce isletemez.
+    const denied = await call("/api/admin/budget/run", env, auth(token, { kingdomId: "varkhenn" }));
+    expect(denied.status).toBe(403);
+
+    const adminToken = await createSessionToken(
+      { accountId: "admin-1", role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
+      env.SESSION_SECRET,
+    );
+    const run = await call("/api/admin/budget/run", env, auth(adminToken, { kingdomId: "varkhenn" }));
+    expect(run.status).toBe(200);
+    expect((await readBody(run)).treasury).toBeGreaterThanOrEqual(0);
+  });
+
+  it("olum mirasi varislere aktarir ve mulku devreder (belge 7.6)", async () => {
+    const { token, characterId, accountId } = await setupPlayer(env);
+    const { settleDeath } = await import("./play/succession");
+    // Aile kur: ayni haneye bir yetiskin varis ekle.
+    const familyId = "fam-1";
+    await env.DB.prepare("INSERT INTO families (id, name, crest, founded_at) VALUES (?,?,?,?)")
+      .bind(familyId, "Veyr Hanesi", null, 1)
+      .run();
+    const heirId = "heir-1";
+    await env.DB.prepare(
+      `INSERT INTO characters (id, account_id, given_name, surname, gender, birth_settlement, age_years, alive, generation, current_settlement, created_at)
+       VALUES (?,?,?,?,?,?,?,1,1,?,?)`,
+    )
+      .bind(heirId, accountId, "Mira", "Veyr", "female", "varkhenn-drahkmar", 25, "varkhenn-drahkmar", Date.now())
+      .run();
+    await env.DB.prepare("INSERT INTO family_members (family_id, character_id, relation, since) VALUES (?,?,?,?)")
+      .bind(familyId, characterId, "head", 1)
+      .run();
+    await env.DB.prepare("INSERT INTO family_members (family_id, character_id, relation, since) VALUES (?,?,?,?)")
+      .bind(familyId, heirId, "child", 1)
+      .run();
+    await grantGold(env, heirId, 0);
+    await env.DB.prepare(
+      "INSERT INTO character_properties (id, character_id, settlement_id, property_type, value, tax_rate, updated_at) VALUES (?,?,?,?,?,?,?)",
+    )
+      .bind("prop-1", characterId, "varkhenn-drahkmar", "house", 500, 0.02, Date.now())
+      .run();
+
+    const result = await settleDeath(env.DB, characterId, "test olum", 5);
+    expect(result).not.toBeNull();
+    expect(result!.heirCharacterId).toBe(heirId);
+
+    const owner = await env.DB.prepare("SELECT character_id FROM character_properties WHERE id = 'prop-1'")
+      .first<{ character_id: string }>();
+    expect(owner!.character_id).toBe(heirId);
+    const dead = await env.DB.prepare("SELECT alive FROM characters WHERE id = ?").bind(characterId).first<{ alive: number }>();
+    expect(dead!.alive).toBe(0);
+    // Idempotent: ikinci cagri islem yapmaz.
+    expect(await settleDeath(env.DB, characterId, "tekrar", 6)).toBeNull();
+    expect(token).toBeTruthy();
+  });
 });

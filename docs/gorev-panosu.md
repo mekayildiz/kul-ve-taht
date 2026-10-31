@@ -113,3 +113,15 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.35 Açık artırma (belge 9.3): sunucu otoriteli teklif doğrulama, rezerv fiyat, kapanınca eşya el değiştirir ve satıcıya altın geçer — `play/auctions.ts`, `/api/auctions`, `auctions.seller_id`
 - [x] E8.36 Pazar fiyatı bağlantısı (belge 9.2, 9.4): yerleşim bazlı arz/talep + bozulma çarpanı, alım-satım pazarı kalıcı günceller — `play/market-state.ts`, `/api/market?settlementId=`
 - [x] E8.37 Arayüz + test: görev günlüğü ve açık artırma panelleri (3 yeni arayüz testi) + 6 yeni API testi — toplam 423 test geçiyor
+
+## E8.38–E8.42 Tam kapsam bağlantıları (belge 7, 9, 10, 13, 20)
+
+Belge 20 "tam oyun kapsamı" gereği daha önce modülleri yazılmış ancak oynanışa
+bağlanmamış sistemler sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
+
+- [x] E8.38 Depolama kapasitesi ve bozulma bağlantısı (belge 9.3): envanter sınırlı depoya sahip; gıda/ilaç gün gün bozulur, depo dolunca alım reddedilir (`storage_full`) — `play/storage.ts`, `play/service.ts`, `/api/play/:id/state.storage`, arayüz depo göstergesi
+- [x] E8.39 Bölgesel tekel ve devlet müdahalesi (belge 9.4, 9.9): pazar payı eşiği aşılırsa fiyat çarpanı; hazineden tahıl sürerek fiyat baskılama — `play/storage.ts` (`monopolyFactor`, `interveneMarket`), `/api/market` `monopoly` alanı, `/api/admin/market/intervene`
+- [x] E8.40 Devlet bütçesi ve yolsuzluk (belge 9.7–9.9): aylık vergi/gider turu, borç krizi, yolsuzluk oranı ve denetim — `play/storage.ts` (`runKingdomBudget`, `auditKingdomCorruption`), zamanlanmış tur (`gameDay % 30`), `/api/admin/budget/run`, `kingdoms.corruption`
+- [x] E8.41 Ölüm, miras ve kuşak devri (belge 7.6): ölüm kalıcı; altın/mülk/unvan varislere geçer, anlaşmazlık hane itibarını düşürür; gün ilerlemesi ve yolculuk ölümle sonuçlanırsa işlenir — `play/succession.ts` (`settleDeath`, `heirOf`), `play/service.ts`, `families.reputation/wealth/debt`
+- [x] E8.42 Rütbe düşürme ve makam azli (belge 10, 13): ağır suç mahkumiyetinde rütbe bir basamak iner, en alt rütbede makam geri alınır; boş makam doğrudan atanır — `politics/government.ts` (`demote`, `isVacant`), `play/systems.ts`
+- [x] Test: 6 yeni API testi (depolama, depo doluluğu, tekel, bütçe+yetki, miras+idempotans) + güncellenen ad doğrulama testi — toplam **428 test** geçiyor; `npm run verify` (lint+typecheck+build+test+0 TL denetimi) temiz

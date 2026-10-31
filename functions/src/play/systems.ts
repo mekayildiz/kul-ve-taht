@@ -34,6 +34,8 @@ import {
   RANKS,
   appoint,
   promote,
+  demote,
+  isVacant,
   resolvePowerStruggle,
   type Government,
   type Position,
@@ -602,6 +604,10 @@ export async function performCrime(
   }
 
   const verdict = sentence(crime, profile, state.gold, Math.random());
+  // Agir sucta rutbe dusurulur (belge 10, 13): ihanet/suclu mahkumiyet.
+  if (CRIME_SEVERITY[crimeType] >= 50) {
+    await demoteOffice(db, characterId, nowMs);
+  }
   if (verdict.type === "fine") {
     state.gold = Math.max(0, state.gold - verdict.fine);
     state.reputation -= 2;
@@ -621,6 +627,28 @@ export async function performCrime(
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { crimeType, arrested: true, chance, verdict } };
+}
+
+/**
+ * Suclu mahkumiyette rutbe dusurme (belge 10, 13). En alt rutbede makam
+ * kaybi olur (azil); aksi halde bir basamak iner.
+ */
+async function demoteOffice(db: SqlDatabase, characterId: string, nowMs: number): Promise<void> {
+  const row = await queryOne<{ rank: string }>(
+    db,
+    "SELECT rank FROM character_offices WHERE character_id = ?",
+    characterId,
+  );
+  if (!row) return;
+  const next = demote((RANKS.includes(row.rank as Rank) ? row.rank : "recruit") as Rank);
+  if (next === row.rank) {
+    // En alt rutbe: makam tamamen geri alinir.
+    await execute(db, "DELETE FROM character_offices WHERE character_id = ?", characterId);
+    await execute(db, "UPDATE offices SET holder_type=NULL, holder_id=NULL, appointed_day=? WHERE holder_id = ?", nowMs, characterId);
+    return;
+  }
+  await execute(db, "UPDATE character_offices SET rank = ?, updated_at = ? WHERE character_id = ?", next, nowMs, characterId);
+  await execute(db, "UPDATE offices SET rank = ? WHERE holder_id = ?", next, characterId);
 }
 
 /** Hapisten kacis: ceviklik/zeka/rusvet SUNUCUDA; sonuc kalici. */
@@ -823,28 +851,31 @@ export async function performSeekOffice(
   const rank = promote(baseRank, points, true);
 
   // Makam tek sahipli: musait veya devredilebilir olmali (belge 10.4).
-  const position: Position = {
-    id: `office-${kingdomId}-${safeTitle}`,
-    kingdomId,
-    title: safeTitle,
-    authority: "general",
-    holderType: null,
-    holderId: null,
-    appointedAt: null,
-  };
+  const officeId = `office-${kingdomId}-${safeTitle}`;
   const existing = await queryOne<{ holder_id: string | null; service_points: number }>(
     db,
     "SELECT holder_id, service_points FROM offices WHERE id = ?",
-    position.id,
+    officeId,
   );
   const occupant = existing?.holder_id ?? null;
   const incumbentPoints = existing?.service_points ?? 0;
+  const position: Position = {
+    id: officeId,
+    kingdomId,
+    title: safeTitle,
+    authority: "general",
+    holderType: occupant ? "character" : null,
+    holderId: occupant,
+    appointedAt: null,
+  };
+  // Makam bos mu? Bos makam dogrudan atanir (belge 10.2).
+  const vacant = isVacant(position);
   const needsCouncil = government === "council_monarchy" || government === "noble_council_monarchy";
   const councilApproval = !needsCouncil || points >= 40;
 
   // Makam doluysa siyasi mucadele cozulur (belge 8.6, 10.4, 11). Destek +
   // itibar toplami yuksek olan kazanir; esitlikte mevcut sahip avantajlidir.
-  if (occupant !== null && occupant !== characterId) {
+  if (!vacant && occupant !== characterId) {
     if (!councilApproval) {
       return { ok: false, error: "invalid_action", state, detail: { reason: "council_approval_required", government } };
     }
