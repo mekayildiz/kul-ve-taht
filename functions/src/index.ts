@@ -17,6 +17,7 @@ import { queryOne, queryAll, execute, type SqlDatabase } from "./db/client";
 import { registerAccount, loginAccount } from "./auth/service";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
+import { runWorldSimulation } from "./play/world-sim";
 import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 import {
@@ -220,6 +221,8 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
       advanced.gameYear,
       advanced.lastTickRealMs,
     );
+    // Dunya ilerledikce katmanli simulasyon calisir (belge 8.8, 9.4).
+    await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
   }
 
   return json({
@@ -668,6 +671,34 @@ function readQuotaState(env: Env | undefined): QuotaState {
 }
 
 export default {
+  /**
+   * Zamanlanmis dunya turu (belge 8.8). Free plan cron tetikleyicisi ile
+   * calisir; istek kotasindan bagimsizdir. Simulasyon katmanli ve partili
+   * oldugu icin tek turda yazma kotasi asilmaz.
+   */
+  async scheduled(_event: ScheduledController, env: Env): Promise<void> {
+    if (!env?.DB) return;
+    const row = await queryOne<{ game_day: number; game_year: number; last_tick_real_ms: number }>(
+      env.DB,
+      "SELECT game_day, game_year, last_tick_real_ms FROM world_clock WHERE id = 1",
+    );
+    if (!row) return;
+    const advanced = advanceWorldTime(
+      { gameDay: row.game_day, gameYear: row.game_year, lastTickRealMs: row.last_tick_real_ms },
+      Date.now(),
+    );
+    if (advanced.advancedDays > 0) {
+      await execute(
+        env.DB,
+        "UPDATE world_clock SET game_day = ?, game_year = ?, last_tick_real_ms = ? WHERE id = 1",
+        advanced.gameDay,
+        advanced.gameYear,
+        advanced.lastTickRealMs,
+      );
+    }
+    await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
+  },
+
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const isCritical = url.pathname.startsWith("/api/auth") || url.pathname.startsWith("/api/trade");

@@ -98,4 +98,10 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.21 Bildirim yayma (belge 19): evlilik/çocuk/özel mesaj olayları hesaba bildirim yazar; öncelik eşiği özeti — `notifyCharacter`
 - [x] E8.22 Arayüz: aile paneli + sohbet paneli (mesaj listesi ve gönderme) — `PlayPanel.tsx`
 - [x] E8.23 Test: 7 yeni API testi + 2 yeni arayüz testi — toplam 400 test geçiyor
+- [x] E8.24 NPC simülasyonunu çalıştırma (belge 8.8): katmanlı ve partili dünya turu — `play/world-sim.ts` (önemli 1g / yerel 7g / arka plan 30g, parti limiti 50)
+- [x] E8.25 NPC tohumlama (belge 8.8): 130+ yerleşime katmanlı NPC üretimi (~950 NPC) — `world/seed.ts`
+- [x] E8.26 Ekonomi tamamlayıcıları bağlantısı (belge 9.4): bozulma olayları pazar çarpanı + dünya olay günlüğü — `market_state`, `world_event_log`
+- [x] E8.27 Zamanlanmış dünya turu (belge 8.8): Free plan Cron Trigger (saatlik) + dünya saati ilerlemesinde tetikleme — `wrangler.toml`, `scheduled()`
+- [x] E8.28 Yeni kalıcı tablolar (belge 9, 10, 18): `market_state`, `auctions`, `offices`, `character_quests` + NPC simülasyon kolonları — `db/migrations/0008_world_simulation.sql`
+- [x] E8.29 Test: 10 yeni simülasyon testi (`world-sim.test.ts`) — toplam 410 test geçiyor
 

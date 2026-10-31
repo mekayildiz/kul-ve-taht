@@ -50,6 +50,12 @@ class_name = "BackupWorkflow"
 [observability]
 enabled = true
 
+# --- Zamanlanmis dunya turu (belge 8.8) ---
+# Free plan Cron Triggers ile saatlik calisir; istek kotasindan bagimsizdir.
+# Simulasyon katmanli ve partili oldugu icin tek turda yazma kotasi asilmaz.
+[triggers]
+crons = ["0 * * * *"]
+
 # --- Yerel gelistirme degiskenleri ---
 # NOT: Bunlar YALNIZCA yerel Miniflare icindir ve gercek sir DEGILDIR.
 # Uretimde `wrangler secret put SESSION_SECRET` ile ayarlanir (ucretsiz).

@@ -52,3 +52,13 @@ Yayın adımları: `docs/yayin-kilavuzu.md`.
 `GITHUB_TOKEN` yazma yetkisi olmayan bir kurulum belirtecidir: repo okuma 200,
 `git push` ve API yazma 403. Çözüm için `docs/yedekleme-durumu.md` içindeki tek
 kullanıcı müdahalesine bakın.
+
+## Dunya simulasyonu (belge 8/9/19)
+
+- Katmanli NPC simulasyonu `functions/src/play/world-sim.ts` icindedir ve
+  `scheduled()` (Cron Trigger) veya dunya saati ilerlemesi ile calisir;
+  istemci istegine bagli DEGILDIR.
+- Parti limiti `NPC_BATCH_LIMIT = 50` Free plan yazma kotasini korur. Simulasyon
+  idempotenttir (`last_simulated_day`, `world_event_log.game_day`).
+- NPC'ler `seedWorld` icinde tohumlanir (yerlesim basina 1 onemli + 2 yerel +
+  4 arka plan). Sema `db/migrations/0008_world_simulation.sql`.
