@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "note": "Görsel varlık kaydı. Her varlık kimlik + lisans + kaynak + kullanım yeri ile kayıtlıdır. BLOB veritabanına konmaz; varlıklar R2'de tutulur.",
+  "licenses": {
+    "CC0": { "attributionRequired": false },
+    "CC-BY-3.0": { "attributionRequired": true, "attributionText": "Icons by game-icons.net (CC BY 3.0)" }
+  },
+  "assets": []
+}

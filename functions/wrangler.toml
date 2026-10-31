@@ -1,0 +1,11 @@
+# Kul ve Taht - Cloudflare Workers / Durable Objects / Workflows
+# YALNIZCA Workers Free plan ozellikleri. Ucretli plan ozelligi ETKIN DEGIL.
+# Bkz. docs/arac-kaydi.md ve docs/kota-butcesi.md
+name = "kul-ve-taht-functions"
+main = "src/index.ts"
+compatibility_date = "2026-10-31"
+compatibility_flags = ["nodejs_compat"]
+
+# Not: D1 binding, R2 binding, Durable Object ve Workflow tanimlari
+# E1.2'de (Cloudflare ucretsiz katman yapilandirmasi) eklenecek.
+# Burada yalnizca iskelet ve plan notlari bulunur; hicbir ucretli ozellik yoktur.

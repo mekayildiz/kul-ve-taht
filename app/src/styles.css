@@ -1,0 +1,134 @@
+/* Kul ve Taht - temel tema (tasarim belgesi 18.1 renk paleti) */
+:root {
+  --kvt-stone: #1b1713;
+  --kvt-stone-light: #2a241d;
+  --kvt-brown: #4a3b2a;
+  --kvt-gold: #c9a227;
+  --kvt-bordo: #5a1f2b;
+  --kvt-parchment: #e8dcc4;
+  --kvt-text: #f0e6d2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--kvt-stone);
+  color: var(--kvt-text);
+  font-family: Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.kvt-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: 64px;
+}
+
+.kvt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--kvt-stone-light);
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-brand {
+  color: var(--kvt-gold);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+
+.kvt-lang {
+  background: var(--kvt-brown);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 15px;
+  min-width: 48px;
+}
+
+.kvt-main {
+  flex: 1;
+  padding: 20px 16px;
+}
+
+.kvt-title h1 {
+  font-size: 32px;
+  color: var(--kvt-gold);
+  margin: 24px 0 8px;
+}
+
+.kvt-slogan {
+  color: var(--kvt-parchment);
+  font-style: italic;
+  margin-bottom: 28px;
+}
+
+.kvt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.kvt-actions button,
+.kvt-intro button {
+  background: var(--kvt-bordo);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 17px;
+  font-family: inherit;
+  min-height: 52px;
+}
+
+.kvt-actions button:disabled {
+  opacity: 0.45;
+}
+
+.kvt-intro ol {
+  padding-left: 22px;
+  line-height: 2;
+}
+
+.kvt-closing {
+  color: var(--kvt-parchment);
+  font-style: italic;
+  margin: 18px 0;
+}
+
+.kvt-bottomnav {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--kvt-stone-light);
+  border-top: 1px solid var(--kvt-brown);
+}
+
+.kvt-navbtn {
+  background: transparent;
+  color: var(--kvt-text);
+  border: 0;
+  padding: 16px 4px;
+  font-size: 13px;
+  font-family: inherit;
+  min-height: 56px;
+}
+
+.kvt-navbtn:disabled {
+  opacity: 0.5;
+}

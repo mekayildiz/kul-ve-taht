@@ -1,0 +1,35 @@
+{
+  "name": "kul-ve-taht",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Kul ve Taht - metin tabanli, kalici ortak dunyali ortacag-fantezi RPG/strateji (0 TL butce)",
+  "workspaces": [
+    "app",
+    "functions"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build -w @kvt/app && npm run build -w @kvt/functions",
+    "typecheck": "npm run typecheck -w @kvt/app && npm run typecheck -w @kvt/functions",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check:paid": "node scripts/check-no-paid-config.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run build && npm run test && npm run check:paid"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.12.0",
+    "vitest": "^2.1.4"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true,
+    "esbuild@0.17.19": true,
+    "workerd@1.20250718.0": true,
+    "sharp@0.33.5": true
+  }
+}
