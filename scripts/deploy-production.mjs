@@ -118,7 +118,7 @@ for (const bucket of [R2_BACKUPS, R2_ASSETS]) {
 
 step("5/8 SESSION_SECRET");
 const secrets = run(["secret", "list", "--config", "functions/wrangler.toml"], { allowFail: true });
-if (/"name"\s*:\s*"SESSION_SECRET"/.test(secrets.out)) {
+if (/SESSION_SECRET/.test(secrets.out)) {
   console.log("SESSION_SECRET zaten tanimli; korunuyor.");
 } else {
   const secret = randomBytes(48).toString("base64url");
