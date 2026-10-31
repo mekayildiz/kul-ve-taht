@@ -19,6 +19,23 @@ import { createCharacter, type CreateCharacterInput } from "./character/service"
 import { seedWorld } from "./world/seed";
 import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
+import {
+  getPlayState,
+  performEat,
+  performRest,
+  performCraft,
+  performWork,
+  performTravel,
+  performExplore,
+  performTrade,
+  performTreat,
+  performTreatDisease,
+  marketQuote,
+  lodgingQuote,
+} from "./play/service";
+import { ITEMS } from "./inventory/items";
+import { RECIPES } from "./inventory/crafting";
+import { EXPLORATION_SITES } from "./quests/system";
 
 export { PasswordHashGate } from "./durable/password-hash-gate";
 export { BackupWorkflow } from "./workflows/backup-workflow";
@@ -183,6 +200,126 @@ router.post("/api/characters", async ({ request, env }: Ctx) => {
     return json({ error: { code: result.error, message: "Karakter olusturulamadi." }, problems: result.problems ?? [] }, status);
   }
   return json({ characterId: result.characterId }, 201);
+});
+
+/** Oturumu cozer; gecersizse null. */
+async function readSession(request: Request, env: Env) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  return env?.SESSION_SECRET ? verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+}
+
+/**
+ * Karakterin bu oturuma ait oldugunu dogrular. Sahiplik kontrolu olmadan
+ * hicbir oynanis aksiyonu calistirilmaz (belge 21.1).
+ */
+async function ownsCharacter(env: Env, accountId: string, characterId: string): Promise<boolean> {
+  const row = await queryOne<{ id: string }>(
+    env.DB,
+    "SELECT id FROM characters WHERE id = ? AND account_id = ?",
+    characterId,
+    accountId,
+  );
+  return row !== null;
+}
+
+function playError(result: { error?: string }): Response {
+  const status = result.error === "character_not_found" ? 404 : result.error === "not_enough_gold" ? 402 : 400;
+  return error(result.error ?? "invalid_action", "Aksiyon tamamlanamadi.", status);
+}
+
+/** Karakterin tam oynanis durumu (saglik, envanter, altin). */
+router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  if (!(await ownsCharacter(env, session.accountId, params.characterId!))) {
+    return error("forbidden", "Bu karakter size ait degil.", 403);
+  }
+  const state = await getPlayState(env.DB, params.characterId!);
+  if (!state) return error("not_found", "Karakter bulunamadi.", 404);
+  return json({ state, items: ITEMS, recipes: RECIPES, explorationSites: EXPLORATION_SITES });
+});
+
+router.get("/api/market/:itemId", ({ params }: Ctx) => {
+  const quote = marketQuote(params.itemId!);
+  return quote ? json(quote) : error("not_found", "Esya bulunamadi.", 404);
+});
+
+router.get("/api/lodging", ({ url }: Ctx) => {
+  const kind = url.searchParams.get("kind") ?? "town";
+  const nights = Number.parseInt(url.searchParams.get("nights") ?? "1", 10);
+  return json({ cost: lodgingQuote(kind, Number.isFinite(nights) ? nights : 1) });
+});
+
+/** Oynanis aksiyonu: govde { action, ... } seklindedir; SUNUCUDA dogrulanir. */
+router.post("/api/play/:characterId/action", async ({ params, request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const characterId = params.characterId!;
+  if (!(await ownsCharacter(env, session.accountId, characterId))) {
+    return error("forbidden", "Bu karakter size ait degil.", 403);
+  }
+
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  const action = typeof body?.action === "string" ? body.action : null;
+  if (!action) return error("invalid_body", "action alani zorunludur.", 400);
+
+  let result;
+  switch (action) {
+    case "eat":
+      result = await performEat(env.DB, characterId, String(body?.itemId ?? ""));
+      break;
+    case "rest":
+      result = await performRest(env.DB, characterId, Number(body?.hours ?? 6));
+      break;
+    case "craft":
+      result = await performCraft(env.DB, characterId, String(body?.recipeId ?? ""));
+      break;
+    case "work":
+      result = await performWork(env.DB, characterId, String(body?.profession ?? "farmer"), Number(body?.hours ?? 8));
+      break;
+    case "travel":
+      result = await performTravel(env.DB, characterId, String(body?.toSettlementId ?? ""), {
+        season: (body?.season as "spring" | "summer" | "autumn" | "winter") ?? "summer",
+        weather: (body?.weather as "clear" | "rain" | "storm" | "snow" | "fog") ?? "clear",
+        roadQuality: Number(body?.roadQuality ?? 80),
+        isCaravan: Boolean(body?.isCaravan),
+      });
+      break;
+    case "explore":
+      result = await performExplore(
+        env.DB,
+        characterId,
+        String(body?.site ?? "forest") as (typeof EXPLORATION_SITES)[number],
+        Number(body?.preparedness ?? 20),
+      );
+      break;
+    case "trade":
+      result = await performTrade(
+        env.DB,
+        characterId,
+        String(body?.itemId ?? ""),
+        Number(body?.quantity ?? 1),
+        body?.side === "sell" ? "sell" : "buy",
+      );
+      break;
+    case "treat":
+      result = await performTreat(
+        env.DB,
+        characterId,
+        String(body?.injuryId ?? ""),
+        (body?.method as "bandage" | "herb" | "surgery" | "rest") ?? "bandage",
+        Number(body?.quality ?? 50),
+      );
+      break;
+    case "treatDisease":
+      result = await performTreatDisease(env.DB, characterId, String(body?.diseaseId ?? ""), Number(body?.quality ?? 50));
+      break;
+    default:
+      return error("invalid_action", "Bilinmeyen aksiyon.", 400);
+  }
+
+  if (!result.ok) return playError(result);
+  return json({ ok: true, state: result.state, detail: result.detail });
 });
 
 router.get("/api/admin/quota", async ({ request, env }: Ctx) => {

@@ -33,32 +33,32 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E2.6 7 nitelik, kişilik, uzmanlık, meslek, itibar — modüller + doğrulama (şema `willpower`→`leadership` düzeltildi)
 
 ## E3 – Oynanış ve yaşam
-- [ ] E3.1 Keşif, görevler, dinamik olaylar, yaratıklar
-- [ ] E3.2 Envanter, dayanıklılık, üretim/zanaat
-- [ ] E3.3 Sağlık + ayrıntılı tıp (ertelenmiş → nihai kapsam)
-- [ ] E3.4 Suç, yargı, hapishane/kaçış (ertelenmiş → nihai kapsam)
-- [ ] E3.5 Şehir yaşamı, etkinlikler, seyahat, konaklama
+- [x] E3.1 Keşif, görevler, dinamik olaylar — `quests/system.ts` (10 keşif alanı, görev hedef/çözüm, 11 dünya olayı). Yaratık listesi E7'de içerikle genişler
+- [x] E3.2 Envanter, dayanıklılık, üretim/zanaat — `inventory/items.ts`, `inventory/crafting.ts` (16 eşya, 7 tarif, sunucu doğrulama)
+- [x] E3.3 Sağlık + ayrıntılı tıp — `health/state.ts`, `health/treatment.ts` (kalıcı ölüm, kanama/enfeksiyon, kalıcı sakatlık)
+- [x] E3.4 Suç, yargı, hapishane/kaçış — `justice/system.ts` (7 suç türü, beraat/hapis/sürgün, kaçış, rüşvet)
+- [x] E3.5 Şehir yaşamı, seyahat, konaklama — `travel/travel.ts` (mevsim/hava, kış yolu kapatır, konaklama)
 
 ## E4 – Tam ekonomi ve mülkiyet
-- [ ] E4.1 Arz-talep, üretim/tüketim, pazar
-- [ ] E4.2 Kervan + deniz ticareti + filo
-- [ ] E4.3 Bankacılık, kredi, faiz, borç, iflas
-- [ ] E4.4 Vergi, hazine, devlet borcu, krizler
-- [ ] E4.5 Mülk, işletme, ortaklık, şirket birleşme/devralma (ertelenmiş)
+- [x] E4.1 Arz-talep, pazar — `economy/market.ts` (denge fiyatı, alım/satım, bölgesel fark)
+- [x] E4.2 Kervan + deniz ticareti + filo — `military/army.ts` (filo/gemi sınıfları), `travel/travel.ts` (kervan hız/tehlike)
+- [x] E4.3 Bankacılık, kredi, faiz, borç, iflas — `economy/market.ts` (teminat/itibar, faiz, iflas)
+- [x] E4.4 Vergi, hazine, krizler — `economy/market.ts` (gelir+mülk vergisi, hazine, huzursuzluk)
+- [ ] E4.5 Mülk, işletme, ortaklık, şirket birleşme/devralma — şema hazır; hizmet katmanı bekliyor
 
 ## E5 – Askerî ve siyasi sistemler
-- [ ] E5.1 Birlikler, komuta, ikmal, büyük kara savaşları
-- [ ] E5.2 Kuşatma sistemi (ertelenmiş)
-- [ ] E5.3 Deniz savaşları + gemi sınıfları + liman/filo (ertelenmiş)
-- [ ] E5.4 Krallık yönetimi, diplomasi, ittifak, savaş/barış
-- [ ] E5.5 Rütbe, makam, konseyler, siyasi mücadele
+- [x] E5.1 Birlikler, komuta, ikmal, kara savaşları — `military/army.ts` (ordu gücü, muharebe, ikmal)
+- [x] E5.2 Kuşatma sistemi — `military/army.ts` (surlar, erzak, kuşatma araçları, teslim)
+- [x] E5.3 Deniz savaşları + gemi sınıfları — `military/army.ts` (4 gemi sınıfı, filo gücü, deniz savaşı)
+- [x] E5.4 Krallık yönetimi, diplomasi, ittifak, savaş/barış — `military/army.ts` (5 duruş, diplomatik eylemler)
+- [ ] E5.5 Rütbe, makam, konseyler, siyasi mücadele — şema (government_positions) hazır; hizmet bekliyor
 
 ## E6 – Tam NPC, aile, çok oyunculu
-- [ ] E6.1 NPC hedef/hafıza/ilişki/ekonomi modeli
-- [ ] E6.2 Binlerce NPC katmanlı simülasyon (ertelenmiş)
-- [ ] E6.3 Evlilik/çocuk/eğitim/yaşlanma/ölüm/miras/kuşaklar
-- [ ] E6.4 Sohbet, PM, arkadaşlık, grup, lonca, PvP, ittifak
-- [ ] E6.5 Nesiller arası mülk/işletme aktarımı
+- [x] E6.1 NPC hedef/hafıza/ilişki/ekonomi modeli — `npc/model.ts` (5 etkenli karar, hafıza, duygu)
+- [x] E6.2 Binlerce NPC katmanlı simülasyon — `npc/model.ts` (önemli 1g / yerel 7g / arka plan 30g)
+- [x] E6.3 Evlilik/çocuk/ölüm/miras/kuşaklar — `family/dynasty.ts` (onaylı gelişim evreleri, miras, aile itibarı)
+- [x] E6.4 Sohbet, PM, arkadaşlık, grup, lonca, PvP, ittifak — `social/social.ts` (kanal erişimi, lonca/grup, duello)
+- [ ] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` miras çekirdeği hazır; mülk devri E4.5 ile bağlanacak
 
 ## E7 – Görsel, test ve yayın
 - [ ] E7.1 Tutarlı görsel varlık kütüphanesi + künye/lisans kaydı
