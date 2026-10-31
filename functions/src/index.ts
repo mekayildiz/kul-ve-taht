@@ -90,6 +90,20 @@ import {
   performMarry,
   performHaveChild,
 } from "./play/multiplayer";
+import {
+  bankSummary,
+  performDeposit,
+  performWithdraw,
+  performOpenEscrow,
+  performReleaseEscrow,
+  performRefundEscrow,
+  escrowList,
+  performPeerLoan,
+  bankLoanList,
+  performRepayPeerLoan,
+  performCollectDefault,
+  settleBankruptcies,
+} from "./play/bank";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -234,6 +248,9 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
     // Dunya ilerledikce katmanli simulasyon calisir (belge 8.8, 9.4).
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
     await settleDueAuctions(env.DB).catch(() => undefined);
+    // Temerrut/iflas/tasfiye (belge 20): vadesi gecen krediler her turda
+    // denetlenir; iflas eden borclunun varligi alacaklilara dagitilir.
+    await settleBankruptcies(env.DB).catch(() => undefined);
   }
 
   return json({
@@ -398,6 +415,11 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   );
   const group = await groupStatus(env.DB, params.characterId!);
   const appearance = await appearanceStatus(env.DB, params.characterId!);
+  const [bank, escrows, peerLoans] = await Promise.all([
+    bankSummary(env.DB, params.characterId!),
+    escrowList(env.DB, params.characterId!),
+    bankLoanList(env.DB, params.characterId!),
+  ]);
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
@@ -423,6 +445,9 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     family,
     group,
     appearance,
+    bank,
+    escrows,
+    peerLoans,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -661,6 +686,30 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
     case "setAppearance":
       result = await performSetAppearance(env.DB, characterId, (body?.appearance ?? {}) as Record<string, never>);
       break;
+    case "deposit":
+      result = await performDeposit(env.DB, characterId, Number(body?.amount ?? 0), body?.kind === "vault" ? "vault" : "current");
+      break;
+    case "withdraw":
+      result = await performWithdraw(env.DB, characterId, Number(body?.amount ?? 0), body?.kind === "vault" ? "vault" : "current");
+      break;
+    case "openEscrow":
+      result = await performOpenEscrow(env.DB, characterId, String(body?.toId ?? ""), Number(body?.amount ?? 0), String(body?.condition ?? ""));
+      break;
+    case "releaseEscrow":
+      result = await performReleaseEscrow(env.DB, characterId, String(body?.escrowId ?? ""));
+      break;
+    case "refundEscrow":
+      result = await performRefundEscrow(env.DB, characterId, String(body?.escrowId ?? ""));
+      break;
+    case "peerLoan":
+      result = await performPeerLoan(env.DB, characterId, String(body?.borrowerId ?? ""), Number(body?.principal ?? 0), Number(body?.interestRate ?? 5), Number(body?.days ?? 30));
+      break;
+    case "repayPeerLoan":
+      result = await performRepayPeerLoan(env.DB, characterId, String(body?.loanId ?? ""));
+      break;
+    case "collectDefault":
+      result = await performCollectDefault(env.DB, characterId, String(body?.loanId ?? ""));
+      break;
     case "sendMessage":
       result = await performSendMessage(
         env.DB,
@@ -840,6 +889,9 @@ export default {
     }
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
     await settleDueAuctions(env.DB).catch(() => undefined);
+    // Temerrut/iflas/tasfiye (belge 20): vadesi gecen krediler her turda
+    // denetlenir; iflas eden borclunun varligi alacaklilara dagitilir.
+    await settleBankruptcies(env.DB).catch(() => undefined);
     // Aylik devlet butcesi (belge 9.7-9.9): her 30 oyun gununde bir vergi
     // toplanir, gider odenir, yetmezse borclanilir. Partili calisir.
     if (advanced.advancedDays > 0 && advanced.gameDay % 30 === 0) {

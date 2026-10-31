@@ -131,3 +131,38 @@ bağlanmamış sistemler sunucu otoriteli servis + API ucu + arayüz + test ile 
 - [x] Test: 4 yeni API testi (grup kurma, yinelenen/kısa ad, gruba katılma + kanal erişimi, lonca üyeliği + kanal erişimi) — toplam **432 test** geçiyor; `npm run verify` temiz
 - [x] E8.45 Karakter görünümü kişiselleştirme (belge 20, 17.2): yüz/ten/göz/saç/sakal/vücut/kıyafet/boy + yara izi ve dövme; seçenekler sunucuda doğrulanır, kısmi güncelleme korunur — `character/appearance.ts` (`applyAppearanceChange`, `appearanceOptions`), `play/systems.ts` (`performSetAppearance`, `appearanceStatus`), `/api/play/:id/action` `setAppearance`, `/api/catalog` görünüm seçenekleri, `/api/play/:id/state.appearance`, arayüz görünüm paneli
 - [x] Test: 5 birim + 2 API testi (görünüm doğrulama/kalıcılık, katalog) — toplam **439 test** geçiyor; `npm run verify` temiz
+
+## E9 – Analizde belirlenen eksik gereksinimler (belge 9, 16, 17, 20)
+
+Bu bölüm, tasarım belgesinin tamamı ile mevcut kod arasındaki fark analizinde
+çıkan ve **nihai kapsamda zorunlu** olan işleri listeler. Tamamlanmış işler
+(E1–E8) korunur; bu kalemler açıkça "eksik" olarak tutulur ve bağımlılık
+sırasına göre P1 → P2 → P3 olarak yürütülür. Her sistem veritabanı + sunucu
+servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
+
+### P1 – Bankacılık, şirket ve işletme finansmanı (belge 20, 9.x)
+
+- [x] E9.1 Mevduat ve kasa (belge 20): oyuncu/NPC mevduat yatırır/çeker, faiz işler; kasa (vault) ayrı tutulur — `economy/bank.ts`, `play/systems.ts`, migration, `/api/play/:id/state.bank`, arayüz banka paneli
+- [x] E9.2 Emanet (escrow) (belge 20): taraflar arası güvenli işlem; emanet bir hesapta tutulur, koşul gerçekleşince serbest kalır — `economy/bank.ts`, `/api/escrow`
+- [x] E9.3 Faiz, temerrüt, iflas ve tasfiye (belge 20): gecikmiş borç temerrüde düşer; ödeyemeyen iflas eder, mülkleri tasfiye edilir — `economy/bank.ts`, `play/systems.ts`, `play/succession.ts`
+- [x] E9.4 Oyuncular/NPC'ler arası finansman (belge 20): borç verme/alma, alacaklı kaydı — `economy/bank.ts`, migration
+- [ ] E9.5 Şirket, ortaklık ve hisse (belge 20): şirket kurma, ortak hissesi, kâr dağıtımı, kontrol eşiği — `economy/property.ts` (mevcut saf fn'ler), `play/company.ts`, migration, `/api/companies`
+- [ ] E9.6 Birleşme/devralma ve kurumsal bürokrasi (belge 20): şirket birleşmesi, satın alma, devralma — `economy/property.ts` (`mergeCompanies`, `canAcquire`), `play/company.ts`
+- [ ] E9.7 İşletme: çalışanlar, şube ağı, işletmeler arası ortaklık (belge 20) — `play/company.ts`, `economy/property.ts`
+- [ ] E9.8 Bankacılık/şirket arayüzü ve testleri (belge 20) — `app/src/screens/PlayPanel.tsx`, i18n TR+EN
+
+### P2 – Mülk, çok oyunculu ve kalan saf fonksiyonlar (belge 9, 10, 16)
+
+- [ ] E9.9 Mülk tamamlayıcıları: kira, haciz, tapu uyuşmazlığı (belge 9.3, 20): `monthlyRent`, `rentAfterTax`, haciz (foreclosure), tapu uyuşmazlığı — `economy/extras.ts`, `play/systems.ts`, migration
+- [ ] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
+- [ ] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
+- [ ] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`
+- [ ] E9.13 P2 arayüz ve testleri (belge 16, 20) — `PlayPanel.tsx`, i18n, API testleri
+
+### P3 – Görsel varlık, yönetim, erişilebilirlik ve doğrulama (belge 17, 19, 21.4, 25)
+
+- [ ] E9.14 Görsel varlık tüketimi (belge 17): portre/ikon/arma/harita arayüzde gösterilir; veri tasarrufu modu; lisans atıfları görünür — `app/src/screens/*`, `/api/assets/*`, `assets/`
+- [ ] E9.15 Ücretsiz lisanslı görsel dosyalar (belge 17.2, 17.5): 40 portrelik havuz + ikon + arma + harita; WebP/AVIF + küçük türev; lisans/kaynak kaydı — `assets/portraits`, `assets/icons`, `assets/maps`, `assets/manifest.json`
+- [ ] E9.16 Yönetici arayüzleri (belge 20): bütçe, pazar müdahalesi, kota, kullanıcı/karakter yönetimi panelleri — `app/src/screens/AdminPanel.tsx`
+- [ ] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi/okundu, klavye erişimi, ekran okuyucu etiketleri, mobil alt gezinme doğrulaması — `app/src/`
+- [ ] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük testi, kota kullanımı raporu, D1→R2 yedek ve geri yükleme provası — `scripts/`, `docs/`

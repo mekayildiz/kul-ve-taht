@@ -61,6 +61,9 @@ const stateResponse = {
   family: null,
   group: null,
   appearance: { faceShape: null, skinTone: null, eyeColor: null, hairColor: null, hairStyle: null, beardStyle: null, heightCm: null, build: null, scars: null, tattoos: null, outfit: null },
+  bank: [],
+  escrows: [],
+  peerLoans: [],
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 

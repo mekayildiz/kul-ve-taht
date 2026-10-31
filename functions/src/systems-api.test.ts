@@ -697,3 +697,67 @@ describe("Karakter gorunumu kisilestirme (belge 20, 17.2)", () => {
     expect(catalog.appearance.outfits).toContain("yolcu");
   });
 });
+
+describe("Bankacilik, emanet ve finansman (belge 20)", () => {
+  const env = makeEnv();
+
+  it("mevduat yatirir, faiz isler ve cekim altini geri verir", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 1000);
+    const dep = await act(env, token, characterId, { action: "deposit", amount: 400 });
+    expect(dep.status).toBe(200);
+    const state1 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state1.state.gold).toBe(600);
+    expect(state1.bank.find((b: any) => b.kind === "current").balance).toBe(400);
+
+    const wd = await act(env, token, characterId, { action: "withdraw", amount: 100 });
+    expect(wd.status).toBe(200);
+    const state2 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state2.state.gold).toBe(700);
+    expect(state2.bank.find((b: any) => b.kind === "current").balance).toBe(300);
+  });
+
+  it("kasaya yatirilan para faizsiz saklanir ve geri alinir", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 500);
+    await act(env, token, characterId, { action: "deposit", amount: 200, kind: "vault" });
+    const state = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    const vault = state.bank.find((b: any) => b.kind === "vault");
+    expect(vault.balance).toBe(200);
+    expect(vault.interestRate).toBe(0);
+  });
+
+  it("emanet acar, alici serbest birakir ve odeme aliciya gecer", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    await grantGold(env, a.characterId, 500);
+    const open = await act(env, a.token, a.characterId, { action: "openEscrow", toId: b.characterId, amount: 150, condition: "teslim" });
+    expect(open.status).toBe(200);
+    const escrowId = (await readBody(open)).detail.escrowId as string;
+    // Gonderen tek tarafli serbest birakamaz.
+    const denied = await act(env, a.token, a.characterId, { action: "releaseEscrow", escrowId });
+    expect(denied.status).toBe(400);
+    // Alici serbest birakir; odeme aliciya gecer.
+    const released = await act(env, b.token, b.characterId, { action: "releaseEscrow", escrowId });
+    expect(released.status).toBe(200);
+    const bState = await readBody(await call(`/api/play/${b.characterId}/state`, env, auth(b.token)));
+    expect(bState.state.gold).toBe(170); // 20 baslangic + 150
+  });
+
+  it("taraflar arasi kredi verir, borcluya altin gecer ve geri odeme alacakliya doner", async () => {
+    const lender = await setupPlayer(env);
+    const borrower = await setupPlayer(env);
+    await grantGold(env, lender.characterId, 1000);
+    const loan = await act(env, lender.token, lender.characterId, { action: "peerLoan", borrowerId: borrower.characterId, principal: 300, interestRate: 10, days: 30 });
+    expect(loan.status).toBe(200);
+    const loanId = (await readBody(loan)).detail.loanId as string;
+    const bState = await readBody(await call(`/api/play/${borrower.characterId}/state`, env, auth(borrower.token)));
+    expect(bState.state.gold).toBe(320);
+
+    await grantGold(env, borrower.characterId, 1000);
+    const repay = await act(env, borrower.token, borrower.characterId, { action: "repayPeerLoan", loanId });
+    expect(repay.status).toBe(200);
+    const lState = await readBody(await call(`/api/play/${lender.characterId}/state`, env, auth(lender.token)));
+    expect(lState.state.gold).toBeGreaterThan(700); // 1000-300 + (anapara+faiz)
+  });
+});

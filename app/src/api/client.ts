@@ -209,6 +209,34 @@ export interface AppearanceOptionsDto {
   heightMaxCm: number;
 }
 
+export interface BankAccountDto {
+  id: string;
+  kind: "current" | "vault";
+  balance: number;
+  interestRate: number;
+}
+
+export interface EscrowDto {
+  id: string;
+  fromId: string;
+  toId: string;
+  amount: number;
+  condition: string;
+  status: "held" | "released" | "refunded" | "disputed";
+  createdGameDay: number;
+}
+
+export interface PeerLoanDto {
+  id: string;
+  borrowerId: string;
+  lenderId: string;
+  principal: number;
+  outstanding: number;
+  interestRate: number;
+  issuedGameDay: number;
+  dueGameDay: number;
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -249,6 +277,9 @@ export interface PlayStateResponse {
   family: FamilyDto | null;
   group: GroupDto | null;
   appearance: AppearanceDto;
+  bank: BankAccountDto[];
+  escrows: EscrowDto[];
+  peerLoans: PeerLoanDto[];
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -354,6 +385,14 @@ export type PlayAction =
   | { action: "setRelationship"; targetId: string; kind: string }
   | { action: "seekOffice"; title: string }
   | { action: "setAppearance"; appearance: Partial<AppearanceDto> }
+  | { action: "deposit"; amount: number; kind?: "current" | "vault" }
+  | { action: "withdraw"; amount: number; kind?: "current" | "vault" }
+  | { action: "openEscrow"; toId: string; amount: number; condition: string }
+  | { action: "releaseEscrow"; escrowId: string }
+  | { action: "refundEscrow"; escrowId: string }
+  | { action: "peerLoan"; borrowerId: string; principal: number; interestRate: number; days: number }
+  | { action: "repayPeerLoan"; loanId: string }
+  | { action: "collectDefault"; loanId: string }
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }

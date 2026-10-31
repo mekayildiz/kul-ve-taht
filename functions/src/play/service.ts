@@ -51,6 +51,8 @@ export type PlayError =
   | "invalid_action"
   | "no_such_recipe"
   | "unknown_item"
+  | "not_found"
+  | "forbidden"
   | "dead";
 
 export interface PlayResult {

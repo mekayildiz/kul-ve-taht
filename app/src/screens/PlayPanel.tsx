@@ -9,6 +9,8 @@ import {
   type ChatMessageDto,
   type DiplomacyDto,
   type AppearanceDto,
+  type BankAccountDto,
+  type EscrowDto,
   type FamilyDto,
   type GroupDto,
   type StorageDto,
@@ -49,6 +51,8 @@ interface State {
   family: FamilyDto | null;
   group: GroupDto | null;
   appearance: AppearanceDto | null;
+  bank: BankAccountDto[];
+  escrows: EscrowDto[];
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -80,6 +84,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     family: null,
     group: null,
     appearance: null,
+    bank: [],
+    escrows: [],
     storage: null,
     diplomacy: [],
     quests: [],
@@ -118,6 +124,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           family: res.family,
           group: res.group,
           appearance: res.appearance,
+          bank: res.bank,
+          escrows: res.escrows,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -638,6 +646,41 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           {t.play.seekOffice}
         </button>
       </div>
+
+      <h3>
+        {t.play.bank} — {t.play.deposit}:{" "}
+        {state.bank.find((b) => b.kind === "current")?.balance ?? 0} {t.play.gold}
+        {" / "}
+        {t.play.vault}: {state.bank.find((b) => b.kind === "vault")?.balance ?? 0} {t.play.gold}
+      </h3>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "deposit", amount: 50 }, t.play.committed)}>
+          {t.play.deposit} 50
+        </button>
+        <button type="button" onClick={() => act({ action: "withdraw", amount: 50 }, t.play.committed)}>
+          {t.play.withdraw} 50
+        </button>
+        <button type="button" onClick={() => act({ action: "deposit", amount: 50, kind: "vault" }, t.play.committed)}>
+          {t.play.vault} +50
+        </button>
+      </div>
+      {state.escrows.length > 0 && (
+        <ul className="kvt-escrow">
+          {state.escrows.map((e) => (
+            <li key={e.id}>
+              <span>
+                {t.play.escrow}: {e.amount} {t.play.gold} — {e.condition}
+              </span>
+              <button type="button" onClick={() => act({ action: "releaseEscrow", escrowId: e.id }, t.play.committed)}>
+                {t.play.release}
+              </button>
+              <button type="button" onClick={() => act({ action: "refundEscrow", escrowId: e.id }, t.play.committed)}>
+                {t.play.refund}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <h3>{t.play.appearance}</h3>
       <ul className="kvt-appearance">
