@@ -56,8 +56,9 @@ talimat) **değiştirilmemiş, silinmemiştir**. Uygulamada:
 |---|---|---|---|
 | Barındırma/API | Cloudflare Workers | 100.000 istek/gün | Uygun |
 | Veritabanı | Cloudflare D1 (SQLite) | 5M okuma, 100K yazma/gün | Uygun |
-| Depolama | Cloudflare R2 | 10 GB, sınıf A/B sınırlı | Uygun |
-| Zamanlayıcı | Workflows + Cron | Ücretsiz katman | Uygun |
+| Depolama | Worker `[assets]` statik sistem | R2 yok; görseller `app/dist` | Uygun |
+| Yedekleme | D1 Time Travel | 30 gün PITR, ücretsiz | Uygun |
+| Zamanlayıcı | Cron Triggers | Ücretsiz katman | Uygun |
 | Kimlik | Kendi PBKDF2 + HMAC oturumu | Sunucu içi | Uygun |
 | Statik ön yüz | Cloudflare Pages | Ücretsiz | Uygun |
 | Sürüm kontrolü | GitHub | Ücretsiz özel/genel depo | Uygun |
@@ -99,7 +100,7 @@ entegrasyon token'ıyla erişildiğinde push engellenebilir; bu durum
   havuzu + 7 ikon + arma + harita ve 96/64px türevler; `WorldOverview.tsx`
   varlık galerisi + veri tasarrufu modu + lisans atıfları.
 - **E9.18 Yük/yedek provası:** `scripts/load-restore-rehearsal.mjs` — 88 tablo,
-  141 satır, D1→R2 dump ve veri kayıpsız geri yükleme; ücretsiz limit içinde.
+  141 satır, D1 dump ve veri kayıpsız geri yükleme; ücretsiz limit içinde.
 - **E9.13 P2 arayüz/testleri** doğrulandı ve panoya işlendi.
 
 Doğrulama: `npm run verify` → lint 0 hata, tip kontrolü temiz, build başarılı,

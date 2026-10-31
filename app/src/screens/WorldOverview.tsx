@@ -141,7 +141,7 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
                 </span>
                 <span className="kvt-assetname">{a.assetKey}</span>
                 <span className="kvt-assetlicense">{a.license}</span>
-                <span className="kvt-assetfile">{dataSaver ? a.thumbnailKey ?? a.r2Key : a.r2Key}</span>
+                <span className="kvt-assetfile">{dataSaver ? a.thumbnailPath ?? a.assetPath : a.assetPath}</span>
               </li>
             ))}
           </ul>

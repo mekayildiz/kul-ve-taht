@@ -50,7 +50,12 @@ geçiş tetikleyen hiçbir yapılandırma kullanılmaz; kota aşımında sistem 
 
 Örnek: 100 gelen mesaj = 5 istek. "Her mesaj = 1 istek" varsayımı yanlıştır.
 
-## R2 (Free)
+## R2 (Free) — KULLANILMIYOR
+
+R2 bu projede **kullanılmaz** (hesap düzeyinde etkinleştirme gerektirir ve
+ücretsiz kota sınırları vardır). Yedekleme D1 Time Travel ile, görsel varlıklar
+ise Worker `[assets]` statik sistemiyle karşılanır. Aşağıdaki sınırlar yalnızca
+karşılaştırma içindir; hiçbir bağımlılık R2'ye bağlı değildir.
 
 | Ölçüt | Sınır |
 |---|---|
@@ -58,6 +63,20 @@ geçiş tetikleyen hiçbir yapılandırma kullanılmaz; kota aşımında sistem 
 | Class A işlem | 1.000.000 / ay |
 | Class B işlem | 10.000.000 / ay |
 | Egress | Ücretsiz |
+
+## D1 Time Travel (Free) — YEDEKLEME
+
+| Ölçüt | Sınır |
+|---|---|
+| PITR penceresi | **30 gün** (her dakikaya geri dönüş) |
+| Etkinleştirme | Gerekmez; her zaman açık |
+| Maliyet | **Ek maliyet yok** (geçmiş ve geri yükleme ücretsiz) |
+| Ön koşul | Wrangler v3.4.0+ ve `version: production` D1 |
+
+Time Travel otomatik olarak bookmark üretir; elle yedek tetiklemeye gerek yoktur.
+Komutlar: `wrangler d1 time-travel info` (bookmark al) ve
+`wrangler d1 time-travel restore` (geri yükle). Geri yükleme bir yedekleme
+Workflow'u gerektirmez; bu nedenle **Workflows kotası harcanmaz.**
 
 ## Pages (Free)
 
@@ -68,31 +87,18 @@ geçiş tetikleyen hiçbir yapılandırma kullanılmaz; kota aşımında sistem 
 | Dosya boyutu | 25 MiB |
 | Bant genişliği/istek | Sınırsız |
 
-## Workflows (Free)
+## Workflows (Free) — KULLANILMIYOR
+
+Yedekleme artık D1 Time Travel ile yapıldığı için **hiçbir Workflow çalışmaz**;
+Workflows kotası (adım/depolama) tüketilmez. Aşağıdaki sınırlar yalnızca
+karşılaştırma içindir.
 
 | Ölçüt | Sınır |
 |---|---|
-| Adım | **3.000 / gün** (yeniden denemeler ve rollback handler'ları sayılmaz) |
-| Depolama | **1 GB-ay** |
+| Adım | 3.000 / gün |
+| Depolama | 1 GB-ay |
 | İstek | Workers 100.000/gün ile paylaşımlı |
 | CPU | 10 ms / invocation |
-| Instance durumu saklama | 3 gün |
-| Maks. adım / instance | 1.024 |
-
-### Yedekleme Workflow'u tüketim hesabı
-
-Yedekleme Workflow'u **2 adım** kullanır:
-1. `start-export` (export başlat)
-2. `poll-and-store-to-r2` (durum kontrol + R2'ye akıt)
-
-- **Günlük tüketim:** 2 adım × 1 çalıştırma = **2 adım/gün** (3.000/gün sınırının %0,07'si).
-- **Yeniden denemeler adım sayılmaz**; yalnızca istek/CPU harcar.
-- **Depolama:** instance durumu 3 gün tutulur; `default_retention` ile daha da kısaltılabilir. Dump R2'ye yazılır (Workflows depolamasına değil).
-- **İstek:** günlük yedek = birkaç istek (export init + poll + R2 put); Workers 100.000/gün bütçesinden payı ihmal edilebilir.
-
-**Kritik not:** "A running export will block other database requests." Bu nedenle
-yedekleme **düşük yoğunluk saatinde (03:00 UTC civarı)** çalışır; export süresince
-oyuncu işlemleri kota koruması ile kuyruğa alınır / kısıtlanır.
 
 ## GitHub Actions
 

@@ -31,8 +31,8 @@ const settlements = {
 const assets = {
   count: 2,
   assets: [
-    { assetKey: "icon/sword", category: "icon", license: "CC0", source: "self", r2Key: "icons/sword.webp", thumbnailKey: "icons/sword-64.webp", tags: ["combat"] },
-    { assetKey: "portrait/pool/00", category: "portrait", license: "CC0", source: "self", r2Key: "portraits/pool-00.webp", thumbnailKey: "portraits/pool-00-96.webp", tags: ["npc"] },
+    { assetKey: "icon/sword", category: "icon", license: "CC0", source: "self", assetPath: "icons/sword.webp", thumbnailPath: "icons/sword-64.webp", tags: ["combat"] },
+    { assetKey: "portrait/pool/00", category: "portrait", license: "CC0", source: "self", assetPath: "portraits/pool-00.webp", thumbnailPath: "portraits/pool-00-96.webp", tags: ["npc"] },
   ],
   attributions: [],
 };

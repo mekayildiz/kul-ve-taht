@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "note": "Görsel varlık kaydı. Tüm dosyalar yerel üretilir (scripts/gen-assets.mjs, deterministik SVG→WebP) ve CC0/self lisanslıdır; harici indirme veya atıf zorunluluğu yoktur. Her varlık kimlik + lisans + kaynak + kullanım yeri ile kayıtlıdır. BLOB veritabanına konmaz; varlıklar R2'de tutulur.",
+  "note": "Görsel varlık kaydı. Tüm dosyalar yerel üretilir (scripts/gen-assets.mjs, deterministik SVG→WebP) ve CC0/self lisanslıdır; harici indirme veya atıf zorunluluğu yoktur. Her varlık kimlik + lisans + kaynak + kullanım yeri ile kayıtlıdır. BLOB veritabanına konmaz; varlıklar Worker statik varlık sisteminden (/assets/...) sunulur.",
   "licenses": {
     "CC0": {
       "attributionRequired": false
@@ -16,8 +16,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/sword.webp",
-      "thumbnailKey": "icons/sword-64.webp",
+      "assetPath": "icons/sword.webp",
+      "thumbnailPath": "icons/sword-64.webp",
       "tags": [
         "combat",
         "item"
@@ -28,8 +28,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/shield.webp",
-      "thumbnailKey": "icons/shield-64.webp",
+      "assetPath": "icons/shield.webp",
+      "thumbnailPath": "icons/shield-64.webp",
       "tags": [
         "combat",
         "defense"
@@ -40,8 +40,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/gold.webp",
-      "thumbnailKey": "icons/gold-64.webp",
+      "assetPath": "icons/gold.webp",
+      "thumbnailPath": "icons/gold-64.webp",
       "tags": [
         "economy"
       ]
@@ -51,8 +51,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/crown.webp",
-      "thumbnailKey": "icons/crown-64.webp",
+      "assetPath": "icons/crown.webp",
+      "thumbnailPath": "icons/crown-64.webp",
       "tags": [
         "kingdom",
         "politics"
@@ -63,8 +63,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/scroll.webp",
-      "thumbnailKey": "icons/scroll-64.webp",
+      "assetPath": "icons/scroll.webp",
+      "thumbnailPath": "icons/scroll-64.webp",
       "tags": [
         "quest"
       ]
@@ -74,8 +74,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/horse.webp",
-      "thumbnailKey": "icons/horse-64.webp",
+      "assetPath": "icons/horse.webp",
+      "thumbnailPath": "icons/horse-64.webp",
       "tags": [
         "travel"
       ]
@@ -85,8 +85,8 @@
       "category": "icon",
       "license": "CC0",
       "source": "self",
-      "r2Key": "icons/heart.webp",
-      "thumbnailKey": "icons/heart-64.webp",
+      "assetPath": "icons/heart.webp",
+      "thumbnailPath": "icons/heart-64.webp",
       "tags": [
         "health"
       ]
@@ -96,8 +96,8 @@
       "category": "crest",
       "license": "CC0",
       "source": "self",
-      "r2Key": "crests/neutral.webp",
-      "thumbnailKey": "crests/neutral-96.webp",
+      "assetPath": "crests/neutral.webp",
+      "thumbnailPath": "crests/neutral-96.webp",
       "tags": [
         "kingdom"
       ]
@@ -107,8 +107,8 @@
       "category": "portrait",
       "license": "CC0",
       "source": "self",
-      "r2Key": "portraits/pool-{00..39}.webp",
-      "thumbnailKey": "portraits/pool-{00..39}-96.webp",
+      "assetPath": "portraits/pool-{00..39}.webp",
+      "thumbnailPath": "portraits/pool-{00..39}-96.webp",
       "tags": [
         "npc"
       ],

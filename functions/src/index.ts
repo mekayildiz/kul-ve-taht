@@ -168,7 +168,6 @@ import {
 } from "./assets/library";
 
 export { PasswordHashGate } from "./durable/password-hash-gate";
-export { BackupWorkflow } from "./workflows/backup-workflow";
 
 export interface Env {
   DB: SqlDatabase;

@@ -1,10 +1,12 @@
-# Kul ve Taht - Cloudflare Workers / Durable Objects / Workflows / D1 / R2
+# Kul ve Taht - Cloudflare Workers / Durable Objects / D1
 #
 # YALNIZCA Workers FREE plan ozellikleri. Ucretli plana gecis tetikleyen
 # hicbir ayar yoktur. Yerel gelistirme (`wrangler dev`) Miniflare ile
-# D1/R2/DO/Workflows'i HESAP GEREKTIRMEDEN ve UCRETSIZ emule eder.
+# D1/DO'yu HESAP GEREKTIRMEDEN ve UCRETSIZ emule eder.
 #
-# Bkz. docs/kota-butcesi.md ve docs/karar-kayitlari.md (ADR-010).
+# R2 kullanilmaz: yedekleme D1 Time Travel (ucretsiz, 30 gun) ile, gorsel
+# varliklar Worker [assets] statik sistemle sunulur. Bkz. docs/kota-butcesi.md
+# ve docs/karar-kayitlari.md (ADR-010).
 
 name = "kul-ve-taht-functions"
 main = "src/index.ts"
@@ -24,17 +26,8 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "kul-ve-taht-db"
-database_id = "local-kul-ve-taht-db"
+database_id = "59e60c73-2f63-40dc-966b-6cd42f1114c5"
 migrations_dir = "../db/migrations"
-
-# --- R2 (yedek ve gorsel depolama) ---
-[[r2_buckets]]
-binding = "BACKUP_BUCKET"
-bucket_name = "kul-ve-taht-backups"
-
-[[r2_buckets]]
-binding = "ASSETS_BUCKET"
-bucket_name = "kul-ve-taht-assets"
 
 # --- Durable Objects (parola hash kapisi; SQLite arka uc = Free plan) ---
 [[durable_objects.bindings]]
@@ -45,17 +38,15 @@ class_name = "PasswordHashGate"
 tag = "v1"
 new_sqlite_classes = ["PasswordHashGate"]
 
-# --- Workflows (D1 -> R2 yedekleme) ---
-[[workflows]]
-name = "d1-backup"
-binding = "BACKUP_WORKFLOW"
-class_name = "BackupWorkflow"
+# --- Yedekleme ---
+# Ayri bir Workflow binding'i YOKTUR. Yedekleme D1 Time Travel ile yapilir:
+# her D1 uretim veritabani otomatik olarak 30 gunluk geri donus noktasi tutar
+# (ucretsiz, ek maliyet yok). Bkz. docs/yayin-kilavuzu.md bolum 5.
 
 # --- Free plan sinirlari icinde kalma ---
 # Workers: 100.000 istek/gun, 10 ms CPU
 # D1: 5M okuma/gun, 100K yazma/gun, 5 GB
 # DO: 100.000 istek/gun, 13.000 GB-s/gun
-# Workflows: 3.000 adim/gun, 1 GB-ay
 [observability]
 enabled = true
 

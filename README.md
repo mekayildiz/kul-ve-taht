@@ -8,17 +8,18 @@ Yalnızca doğrulanmış ücretsiz araçlar kullanılır.
 
 ## Teknoloji
 
-- Ön yüz: React + TypeScript (mobil öncelikli), Cloudflare Pages
-- Sunucu: Cloudflare Workers + Durable Objects + Workflows
+- Ön yüz: React + TypeScript (mobil öncelikli), Worker statik varlık sistemi (`[assets]`)
+- Sunucu: Cloudflare Workers + Durable Objects
 - Veritabanı: Cloudflare D1 (sağlayıcı-bağımsız katman; Turso taşınabilirliği)
-- Depolama: Cloudflare R2
+- Yedekleme: D1 Time Travel (30 gün, ücretsiz; R2 kullanılmaz)
+- Görsel varlıklar: Worker `[assets]` statik sistemi (R2/BLOB yok)
 - CI: GitHub Actions (public repo → ücretsiz)
 
 ## Dizin yapısı
 
 ```
 app/        React + TypeScript ön yüz (arayüz kabuğu, i18n)
-functions/  Workers / Durable Objects / Workflows
+functions/  Workers / Durable Objects
 db/         Şema ve migration'lar
 assets/     Görsel varlıklar + lisans manifesti
 docs/       Görev panosu, araç kaydı, kota bütçesi, karar kayıtları

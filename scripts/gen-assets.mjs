@@ -139,7 +139,7 @@ async function main() {
   const manifest = JSON.parse(readFileSync(join(ASSETS, "manifest.json"), "utf8"));
   const missing = [];
   for (const asset of manifest.assets) {
-    for (const rel of [asset.r2Key, asset.thumbnailKey].filter(Boolean)) {
+    for (const rel of [asset.assetPath, asset.thumbnailPath].filter(Boolean)) {
       if (rel.includes("{")) continue;
       if (!existsSync(join(ASSETS, rel))) missing.push(rel);
     }

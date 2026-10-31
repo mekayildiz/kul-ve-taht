@@ -2,8 +2,10 @@
  * Gorsel varlik kutuphanesi (tasarim belgesi 17.4, 17.5).
  *
  * Kural: Oyun verisi gorselin KENDISINI degil, varlik kimligini tasir. Gorsel
- * dosyalari veritabanina BLOB olarak konmaz; R2'de tutulur ve ihtiyac halinde
- * yuklenir. Her varlik lisans + kaynak + kullanim bilgisiyle kayitlidir.
+ * dosyalari veritabanina BLOB olarak konmaz; dosyalar Worker'in statik varlik
+ * sisteminden (`app/dist/assets/...`) sunulur ve ihtiyac halinde yuklenir.
+ * Burada yalnizca kayit, kimlik ve goreli yol tutulur. Her varlik lisans +
+ * kaynak + kullanim bilgisiyle kayitlidir.
  *
  * 0 TL sarti: yalnizca ucretsiz lisansli varliklar (CC0, CC-BY) kabul edilir.
  */
@@ -21,9 +23,9 @@ export interface AssetRecord {
   category: AssetCategory;
   license: string;
   source: string;
-  r2Key: string;
+  assetPath: string;
   /** Kucuk turev (mobil/veri tasarrufu icin, belge 17.5). */
-  thumbnailKey?: string;
+  thumbnailPath?: string;
   tags: string[];
 }
 
@@ -60,9 +62,9 @@ export function portraitForKey(key: string, reserved: boolean, poolSize = PORTRA
 }
 
 /** Veri tasarrufu: buyuk gorseller yerine kucuk turevi istenir (belge 17.5). */
-export function resolveAssetKey(record: AssetRecord, dataSaver: boolean): string {
-  if (dataSaver && record.thumbnailKey) return record.thumbnailKey;
-  return record.r2Key;
+export function resolveAssetPath(record: AssetRecord, dataSaver: boolean): string {
+  if (dataSaver && record.thumbnailPath) return record.thumbnailPath;
+  return record.assetPath;
 }
 
 /** Lisans uyumu: atif zorunluysa atif metni bulunmalidir. */
@@ -70,7 +72,7 @@ export function licenseCompliant(record: AssetRecord): boolean {
   const license = LICENSES[record.license];
   if (!license) return false;
   if (license.attributionRequired && !license.attributionText) return false;
-  return record.source.trim().length > 0 && record.r2Key.trim().length > 0;
+  return record.source.trim().length > 0 && record.assetPath.trim().length > 0;
 }
 
 /** Katalogdan istege uygun varliklari suzer (kategori/etiket). */
@@ -105,18 +107,18 @@ const ICON_SOURCE = "self";
 /**
  * Baslangic katalogu: yalnizca ucretsiz lisansli varliklar. Tum dosyalar
  * yerel uretilir (scripts/gen-assets.mjs), bu nedenle lisans CC0/self olup
- * atif zorunlulugu yoktur. Dosyalar R2 (ASSETS_BUCKET) altinda tutulur;
- * burada yalnizca kayit ve kimlik tutulur.
+ * atif zorunlulugu yoktur. Dosyalar Worker'in statik varlik sistemi altinda
+ * (`/assets/...`) tutulur; burada yalnizca kayit ve kimlik tutulur.
  */
 export const ASSET_CATALOG: readonly AssetRecord[] = [
-  { assetKey: "icon/sword", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/sword.webp", thumbnailKey: "icons/sword-64.webp", tags: ["combat", "item"] },
-  { assetKey: "icon/shield", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/shield.webp", thumbnailKey: "icons/shield-64.webp", tags: ["combat", "defense"] },
-  { assetKey: "icon/gold", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/gold.webp", thumbnailKey: "icons/gold-64.webp", tags: ["economy"] },
-  { assetKey: "icon/crown", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/crown.webp", thumbnailKey: "icons/crown-64.webp", tags: ["kingdom", "politics"] },
-  { assetKey: "icon/scroll", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/scroll.webp", thumbnailKey: "icons/scroll-64.webp", tags: ["quest"] },
-  { assetKey: "icon/horse", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/horse.webp", thumbnailKey: "icons/horse-64.webp", tags: ["travel"] },
-  { assetKey: "icon/heart", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/heart.webp", thumbnailKey: "icons/heart-64.webp", tags: ["health"] },
-  { assetKey: "crest/neutral", category: "crest", license: "CC0", source: "self", r2Key: "crests/neutral.webp", thumbnailKey: "crests/neutral-96.webp", tags: ["kingdom"] },
+  { assetKey: "icon/sword", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/sword.webp", thumbnailPath: "icons/sword-64.webp", tags: ["combat", "item"] },
+  { assetKey: "icon/shield", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/shield.webp", thumbnailPath: "icons/shield-64.webp", tags: ["combat", "defense"] },
+  { assetKey: "icon/gold", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/gold.webp", thumbnailPath: "icons/gold-64.webp", tags: ["economy"] },
+  { assetKey: "icon/crown", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/crown.webp", thumbnailPath: "icons/crown-64.webp", tags: ["kingdom", "politics"] },
+  { assetKey: "icon/scroll", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/scroll.webp", thumbnailPath: "icons/scroll-64.webp", tags: ["quest"] },
+  { assetKey: "icon/horse", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/horse.webp", thumbnailPath: "icons/horse-64.webp", tags: ["travel"] },
+  { assetKey: "icon/heart", category: "icon", license: "CC0", source: ICON_SOURCE, assetPath: "icons/heart.webp", thumbnailPath: "icons/heart-64.webp", tags: ["health"] },
+  { assetKey: "crest/neutral", category: "crest", license: "CC0", source: "self", assetPath: "crests/neutral.webp", thumbnailPath: "crests/neutral-96.webp", tags: ["kingdom"] },
 ];
 
 /** Portre havuzu gorselleri: 40 ortak portre (belge 17.2). */
@@ -129,8 +131,8 @@ export function portraitPoolCatalog(poolSize = PORTRAIT_POOL_SIZE): AssetRecord[
       category: "portrait",
       license: "CC0",
       source: "self",
-      r2Key: `portraits/pool-${key}.webp`,
-      thumbnailKey: `portraits/pool-${key}-96.webp`,
+      assetPath: `portraits/pool-${key}.webp`,
+      thumbnailPath: `portraits/pool-${key}-96.webp`,
       tags: ["npc"],
     });
   }

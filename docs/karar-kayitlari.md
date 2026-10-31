@@ -27,23 +27,26 @@ D1 ↔ Turso arası taşınabilir veri katmanı korunur. **Otomatik geçiş vars
 SQL uyumluluğu, migration, yedekleme, geri yükleme ve veri bütünlüğü testleri
 eklenir; geçiş ancak tüm testler geçince "tamamlandı" sayılır.
 
-## ADR-006 — Yedekleme ayrımı
-- **Time Travel:** anlık hata kurtarma (PITR), 7 gün (Free), her zaman açık, ücretsiz.
-- **Workflows + D1 REST API → R2:** uzun vadeli arşiv (`.sql`), 10 GB.
-- **R2'den geri yükleme:** felaket sonrası kurulum; **gerçek prova yapılmadan
-  tamamlanmış sayılmaz.**
-`wrangler d1 export` bir CLI komutudur; Cron Worker içinde çalıştırılamaz.
+## ADR-006 — Yedekleme: D1 Time Travel (R2 kullanılmaz)
+- **Time Travel:** anlık hata kurtarma (PITR), **30 gün** (Free), her zaman açık,
+  **ek maliyet yok**. Birincil ve tek yedekleme mekanizması budur.
+- **R2:** kullanılmaz. R2 hesap düzeyinde etkinleştirme gerektirdiği ve 0 TL
+  şartını riske attığı için kaldırıldı; yedekleme ve görsel depolama R2'siz
+  çözülür.
+- **Görsel varlıklar:** Worker `[assets]` statik sistemi (`app/dist/assets/...`)
+  ile sunulur; BLOB veritabanına konmaz.
+- **Geri yükleme:** `restore.ts` modülü dump doğrulamasını R2'den bağımsız yapar;
+  kaynak Time Travel veya `wrangler d1 export` olabilir.
 
-## ADR-007 — Export sırasında sorgu kilidi
-Resmî belge: "A running export will block other database requests." Bu nedenle
-yedekleme **düşük yoğunluk saatinde (03:00 UTC)** çalışır; export süresince oyuncu
-işlemleri kota koruması ile kuyruğa alınır/kısıtlanır. Başarısız export, yeniden
-deneme ve geri yükleme senaryoları test edilir.
+## ADR-007 — Export sırasında sorgu kilidi (yalnızca manuel export)
+`wrangler d1 export` bir CLI komutudur ve çalışırken diğer istekleri bloklar.
+Otomatik Workflow yedeği artık çalışmadığı için bu kilit normal işleyişte
+oluşmaz; manuel export gerektiğinde düşük yoğunluk saatinde yapılır.
 
-## ADR-008 — Workflows kotası
-Free: **3.000 adım/gün, 1 GB-ay depolama**, istekler Workers 100.000/gün ile
-paylaşımlı, CPU 10 ms/invocation, instance durumu 3 gün. Yedekleme Workflow'u
-2 adım kullanır (yeniden denemeler sayılmaz) → günlük 2 adım.
+## ADR-008 — Workflows kullanılmıyor
+Yedekleme D1 Time Travel ile yapıldığı için hiçbir Workflow çalışmaz; Workflows
+kotası (3.000 adım/gün, 1 GB-ay) tüketilmez. İleride gerekirse Free sınırlar
+içinde yeniden değerlendirilebilir.
 
 ## ADR-009 — GitHub Actions public/private
 Public repoda standart runner **ücretsizdir**; private repoda aylık 2.000 dk

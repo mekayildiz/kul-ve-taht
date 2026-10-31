@@ -3,7 +3,7 @@
  * Yuk/kota ve yedek/geri yukleme provasi (tasarim belgesi 21.4, 25).
  *
  * Amac (E9.18): Gercek trafik benzetimi altinda ucretsiz plan limitlerinin
- * asilmadigini ve D1 -> R2 yedek/geri yukleme dongusunun VERI KAYBI OLMADAN
+ * asilmadigini ve D1 yedek/geri yukleme dongusunun VERI KAYBI OLMADAN
  * calistigini OLCMEK. Hicbir ucretli islem yapilmaz; yalnizca yerel SQLite
  * (node:sqlite) ve dosya sistemi kullanilir.
  *
@@ -53,7 +53,7 @@ function simulateLoad(db, requests) {
   return { requests, d1_reads: reads };
 }
 
-/** D1 -> R2 yedek: sema + veriyi SQL dump olarak uretir. */
+/** D1 yedek: sema + veriyi SQL dump olarak uretir (Time Travel/export esdegeri). */
 function exportDump(db) {
   const tables = listTables(db);
   const lines = [];
@@ -99,7 +99,7 @@ function main() {
   const requestsPct = ((load.requests / FREE_DAILY_LIMITS.requests) * 100).toFixed(3);
   const readsPct = ((load.d1_reads / FREE_DAILY_LIMITS.d1_reads) * 100).toFixed(4);
 
-  // Yedek: dump dosyaya yazilir (R2'yi temsil eder).
+  // Yedek: dump dosyaya yazilir (D1 Time Travel / `wrangler d1 export` ciktisini temsil eder).
   const dump = exportDump(db);
   const backupPath = join(dir, "yedek.sql");
   writeFileSync(backupPath, dump, "utf8");

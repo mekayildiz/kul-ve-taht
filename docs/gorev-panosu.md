@@ -6,12 +6,12 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 
 ## E1 – Temel mimari ve güvenlik
 - [x] E1.1 Monorepo iskeleti
-- [x] E1.2 Cloudflare ücretsiz katman yapılandırması (Pages/Workers/D1/R2/DO/Workflows) — wrangler.toml, Free plan sınırları belgelendi
+- [x] E1.2 Cloudflare ücretsiz katman yapılandırması (Workers/D1/DO; R2 ve Workflows sonradan kaldırıldı — bkz. E12) — wrangler.toml, Free plan sınırları belgelendi
 - [x] E1.3 Bağımsız oyuncu auth (kayıt/giriş/oturum) — PBKDF2 + HMAC oturum; Miniflare'de uçtan uca doğrulandı
 - [x] E1.4 Şema + migration (belge 21.2 varlık grupları) — 44 tablo, node:sqlite ile doğrulandı
 - [x] E1.5 Sunucu taraflı authz çekirdeği (kimlik/rol/sahiplik/yetki) — D1'de RLS yok; uçlarda uygulandı
 - [x] E1.6 Dünya zamanı servisi (olay tabanlı; 6 sa = 1 oyun günü)
-- [x] E1.7 Yedekleme: Time Travel + Workflows→R2 + **geri yükleme provası**
+- [x] E1.7 Yedekleme: D1 Time Travel (30 gün PITR) + **geri yükleme provası** (R2 kaldırıldı, bkz. E12)
 - [x] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema — gerçek API'ye bağlı
 - [x] E1.9 i18n (TR varsayılan + EN) — anahtar eşitliği testi ile
 - [x] E1.10 Açılış + 4 bölümlük tanıtım
@@ -21,7 +21,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
 - [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
 - [x] E1.16 PBKDF2 performans ölçümü — **ölçüldü**: 600k iterasyon medyan 84 ms / maks 96 ms; DO 30 s bütçesine sığıyor (R2 endişesi kapandı)
-- [x] E1.17 D1 REST API export + Workflows→R2 yedekleme (birim + entegrasyon testleri; Miniflare'de R2 binding doğrulandı)
+- [x] E1.17 D1 dump + geri yükleme bütünlüğü (birim + entegrasyon testleri); yedekleme D1 Time Travel'e taşındı (E12)
 - [x] E1.18 Geri yükleme provası + veri bütünlüğü doğrulaması — **gerçek SQLite üzerinde yedek→geri yükle döngüsü test edildi** (yıkıcı ifade reddi, kısmi geri yükleme engeli)
 
 ## E2 – Dünya ve karakter
@@ -61,7 +61,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` (`assignPropertyToHeirs`; E4.5 devir ilkesiyle bağlı)
 
 ## E7 – Görsel, test ve yayın
-- [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, R2 kimliği, atıf listesi; `/api/assets/catalog`)
+- [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, varlık yolu, atıf listesi; `/api/assets/catalog`)
 - [x] E7.2 40 portrelik havuz + önemli karakterlere özel portre — `assets/library.ts` (`portraitForKey`, `/api/assets/portrait/:key`)
 - [x] E7.3 Birim/entegrasyon/e2e/güvenlik/yük testleri — `security.test.ts` (8), `play.test.ts` (16), `quota/load.test.ts` (6); mobil ölçüm E7.5
 - [x] E7.4 Ücretsiz kota doğrulama + optimizasyon — `quota/load.test.ts` (200 istek < günlük limit; aşımda ücretli plana geçiş yok)
@@ -165,7 +165,7 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 - [x] E9.15 Ücretsiz lisanslı görsel dosyalar (belge 17.2, 17.5): 40 portrelik havuz + 7 ikon + arma + harita; WebP + 96/64px küçük türev; lisans/kaynak kaydı — `scripts/gen-assets.mjs` (deterministik, yerel üretim; **0 TL, indirme yok**), `assets/portraits`, `assets/icons`, `assets/crests`, `assets/maps`, `assets/manifest.json`
 - [x] E9.16 Yönetici arayüzleri (belge 20): bütçe/kota, pazar izleme, kullanıcı/karakter yönetimi panelleri — `functions/src/admin/console.ts` (+ test), `app/src/screens/AdminPanel.tsx` (+ 3 test), `/api/admin/*`, App kabuğu yönetim düğmesi
 - [x] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi + okundu işaretleme, öncelik eşiği/arka plan özeti, klavye erişimi, `aria-label`/`role="alert"`, tablo `scope` başlıkları — `PlayPanel.tsx`, `AdminPanel.tsx`, `client.notifications()`
-- [x] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük benzetimi, kota kullanım raporu, D1→R2 dump ve veri kayıpsız geri yükleme provası — `scripts/load-restore-rehearsal.mjs` (`npm run rehearsal:load-restore`; 88 tablo, 141 satır, veri kaybı yok, ücretsiz limit içinde)
+- [x] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük benzetimi, kota kullanım raporu, D1 dump ve veri kayıpsız geri yükleme provası — `scripts/load-restore-rehearsal.mjs` (`npm run rehearsal:load-restore`; 88 tablo, 141 satır, veri kaybı yok, ücretsiz limit içinde)
 ### P4 – Sunucu aksiyonlarının arayüze bağlanması (belge 9, 11, 16, 17, 19)
 
 Arka uçta var olan ancak arayüzde düğmesi/paneli bulunmayan aksiyonlar
@@ -244,7 +244,7 @@ Korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
 
 ### Bilinen sınırlama (kullanıcı işlemi)
 
-Gerçek üretim kaynakları (`wrangler d1 create`, `r2 bucket create`,
+Gerçek üretim kaynakları (`wrangler d1 create`,
 `wrangler deploy`) **ücretsiz** Cloudflare hesap yetkilendirmesi
 (`npx wrangler login`) gerektirir. Yetkilendirme olmadan tüm sistemler Miniflare
 ile yerel olarak çalışır ve doğrulanmıştır (bkz. `docs/yayin-kilavuzu.md`).
@@ -263,9 +263,9 @@ komuta indirildi.
   `SESSION_SECRET` varsayılanı kaldırıldı; üretimde yalnızca
   `wrangler secret put` ile ayarlanır, yerelde `functions/.dev.vars` (git dışı).
 - [x] E11.3 Tek komutlu idempotent dağıtım: `scripts/deploy-production.mjs`
-  (`npm run deploy:production`) — yetki kontrolü, D1/R2 oluşturma (varsa atla),
+  (`npm run deploy:production`) — yetki kontrolü, D1 oluşturma (varsa atla),
   `database_id` yazımı, `SESSION_SECRET` üretimi (varsa koru), uzak migration,
-  deploy ve canlı `/api/health` kontrolü. Ücretli adım yok.
+  deploy ve canlı `/api/health` kontrolü. Ücretli adım yok; R2 kovası oluşturmaz.
 - [x] E11.4 Yönlendirme doğrulaması: `[assets]` + `not_found_handling =
   single-page-application` ile statik varlık önce sunulur, `/api/*` Worker'a
   düşer (CF dokümantasyonu ile doğrulandı; yerelde teyit edildi).
@@ -276,3 +276,25 @@ komuta indirildi.
 
 Doğrulama: `npm run verify` → 52 dosya / 500 test geçti, 0 TL denetimi geçti;
 korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+## E12 – R2 bağımlılığının kaldırılması (0 TL şartı)
+
+R2, hesap düzeyinde etkinleştirme gerektirdiği ve 0 TL şartını riske attığı
+için **tamamen kaldırıldı**. Özellik kapsamı küçültülmedi.
+
+- [x] E12.1 `functions/wrangler.toml`'dan iki `[[r2_buckets]]` ve `[[workflows]]`
+  binding'i kaldırıldı. Kalıcı oyun verisi D1'de korunur.
+- [x] E12.2 R2 yedekleme Workflow'u kaldırıldı
+  (`workflows/backup-d1.ts`, `backup-workflow.ts`, testi). Yedekleme artık
+  **D1 Time Travel** (ücretsiz, 30 gün PITR, ek maliyet yok). Geri yükleme
+  bütünlük doğrulaması `workflows/restore.ts` R2'den bağımsız korunur.
+- [x] E12.3 Görsel varlıklar zaten Worker `[assets]` statik sisteminden
+  sunuluyordu; R2'ye özgü adlar (`r2Key`→`assetPath`, `thumbnailKey`→
+  `thumbnailPath`) ve `ASSETS_BUCKET` referansları temizlendi. BLOB yok.
+- [x] E12.4 `scripts/deploy-production.mjs` R2 adımı çıkarıldı (8→7 adım);
+  dağıtım R2 olmadan tek komutta çalışır.
+- [x] E12.5 Belgeler güncellendi (`yayin-kilavuzu`, `kota-butcesi`, `AGENTS.md`,
+  `README`, ADR-006/007/008, araç kaydı).
+
+Doğrulama: `npm run verify` → 51 dosya / 496 test geçti (R2 Workflow testi
+kaldırıldı), 0 TL denetimi geçti; korunan belge md5 değişmedi.

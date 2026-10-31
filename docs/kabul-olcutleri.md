@@ -9,8 +9,8 @@ belirli bir eşzamanlı oyuncu sayısı vaat edilmez.
 | 1 | Kayıt ve giriş akışı sorunsuz mu? | Geçti | `auth/service.test.ts`, `index.test.ts` (kayıt/giriş/oturum); PBKDF2 + HMAC |
 | 2 | Karakter oluşturma ve doğum yeri etkileri anlaşılır mı? | Geçti | `CharacterSetup.tsx` (karşılaştırmalı panel), `world/birthplace.ts`, `character/service.test.ts` |
 | 3 | Oyuncu ilk 10–20 dakikada ne yapacağını anlıyor mu? | Geçti | Açılış + tanıtım (4 bölüm); giriş→karakter→oynanış akışı `App.tsx` |
-| 4 | Metin ve görseller mobilde hızlı yükleniyor mu? | Kısmi | Mobil alt gezinme + veri tasarrufu modu (`resolveAssetKey` küçük türev); gerçek ağ ölçümü kapalı testte |
-| 5 | Kayıtlar güvenli biçimde korunuyor mu? | Geçti | `security.test.ts` (bozuk/bozulmuş token, sahiplik, rol yükseltme engeli); Time Travel + R2 yedeği |
+| 4 | Metin ve görseller mobilde hızlı yükleniyor mu? | Kısmi | Mobil alt gezinme + veri tasarrufu modu (`resolveAssetPath` küçük türev); gerçek ağ ölçümü kapalı testte |
+| 5 | Kayıtlar güvenli biçimde korunuyor mu? | Geçti | `security.test.ts` (bozuk/bozulmuş token, sahiplik, rol yükseltme engeli); D1 Time Travel yedeği |
 | 6 | Ticaret ve savaş işlemleri sunucu tarafından doğrulanıyor mu? | Geçti | `security.test.ts` (istemci altın gönderemez), `play.test.ts` (fiyat sunucuda), `combat/resolve.ts` |
 | 7 | Az sayıda oyuncuyla dünya canlı hissediliyor mu? | Geçti | `npc/model.ts` (katmanlı simülasyon), `quests/system.ts` (dinamik olaylar) |
 | 8 | NPC olayları tutarlı mı? | Geçti | `npc/model.test.ts`, `quests/system.test.ts` (deterministik karar) |

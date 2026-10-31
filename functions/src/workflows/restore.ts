@@ -2,8 +2,9 @@
  * Yedekten geri yukleme ve veri butunlugu dogrulamasi (E1.18).
  *
  * Gereksinim (tasarim belgesi 21.1): "Duzenli yedek alinir ve geri yukleme
- * test edilir." Bu modul, R2'deki bir dump'in guvenli sekilde dogrulanmasini
- * ve uygulanmasini saglar.
+ * test edilir." Bu modul, bir yedek dump'inin guvenli sekilde dogrulanmasini
+ * ve uygulanmasini saglar. Dump kaynagi (D1 Time Travel veya `wrangler d1
+ * export`) bu modulden bagimsizdir; modul R2'ye bagimli DEGILDIR.
  *
  * Guvenlik notu: Geri yukleme yikici bir islemdir; yalnizca yonetici tarafindan,
  * audit_log kaydiyla ve bakim penceresinde calistirilir.

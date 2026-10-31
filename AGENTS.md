@@ -3,8 +3,10 @@
 ## Proje özeti
 
 Çevrimiçi, kalıcı dünyalı, metin tabanlı ortaçağ-fantezi RPG/strateji oyunu.
-Cloudflare **ücretsiz** katmanında çalışır (Pages/Workers/D1/R2/Durable
-Objects/Workflows). **0 TL şartı bağlayıcıdır**; ücretli plana geçiş yoktur.
+Cloudflare **ücretsiz** katmanında çalışır (Workers/D1/Durable Objects).
+**0 TL şartı bağlayıcıdır**; ücretli plana geçiş yoktur. **R2 kullanılmaz**
+(hesap düzeyinde etkinleştirme gerektirir): yedekleme D1 Time Travel, görsel
+varlıklar Worker `[assets]` statik sistemiyle karşılanır.
 
 Tasarım belgesi `Kul_ve_Taht.txt` **değiştirilmez** (md5 korunur). Belge 21.5
 ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
@@ -24,7 +26,8 @@ ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
   - `quota/` 0 TL kota koruması.
 - `app/src/` — React arayüz (ekranlar, i18n TR/EN, API istemcisi).
 - `db/migrations/` — D1 şeması + referans veri (130 yerleşim).
-- `assets/` — görsel varlık manifesti (BLOB yok; dosyalar R2'de).
+- `assets/` — görsel varlık manifesti (BLOB yok; dosyalar Worker statik varlık
+  sisteminden `app/dist/assets/...` sunulur).
 
 ## Komutlar
 
@@ -68,7 +71,8 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
   kaynak kilitlenir. Kimlik `Authorization` başlığıyla (çerez değil) olduğundan
   varsayılan `*` güvenlidir.
 - Yerel geliştirme `npx wrangler dev --local --ip 0.0.0.0` ile yapılır; Miniflare
-  D1/R2/DO/Workflows'u hesap gerekmeden emüle eder.
+  D1/DO'yu hesap gerekmeden emüle eder. Yedekleme D1 Time Travel (ücretsiz, 30
+  gün); ayrı Workflow veya R2 binding'i yoktur.
 
 ## Dunya simulasyonu (belge 8/9/19)
 

@@ -7,7 +7,7 @@ import {
   licenseCompliant,
   portraitForKey,
   portraitPoolCatalog,
-  resolveAssetKey,
+  resolveAssetPath,
   selectAssets,
   type AssetRecord,
 } from "./library";
@@ -36,7 +36,7 @@ describe("Gorsel varlik kutuphanesi (belge 17)", () => {
       category: "icon",
       license: "CC-BY-3.0",
       source: "x",
-      r2Key: "x.webp",
+      assetPath: "x.webp",
       tags: [],
     };
     // LICENSES tablosunda atif metni tanimli oldugu icin kayit kendisi uyumludur;
@@ -65,8 +65,8 @@ describe("Gorsel varlik kutuphanesi (belge 17)", () => {
 
   it("veri tasarrufu modu kucuk turevi secer", () => {
     const record = ASSET_CATALOG[0]!;
-    expect(resolveAssetKey(record, true)).toBe(record.thumbnailKey);
-    expect(resolveAssetKey(record, false)).toBe(record.r2Key);
+    expect(resolveAssetPath(record, true)).toBe(record.thumbnailPath);
+    expect(resolveAssetPath(record, false)).toBe(record.assetPath);
   });
 
   it("kategori ve etikete gore suzme yapar", () => {

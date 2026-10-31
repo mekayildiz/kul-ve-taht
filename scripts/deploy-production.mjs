@@ -6,11 +6,13 @@
  *   1) Yetki kontrolu (wrangler whoami) - yoksa acikca uyarir ve durur.
  *   2) Arayuz derlemesi (app/dist).
  *   3) D1 veritabani olusturma (varsa atlanir) + database_id'yi wrangler.toml'a yazma.
- *   4) R2 kovalari olusturma (varsa atlanir).
- *   5) SESSION_SECRET: yoksa rastgele uretip `secret put` ile ekler (varsa atlanir).
- *   6) Migration'lari uzak D1'e uygulama.
- *   7) Worker'i (arayuz + API) dagitma.
- *   8) Canli adres ve saglik kontrolu.
+ *   4) SESSION_SECRET: yoksa rastgele uretip `secret put` ile ekler (varsa atlanir).
+ *   5) Migration'lari uzak D1'e uygulama.
+ *   6) Worker'i (arayuz + API) dagitma.
+ *   7) Canli adres ve saglik kontrolu.
+ *
+ * Yedekleme R2 gerektirmez: D1 Time Travel (ucretsiz, 30 gun) kullanilir.
+ * Gorsel varliklar Worker [assets] statik sistemiyle sunulur.
  *
  * Kullanim:
  *   npx wrangler login                # (veya CLOUDFLARE_API_TOKEN + ACCOUNT_ID)
@@ -29,8 +31,6 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const WRANGLER_TOML = join(ROOT, "functions", "wrangler.toml");
 const DB_NAME = "kul-ve-taht-db";
-const R2_BACKUPS = "kul-ve-taht-backups";
-const R2_ASSETS = "kul-ve-taht-assets";
 
 function run(args, { allowFail = false, input } = {}) {
   try {
@@ -52,7 +52,7 @@ function step(msg) {
   console.log(`\n=== ${msg} ===`);
 }
 
-step("1/8 Yetki kontrolu");
+step("1/7 Yetki kontrolu");
 const who = run(["whoami"], { allowFail: true });
 if (!who.ok || /not authenticated|You are not authenticated/i.test(who.out)) {
   console.error(
@@ -62,7 +62,7 @@ if (!who.ok || /not authenticated|You are not authenticated/i.test(who.out)) {
       "Su iki yoldan birini secin (ikisi de UCRETSIZ):",
       "  A) npx wrangler login                       # tarayicida hesap onayi",
       "  B) CLOUDFLARE_API_TOKEN ve CLOUDFLARE_ACCOUNT_ID ortam degiskenlerini",
-      "     tanimlayin (D1/R2/Workers duzenleme + hesap okuma yetkili token).",
+      "     tanimlayin (D1/Workers duzenleme + hesap okuma yetkili token).",
       "",
       "Yetkilendirdikten sonra: node scripts/deploy-production.mjs",
     ].join("\n"),
@@ -71,10 +71,10 @@ if (!who.ok || /not authenticated|You are not authenticated/i.test(who.out)) {
 }
 console.log(who.out.trim().split("\n").slice(-4).join("\n"));
 
-step("2/8 Arayuz derlemesi (app/dist)");
+step("2/7 Arayuz derlemesi (app/dist)");
 execFileSync("npm", ["run", "build", "-w", "@kvt/app"], { cwd: ROOT, stdio: "inherit" });
 
-step("3/8 D1 veritabani");
+step("3/7 D1 veritabani");
 let createOut = run(["d1", "create", DB_NAME, "--config", "functions/wrangler.toml"], { allowFail: true });
 if (!createOut.ok && /already exists|already has a database/i.test(createOut.out)) {
   console.log(`D1 '${DB_NAME}' zaten var; mevcut kimlik kullanilacak.`);
@@ -108,15 +108,7 @@ if (updated === toml) {
   console.log(`wrangler.toml database_id = ${databaseId} olarak yazildi.`);
 }
 
-step("4/8 R2 kovalari");
-for (const bucket of [R2_BACKUPS, R2_ASSETS]) {
-  const res = run(["r2", "bucket", "create", bucket], { allowFail: true });
-  if (res.ok) console.log(`R2 '${bucket}' olusturuldu.`);
-  else if (/already exists|10004|bucket.*exists/i.test(res.out)) console.log(`R2 '${bucket}' zaten var.`);
-  else throw new Error(`R2 '${bucket}' olusturma basarisiz:\n${res.out}`);
-}
-
-step("5/8 SESSION_SECRET");
+step("4/7 SESSION_SECRET");
 const secrets = run(["secret", "list", "--config", "functions/wrangler.toml"], { allowFail: true });
 if (/SESSION_SECRET/.test(secrets.out)) {
   console.log("SESSION_SECRET zaten tanimli; korunuyor.");
@@ -130,19 +122,19 @@ if (/SESSION_SECRET/.test(secrets.out)) {
   console.log("SESSION_SECRET rastgele uretildi ve yazildi.");
 }
 
-step("6/8 Migration'lar (uzak D1)");
+step("5/7 Migration'lar (uzak D1)");
 execFileSync(
   "npx",
   ["wrangler", "d1", "migrations", "apply", DB_NAME, "--remote", "--config", "functions/wrangler.toml"],
   { cwd: ROOT, stdio: "inherit" },
 );
 
-step("7/8 Dagitim (Workers + D1 + R2 + DO + Workflows + assets)");
+step("6/7 Dagitim (Workers + D1 + DO + assets)");
 const deploy = run(["deploy", "--config", "functions/wrangler.toml"]);
 const url = deploy.out.match(/https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev/i)?.[0] ?? null;
 console.log(deploy.out.trim().split("\n").slice(-6).join("\n"));
 
-step("8/8 Canli saglik kontrolu");
+step("7/7 Canli saglik kontrolu");
 if (url) {
   console.log(`Oyun adresi: ${url}`);
   try {
@@ -157,6 +149,10 @@ if (url) {
       "Yayin tamam. Dunya tohumlama (idempotent) icin yonetici oturumu ile:",
       `  curl -X POST ${url}/api/admin/seed-world -H "authorization: Bearer <ADMIN_TOKEN>"`,
       "veya ilk yonetici hesabini olusturup panelden calistirin.",
+      "",
+      "Yedekleme (ucretsiz): D1 Time Travel 30 gunluk geri donus noktasi tutar.",
+      "  npx wrangler d1 time-travel info kul-ve-taht-db --config functions/wrangler.toml",
+      "  npx wrangler d1 time-travel restore kul-ve-taht-db --bookmark=<BOOKMARK> --config functions/wrangler.toml",
     ].join("\n"),
   );
 } else {

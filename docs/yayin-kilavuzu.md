@@ -13,7 +13,7 @@ check:paid` bunu doğrular).
 
 ## 1. Yerel doğrulama (hesap gerekmez)
 
-Yerel geliştirme Miniflare ile D1/R2/Durable Objects/Workflows'u **hesap
+Yerel geliştirme Miniflare ile D1/Durable Objects'i **hesap
 açmadan ve ücretsiz** emüle eder.
 
 ```bash
@@ -38,10 +38,6 @@ curl "http://localhost:8787/api/world/profile?id=varkhenn-drahkmar"
 # D1 veritabanı oluştur (ücretsiz katman) ve dönen database_id'yi wrangler.toml'a yaz
 npx wrangler d1 create kul-ve-taht-db
 
-# R2 kovaları (ücretsiz katman)
-npx wrangler r2 bucket create kul-ve-taht-backups
-npx wrangler r2 bucket create kul-ve-taht-assets
-
 # Oturum anahtarı (ücretsiz; varsayılan yerel değer ÜRETİMDE KULLANILMAZ)
 npx wrangler secret put SESSION_SECRET --config functions/wrangler.toml
 ```
@@ -49,6 +45,10 @@ npx wrangler secret put SESSION_SECRET --config functions/wrangler.toml
 > Not: Ücretsiz D1'de 5 GB / 5M okuma-gün / 100K yazma-gün; Workers'ta 100K
 > istek-gün; DO'da 100K istek-gün sınırları vardır (bkz. `docs/kota-butcesi.md`).
 > Bu sınırlar içinde kalındığı sürece ücret oluşmaz.
+>
+> **R2 oluşturulmaz.** Bu proje R2 kullanmaz (hesap düzeyinde etkinleştirme
+> gerektirir). Yedekleme D1 Time Travel ile, görsel varlıklar Worker `[assets]`
+> statik sistemiyle karşılanır.
 
 ## 3. Şema ve dünya verisi
 
@@ -72,7 +72,7 @@ arası (CORS) sorunu yaşanmaz ve ayrı bir Pages projesine gerek kalmaz.
 # 1) Arayüzü derle (statik varlıklar)
 npm run build -w @kvt/app
 
-# 2) Arka uç + arayüzü birlikte yayınla (Workers + D1 + R2 + DO + Workflows + assets)
+# 2) Arka uç + arayüzü birlikte yayınla (Workers + D1 + DO + assets)
 npx wrangler deploy --config functions/wrangler.toml
 ```
 
@@ -104,16 +104,29 @@ npx wrangler secret put ALLOWED_ORIGIN --config functions/wrangler.toml
 `ALLOWED_ORIGIN` boşsa API tüm kaynaklara açıktır; kimlik doğrulama
 `Authorization` başlığıyla yapıldığından (çerez değil) bu güvenlidir.
 
-## 5. Yedekleme
+## 5. Yedekleme (R2 gerektirmez)
 
-- **D1 Time Travel** (ücretsiz): 30 güne kadar geri dönüş.
-- **Workflows → R2**: `BackupWorkflow` günlük yedeği R2'ye yazar; geri yükleme
-  provası test edilmiştir (`functions/src/workflows/restore.ts`).
+- **D1 Time Travel** (ücretsiz, 30 gün): her D1 üretim veritabanı otomatik olarak
+  geri dönüş noktası tutar; etkinleştirme gerekmez, ek maliyet yoktur.
 
 ```bash
-# Manuel yedek alma (workflow tetikleme) — yayın sonrası doğrulanır
+# Bookmark al (mevcut geri dönüş noktası)
+npx wrangler d1 time-travel info kul-ve-taht-db --config functions/wrangler.toml
+
+# Belirli bir ana geri dön
+npx wrangler d1 time-travel restore kul-ve-taht-db \
+  --bookmark=<BOOKMARK> --config functions/wrangler.toml
+```
+
+Ek olarak, elle tam dump almak isterseniz (dosya yerelde tutulur):
+
+```bash
 npx wrangler d1 export kul-ve-taht-db --remote --output backup.sql
 ```
+
+Geri yükleme bütünlük doğrulaması `functions/src/workflows/restore.ts` içindedir
+(yıkıcı ifade reddi, kısmi geri yükleme engeli); dump kaynağından bağımsızdır ve
+**R2'ye bağlı değildir**.
 
 ## 6. 0 TL denetimi
 
@@ -129,7 +142,7 @@ plana geçiş tetikleyen ayar olmadığını doğrular.
 ## 7. Üretim yayını için gereken kullanıcı işlemi
 
 Kod, yapılandırma ve yerel (Miniflare) doğrulama tamdır. Gerçek üretim
-kaynaklarını (`wrangler d1 create`, `r2 bucket create`, `wrangler deploy`)
+kaynaklarını (`wrangler d1 create`, `wrangler deploy`)
 oluşturmak için **Cloudflare hesabı yetkilendirmesi** gerekir; bu adım
 ücretsizdir ama hesap sahibinin onayını ister. İki yol vardır:
 
@@ -138,20 +151,19 @@ oluşturmak için **Cloudflare hesabı yetkilendirmesi** gerekir; bu adım
 ```bash
 npx wrangler login                 # tarayıcıda ücretsiz hesap onayı
 # (alternatif: CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID ortam değişkenleri)
-npm run deploy:production          # D1 + R2 + secret + migration + deploy + sağlık kontrolü
+npm run deploy:production          # D1 + secret + migration + deploy + sağlık kontrolü
 ```
 
-`scripts/deploy-production.mjs` idempotenttir: D1/R2 varsa yeniden oluşturmaz,
+`scripts/deploy-production.mjs` idempotenttir: D1 varsa yeniden oluşturmaz,
 `SESSION_SECRET` tanımlıysa korur, dönen `database_id`'yi `wrangler.toml`'a
 yazar, migration'ları uygular, dağıtır ve canlı `/api/health` kontrolü yapar.
+**R2 kovası oluşturmaz** (R2 kullanılmaz).
 
 **B) Elle adım adım:**
 
 ```bash
 npx wrangler login                     # tarayıcıda ücretsiz hesap onayı
 npx wrangler d1 create kul-ve-taht-db  # dönen database_id'yi wrangler.toml'a yaz
-npx wrangler r2 bucket create kul-ve-taht-backups
-npx wrangler r2 bucket create kul-ve-taht-assets
 npx wrangler secret put SESSION_SECRET --config functions/wrangler.toml
 npm run build -w @kvt/app && npx wrangler deploy --config functions/wrangler.toml
 ```

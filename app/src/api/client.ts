@@ -375,8 +375,8 @@ export interface AssetDto {
   category: "portrait" | "icon" | "map" | "crest" | "environment";
   license: string;
   source: string;
-  r2Key: string;
-  thumbnailKey?: string;
+  assetPath: string;
+  thumbnailPath?: string;
   tags: string[];
 }
 

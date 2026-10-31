@@ -13,7 +13,7 @@ koordinasyon talimatları aynen korunur; değiştirilmemiştir.**
 | 2 | **130 yerleşim** ve **ertelenen tüm özellikler** nihai kapsamdadır |
 | 3 | 21.5 ve 26. bölümler (AI araç koordinasyonu) **korunur** |
 | 4 | Bütçe **0 TL** — yalnızca doğrulanmış ücretsiz Cloudflare/GitHub katmanları |
-| 5 | React+TS (mobil öncelikli) → Cloudflare Pages; Workers + Durable Objects + Workflows + D1 + R2 |
+| 5 | React+TS (mobil öncelikli) → Worker statik varlık sistemi; Workers + Durable Objects + D1 |
 
 ### Ertelenmiş → nihai kapsama alınan özellikler
 
@@ -36,7 +36,7 @@ Tüm sınırlar resmî belgeden doğrulanmıştır (bkz. `docs/arac-kaydi.md`,
   (`scripts/bench-pbkdf2.mjs`) → güvenlikten taviz vermeden sığar.
 - **D1 Free** satır yazma 100.000/gün. Yüksek frekanslı yazma gerektiren
   canlı durum (savaş, sohbet) DO'da tutulur; D1'e toplu yazılır.
-- **R2** egress ücretsiz → yedek ve görsel depolama için ideal.
+- **Worker `[assets]`** statik sistemi → görsel depolama için ücretsiz; yedekleme D1 Time Travel.
 - `check-no-paid-config.mjs` her doğrulamada ücretli plana geçiş tetikleyen
   yapılandırmayı reddeder (CI'da zorunlu).
 
@@ -59,7 +59,7 @@ Cloudflare Pages/Workers dağıtımı bu depoya bağlanır.
 
 | Alan | Yürütme |
 |---|---|
-| Teknik geliştirme | TypeScript strict; sağlayıcı-bağımsız veri katmanı; modüller `functions/src/{auth,world,character,time,quota,workflows,durable}` |
+| Teknik geliştirme | TypeScript strict; sağlayıcı-bağımsız veri katmanı; modüller `functions/src/{auth,world,character,time,quota,durable}` |
 | Arayüz | React+TS, mobil öncelikli; API istemcisi (`app/src/api/client.ts`); TR varsayılan + EN; erişilebilirlik (rol/etiket) |
 | Görseller | CC0/CC BY kaynaklar (Kenney, Game-icons); `assets/manifest.json` kimlik+lisans kaydı; 40 portrelik havuz |
 | Veritabanı | D1 + SQLite ortak alt kümesi; migration'lar `db/migrations`; referans veri migration olarak üretilir (`npm run gen:world`) |
