@@ -17,6 +17,8 @@ import { queryOne, execute, type SqlDatabase } from "./db/client";
 import { registerAccount, loginAccount } from "./auth/service";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
+import { recordUsage, quotaReport } from "./quota/usage";
+import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 
 export { PasswordHashGate } from "./durable/password-hash-gate";
 export { BackupWorkflow } from "./workflows/backup-workflow";
@@ -52,6 +54,17 @@ router.get("/api/world/settlements", ({ url }: Ctx) => {
 router.get("/api/world/places", () =>
   json({ freeCities: FREE_CITIES, neutralZones: NEUTRAL_ZONES }),
 );
+
+router.get("/api/world/map", () => json(mapData()));
+
+router.get("/api/world/birthplaces", ({ url }: Ctx) => {
+  const id = url.searchParams.get("id");
+  if (id) {
+    const panel = birthplacePanel(id);
+    return panel ? json(panel) : error("not_found", "Dogum yeri bulunamadi.", 404);
+  }
+  return json({ count: allBirthplacePanels().length, panels: allBirthplacePanels() });
+});
 
 router.get("/api/world/time", async ({ env }: Ctx) => {
   if (!env?.DB) {
@@ -172,6 +185,14 @@ router.post("/api/characters", async ({ request, env }: Ctx) => {
   return json({ characterId: result.characterId }, 201);
 });
 
+router.get("/api/admin/quota", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const decision = authorize({ session, action: "admin:any" });
+  if (!decision.allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  return json(await quotaReport(env.DB));
+});
+
 function readQuotaState(env: Env | undefined): QuotaState {
   const remaining = Number.parseInt(env?.REQUESTS_REMAINING ?? "100000", 10);
   return {
@@ -192,7 +213,11 @@ export default {
     if (guarded) return guarded;
 
     const handled = await router.handle(request, env, ctx);
-    if (handled) return handled;
+    if (handled) {
+      // Kota olcumu: gercek tuketimi say (E1.11). Basarisizlik oyunu bloklamaz.
+      if (env?.DB) await recordUsage(env.DB, "requests").catch(() => undefined);
+      return handled;
+    }
 
     if (request.method === "OPTIONS") return noContent();
     return error("not_found", "Kaynak bulunamadi.", 404);

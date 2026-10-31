@@ -15,8 +15,8 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema — gerçek API'ye bağlı
 - [x] E1.9 i18n (TR varsayılan + EN) — anahtar eşitliği testi ile
 - [x] E1.10 Açılış + 4 bölümlük tanıtım
-- [ ] E1.11 Kota bütçe panosu (istek/CPU/D1 satır/DO)
-- [ ] E1.12 CI (lint/tip/test) + önizleme
+- [x] E1.11 Kota bütçe panosu — `quota_usage` şeması + `recordUsage`/`quotaReport`, `/api/admin/quota`
+- [x] E1.12 CI (lint/tip/test) + önizleme — `.github/workflows/ci.yml` (lint/typecheck/build/test/check:paid)
 - [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri
 - [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
 - [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
@@ -27,7 +27,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 ## E2 – Dünya ve karakter
 - [x] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi
 - [x] E2.2 **130 yerleşim/yapı** tam veri seti (E1.13'te tamamlandı)
-- [ ] E2.3 Harita verisi + statik illüstrasyon + bilgi paneli
+- [x] E2.3 Harita verisi + bilgi paneli — `/api/world/map`, `/api/world/birthplaces` (130 panel, 5 test); statik illüstrasyon E7.1
 - [x] E2.4 Karakter oluşturma (doğum yeri, geçmiş, aile) — servis + `/api/characters` uçları, 12 test
 - [x] E2.5 Kapsamlı görünüş editörü (ertelenmiş → nihai kapsam) — `character_appearance` şeması + servis desteği
 - [x] E2.6 7 nitelik, kişilik, uzmanlık, meslek, itibar — modüller + doğrulama (şema `willpower`→`leadership` düzeltildi)
