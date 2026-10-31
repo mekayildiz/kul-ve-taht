@@ -50,11 +50,10 @@ Yayın adımları: `docs/yayin-kilavuzu.md`.
 - Kota aşımı 429/202/503 ile karşılanır; **402/ödeme üretilmez**.
 - İlerleme `docs/gorev-panosu.md` panosunda ve `docs/yedekleme-durumu.md`'de izlenir.
 
-## Bilinen engel
+## GitHub durumu
 
-`GITHUB_TOKEN` yazma yetkisi olmayan bir kurulum belirtecidir: repo okuma 200,
-`git push` ve API yazma 403. Çözüm için `docs/yedekleme-durumu.md` içindeki tek
-kullanıcı müdahalesine bakın.
+`feat/kul-ve-taht-development` dalı `origin`'e gönderilebilir (push çalışır).
+Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
 
 ## Dunya simulasyonu (belge 8/9/19)
 
