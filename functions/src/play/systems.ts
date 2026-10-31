@@ -41,6 +41,7 @@ import {
   type Position,
   type Rank,
 } from "../politics/government";
+import { applyAppearanceChange, type AppearanceChoices } from "../character/appearance";
 import { settlementProfile } from "../world/settlement-profile";
 import { emptyAttributes } from "../character/attributes";
 
@@ -961,4 +962,90 @@ export async function performDiplomacy(
   if (action === "gift" || action === "treaty") state.gold -= amount;
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { kingdomId, action, stance: stanceFor(next.affinity), affinity: next.affinity } };
+}
+
+
+// --- Karakter gorunumu (belge 20, 17.2) ---
+
+interface AppearanceRow {
+  face_shape: string | null;
+  skin_tone: string | null;
+  eye_color: string | null;
+  hair_color: string | null;
+  hair_style: string | null;
+  beard_style: string | null;
+  height_cm: number | null;
+  build: string | null;
+  scars: string | null;
+  tattoos: string | null;
+  outfit: string | null;
+}
+
+function toChoices(row: AppearanceRow | null): AppearanceChoices {
+  return {
+    faceShape: row?.face_shape ?? null,
+    skinTone: row?.skin_tone ?? null,
+    eyeColor: row?.eye_color ?? null,
+    hairColor: row?.hair_color ?? null,
+    hairStyle: row?.hair_style ?? null,
+    beardStyle: row?.beard_style ?? null,
+    heightCm: row?.height_cm ?? null,
+    build: row?.build ?? null,
+    scars: row?.scars ?? null,
+    tattoos: row?.tattoos ?? null,
+    outfit: row?.outfit ?? null,
+  };
+}
+
+/** Karakterin mevcut gorunumu (panel icin). */
+export async function appearanceStatus(db: SqlDatabase, characterId: string): Promise<AppearanceChoices> {
+  const row = await queryOne<AppearanceRow>(
+    db,
+    `SELECT face_shape, skin_tone, eye_color, hair_color, hair_style, beard_style, height_cm, build, scars, tattoos, outfit
+     FROM character_appearance WHERE character_id = ?`,
+    characterId,
+  );
+  return toChoices(row);
+}
+
+/**
+ * Gorunum kisilestirme (belge 20): yuz/sac/sakal/ten/goz/vucut/yara izi/dovme/
+ * kiyafet. Dogrulama SUNUCUDA; gecersiz secim reddedilir (belge 21.1).
+ */
+export async function performSetAppearance(
+  db: SqlDatabase,
+  characterId: string,
+  change: Partial<AppearanceChoices>,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const current = await appearanceStatus(db, characterId);
+  const result = applyAppearanceChange(current, change);
+  if (!result.ok) {
+    return { ok: false, error: "invalid_action", state, detail: { reason: result.problem, field: result.field } };
+  }
+  const a = result.appearance;
+  await execute(
+    db,
+    `INSERT INTO character_appearance (character_id, face_shape, skin_tone, eye_color, hair_color, hair_style, beard_style, height_cm, build, scars, tattoos, outfit)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+     ON CONFLICT(character_id) DO UPDATE SET
+       face_shape=excluded.face_shape, skin_tone=excluded.skin_tone, eye_color=excluded.eye_color,
+       hair_color=excluded.hair_color, hair_style=excluded.hair_style, beard_style=excluded.beard_style,
+       height_cm=excluded.height_cm, build=excluded.build, scars=excluded.scars, tattoos=excluded.tattoos, outfit=excluded.outfit`,
+    characterId,
+    a.faceShape,
+    a.skinTone,
+    a.eyeColor,
+    a.hairColor,
+    a.hairStyle,
+    a.beardStyle,
+    a.heightCm,
+    a.build,
+    a.scars,
+    a.tattoos,
+    a.outfit,
+  );
+  return { ok: true, state, detail: { appearance: a } };
 }

@@ -182,6 +182,33 @@ export interface FamilyDto {
   children: number;
 }
 
+export interface AppearanceDto {
+  faceShape: string | null;
+  skinTone: string | null;
+  eyeColor: string | null;
+  hairColor: string | null;
+  hairStyle: string | null;
+  beardStyle: string | null;
+  heightCm: number | null;
+  build: string | null;
+  scars: string | null;
+  tattoos: string | null;
+  outfit: string | null;
+}
+
+export interface AppearanceOptionsDto {
+  faceShapes: string[];
+  skinTones: string[];
+  eyeColors: string[];
+  hairColors: string[];
+  hairStyles: string[];
+  beardStyles: string[];
+  builds: string[];
+  outfits: string[];
+  heightMinCm: number;
+  heightMaxCm: number;
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -221,6 +248,7 @@ export interface PlayStateResponse {
   office: OfficeDto | null;
   family: FamilyDto | null;
   group: GroupDto | null;
+  appearance: AppearanceDto;
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -325,6 +353,7 @@ export type PlayAction =
   | { action: "duel"; consented: boolean; opponentStrength?: number }
   | { action: "setRelationship"; targetId: string; kind: string }
   | { action: "seekOffice"; title: string }
+  | { action: "setAppearance"; appearance: Partial<AppearanceDto> }
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }
@@ -345,6 +374,7 @@ export interface CatalogDto {
   activities: { kind: string; name: string; cost: number }[];
   templeServices: { service: string; cost: number }[];
   underworldActions: { action: string; name: string }[];
+  appearance: AppearanceOptionsDto;
 }
 
 export interface PlayActionResult {

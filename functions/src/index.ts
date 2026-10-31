@@ -77,6 +77,8 @@ import {
   performSeekOffice,
   diplomacyStances,
   performDiplomacy,
+  appearanceStatus,
+  performSetAppearance,
 } from "./play/systems";
 import {
   listMessages,
@@ -93,6 +95,7 @@ import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
 import { MAGIC_PATHS, SPELLS, GUILDS, ACTIVITIES, TEMPLE_SERVICES } from "./magic/lore";
 import { UNDERWORLD_ACTIONS } from "./underworld/gangs";
+import { appearanceOptions } from "./character/appearance";
 import { buildDigest, type Notification } from "./notify/notifications";
 import {
   ASSET_CATALOG,
@@ -394,6 +397,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     state.inventory.some((e) => e.itemId === "pack-horse"),
   );
   const group = await groupStatus(env.DB, params.characterId!);
+  const appearance = await appearanceStatus(env.DB, params.characterId!);
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
@@ -418,6 +422,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     office,
     family,
     group,
+    appearance,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -653,6 +658,9 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
     case "seekOffice":
       result = await performSeekOffice(env.DB, characterId, String(body?.title ?? "Memur"));
       break;
+    case "setAppearance":
+      result = await performSetAppearance(env.DB, characterId, (body?.appearance ?? {}) as Record<string, never>);
+      break;
     case "sendMessage":
       result = await performSendMessage(
         env.DB,
@@ -783,6 +791,7 @@ router.get("/api/catalog", () =>
     activities: ACTIVITIES,
     templeServices: TEMPLE_SERVICES,
     underworldActions: UNDERWORLD_ACTIONS,
+    appearance: appearanceOptions(),
   }),
 );
 

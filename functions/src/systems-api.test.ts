@@ -671,3 +671,29 @@ describe("Oyuncu gruplari ve lonca uyeligi (belge 16.2, 16.4)", () => {
     expect(after.status).toBe(200);
   });
 });
+
+describe("Karakter gorunumu kisilestirme (belge 20, 17.2)", () => {
+  const env = makeEnv();
+
+  it("gorunum degisikligini sunucuda dogrular ve kalici kaydeder", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const ok = await act(env, token, characterId, { action: "setAppearance", appearance: { faceShape: "oval", hairStyle: "orgu", outfit: "tacir", heightCm: 175 } });
+    expect(ok.status).toBe(200);
+    const state = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state.appearance.faceShape).toBe("oval");
+    expect(state.appearance.hairStyle).toBe("orgu");
+    expect(state.appearance.heightCm).toBe(175);
+
+    // Gecersiz secim reddedilir ve kayit degismez.
+    const bad = await act(env, token, characterId, { action: "setAppearance", appearance: { faceShape: "ucgen" } });
+    expect(bad.status).toBe(400);
+    const after = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(after.appearance.faceShape).toBe("oval");
+  });
+
+  it("katalog gorunum seceneklerini doner (belge 20)", async () => {
+    const catalog = await readBody(await call("/api/catalog", env));
+    expect(catalog.appearance.faceShapes.length).toBeGreaterThan(0);
+    expect(catalog.appearance.outfits).toContain("yolcu");
+  });
+});

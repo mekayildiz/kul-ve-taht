@@ -59,6 +59,8 @@ const stateResponse = {
   social: [],
   office: null,
   family: null,
+  group: null,
+  appearance: { faceShape: null, skinTone: null, eyeColor: null, hairColor: null, hairStyle: null, beardStyle: null, heightCm: null, build: null, scars: null, tattoos: null, outfit: null },
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 
@@ -130,6 +132,7 @@ describe("PlayPanel", () => {
       activities: [{ kind: "festival", name: "Festival", cost: 5 }],
       templeServices: [{ service: "healing", cost: 10 }],
       underworldActions: [{ action: "theft", name: "Hırsızlık" }],
+      appearance: { faceShapes: [], skinTones: [], eyeColors: [], hairColors: [], hairStyles: ["kisa"], beardStyles: [], builds: [], outfits: ["yolcu"], heightMinCm: 120, heightMaxCm: 230 },
     };
     const client = clientWith((path) => {
       if (path.endsWith("/state")) return json(stateResponse);
@@ -155,6 +158,7 @@ describe("PlayPanel", () => {
       activities: [],
       templeServices: [],
       underworldActions: [],
+      appearance: { faceShapes: [], skinTones: [], eyeColors: [], hairColors: [], hairStyles: [], beardStyles: [], builds: [], outfits: [], heightMinCm: 120, heightMaxCm: 230 },
     };
     let sent: Record<string, unknown> | null = null;
     const client = clientWith((path, init) => {

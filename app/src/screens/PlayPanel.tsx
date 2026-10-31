@@ -8,6 +8,7 @@ import {
   type CharacterDto,
   type ChatMessageDto,
   type DiplomacyDto,
+  type AppearanceDto,
   type FamilyDto,
   type GroupDto,
   type StorageDto,
@@ -47,6 +48,7 @@ interface State {
   office: OfficeDto | null;
   family: FamilyDto | null;
   group: GroupDto | null;
+  appearance: AppearanceDto | null;
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -77,6 +79,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     office: null,
     family: null,
     group: null,
+    appearance: null,
     storage: null,
     diplomacy: [],
     quests: [],
@@ -114,6 +117,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           office: res.office,
           family: res.family,
           group: res.group,
+          appearance: res.appearance,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -633,6 +637,34 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         <button type="button" onClick={() => act({ action: "seekOffice", title: "Memur" }, t.play.committed)}>
           {t.play.seekOffice}
         </button>
+      </div>
+
+      <h3>{t.play.appearance}</h3>
+      <ul className="kvt-appearance">
+        <li>{t.play.face}: {state.appearance?.faceShape ?? t.play.none}</li>
+        <li>{t.play.hair}: {state.appearance?.hairStyle ?? t.play.none} ({state.appearance?.hairColor ?? t.play.none})</li>
+        <li>{t.play.build}: {state.appearance?.build ?? t.play.none}</li>
+        <li>{t.play.outfit}: {state.appearance?.outfit ?? t.play.none}</li>
+      </ul>
+      <div className="kvt-playactions">
+        {(state.catalog?.appearance?.hairStyles ?? []).map((style) => (
+          <button
+            key={style}
+            type="button"
+            onClick={() => act({ action: "setAppearance", appearance: { hairStyle: style } }, t.play.committed)}
+          >
+            {t.play.hair}: {style}
+          </button>
+        ))}
+        {(state.catalog?.appearance?.outfits ?? []).map((outfit) => (
+          <button
+            key={outfit}
+            type="button"
+            onClick={() => act({ action: "setAppearance", appearance: { outfit } }, t.play.committed)}
+          >
+            {t.play.outfit}: {outfit}
+          </button>
+        ))}
       </div>
 
       <h3>
