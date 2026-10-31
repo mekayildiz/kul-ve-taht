@@ -208,6 +208,10 @@ export const tr = {
     storageFull: "Depo dolu; önce yer açın.",
     monopoly: "Tekel Çarpanı",
     familyReputation: "Hane İtibarı",
+    playerGroups: "Oyuncu Grubu",
+    createGroup: "Grup Kur",
+    noGroup: "Henüz bir grubunuz yok.",
+    members: "Üye",
   },
 };
 

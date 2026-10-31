@@ -10,7 +10,7 @@
 import type { SqlDatabase } from "../db/client";
 import { execute, queryOne, queryAll } from "../db/client";
 import { loadState, saveState, type PlayResult } from "./service";
-import { MAX_MESSAGE_LENGTH, validateMessage, type ChannelKind } from "../social/social";
+import { MAX_MESSAGE_LENGTH, validateMessage, canSendToChannel, canJoinGroup, type ChannelKind, type ChatChannel, type Group } from "../social/social";
 import { canMarry, MARRIAGE_MIN_AGE, DAYS_TO_ADULTHOOD, type FamilyMember } from "../family/dynasty";
 import { createNotification, type NotificationKind } from "../notify/notifications";
 
@@ -36,25 +36,133 @@ export async function canAccessChannel(
   kind: ChannelKind,
   scopeId: string | null,
 ): Promise<boolean> {
-  if (kind === "global" || kind === "direct") return true;
-  if (kind === "local") {
-    const row = await queryOne<{ current_settlement: string | null }>(
+  const row = await queryOne<{ current_settlement: string | null; allies: number }>(
+    db,
+    `SELECT c.current_settlement,
+            (SELECT COUNT(*) FROM character_social s WHERE s.character_id = c.id AND s.kind IN ('ally','friend')) AS allies
+     FROM characters c WHERE c.id = ?`,
+    characterId,
+  );
+  if (!row) return false;
+  let guildMember = false;
+  let groupMember = false;
+  if (kind === "guild") {
+    guildMember = (await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM character_guilds WHERE character_id = ?", characterId))!.n > 0;
+  } else if (kind === "group") {
+    // Grup kanali: yalnizca ilgili grubun uyeleri (belge 16.4).
+    groupMember = (await queryOne<{ n: number }>(
       db,
-      "SELECT current_settlement FROM characters WHERE id = ?",
+      "SELECT COUNT(*) AS n FROM player_group_members WHERE character_id = ? AND (? IS NULL OR group_id = ?)",
       characterId,
-    );
-    return Boolean(scopeId) && row?.current_settlement === scopeId;
+      scopeId,
+      scopeId,
+    ))!.n > 0;
   }
-  // guild/group uyeligi bu surumde karakter_social uzerinden dogrulanir.
-  if (kind === "guild" || kind === "group") {
-    const row = await queryOne<{ n: number }>(
-      db,
-      "SELECT COUNT(*) AS n FROM character_social WHERE character_id = ? AND kind IN ('ally','friend')",
-      characterId,
-    );
-    return (row?.n ?? 0) > 0;
-  }
-  return false;
+  const channel: ChatChannel = { id: `${kind}:${scopeId ?? ""}`, kind, scopeId, name: kind };
+  // Kanal erisim kurali social/social.ts'te TEK kaynaktir (belge 16.2).
+  return canSendToChannel(channel, row.current_settlement, guildMember, groupMember);
+}
+
+export interface GroupView {
+  id: string;
+  name: string;
+  leaderCharacterId: string;
+  objective: string | null;
+  members: string[];
+}
+
+/** Oyuncu grubu kurma (belge 16.4): kurucu lider olur; isim dogrulanir. */
+export async function performCreateGroup(
+  db: SqlDatabase,
+  characterId: string,
+  name: string,
+  objective: string | null,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const safeName = name.trim().slice(0, 40);
+  if (safeName.length < 2) return { ok: false, error: "invalid_action", state, detail: { reason: "invalid_name" } };
+  const existing = await queryOne<{ n: number }>(
+    db,
+    "SELECT COUNT(*) AS n FROM player_group_members WHERE character_id = ?",
+    characterId,
+  );
+  if ((existing?.n ?? 0) > 0) return { ok: false, error: "invalid_action", state, detail: { reason: "already_in_group" } };
+  const id = crypto.randomUUID();
+  await execute(
+    db,
+    "INSERT INTO player_groups (id, name, leader_character_id, objective, created_at) VALUES (?,?,?,?,?)",
+    id,
+    safeName,
+    characterId,
+    objective?.slice(0, 80) ?? null,
+    nowMs,
+  );
+  await execute(
+    db,
+    "INSERT INTO player_group_members (group_id, character_id, joined_at) VALUES (?,?,?)",
+    id,
+    characterId,
+    nowMs,
+  );
+  return { ok: true, state, detail: { groupId: id, name: safeName, objective } };
+}
+
+/** Gruba katilma (belge 16.4): uye siniri sunucuda uygulanir. */
+export async function performJoinGroup(
+  db: SqlDatabase,
+  characterId: string,
+  groupId: string,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const group = await queryOne<{ id: string; name: string; leader_character_id: string; objective: string | null }>(
+    db,
+    "SELECT id, name, leader_character_id, objective FROM player_groups WHERE id = ?",
+    groupId,
+  );
+  if (!group) return { ok: false, error: "invalid_action", state, detail: { reason: "no_group" } };
+  const members = await queryAll<{ character_id: string }>(
+    db,
+    "SELECT character_id FROM player_group_members WHERE group_id = ?",
+    groupId,
+  );
+  const model: Group = {
+    id: group.id,
+    name: group.name,
+    leaderCharacterId: group.leader_character_id,
+    members: members.map((m) => m.character_id),
+    objective: group.objective,
+  };
+  if (!canJoinGroup(model)) return { ok: false, error: "invalid_action", state, detail: { reason: "group_full" } };
+  await execute(
+    db,
+    "INSERT OR IGNORE INTO player_group_members (group_id, character_id, joined_at) VALUES (?,?,?)",
+    groupId,
+    characterId,
+    nowMs,
+  );
+  return { ok: true, state, detail: { groupId, members: model.members.length + 1 } };
+}
+
+/** Karakterin grubu (varsa) ve uyeleri. */
+export async function groupStatus(db: SqlDatabase, characterId: string): Promise<GroupView | null> {
+  const row = await queryOne<{ id: string; name: string; leader_character_id: string; objective: string | null }>(
+    db,
+    `SELECT g.id, g.name, g.leader_character_id, g.objective
+     FROM player_groups g JOIN player_group_members m ON m.group_id = g.id
+     WHERE m.character_id = ? LIMIT 1`,
+    characterId,
+  );
+  if (!row) return null;
+  const members = await queryAll<{ character_id: string }>(
+    db,
+    "SELECT character_id FROM player_group_members WHERE group_id = ?",
+    row.id,
+  );
+  return { id: row.id, name: row.name, leaderCharacterId: row.leader_character_id, objective: row.objective, members: members.map((m) => m.character_id) };
 }
 
 /** Sohbet gecmisi: kanal + kapsam (yerlesim/hedef) ile son mesajlar. */

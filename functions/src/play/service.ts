@@ -703,6 +703,14 @@ export async function performJoinGuild(
     guild.profession,
     1,
   ).catch(() => undefined);
+  // Lonca uyeligi kalici: lonca sohbet kanali erisimi bu kayda baglidir (belge 16.2).
+  await execute(
+    db,
+    "INSERT INTO character_guilds (character_id, guild_id, joined_at) VALUES (?,?,?) ON CONFLICT(character_id) DO UPDATE SET guild_id=excluded.guild_id, joined_at=excluded.joined_at",
+    characterId,
+    guildId,
+    nowMs,
+  ).catch(() => undefined);
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { guildId, dues: guild.dues } };
 }

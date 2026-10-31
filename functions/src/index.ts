@@ -81,6 +81,9 @@ import {
 import {
   listMessages,
   performSendMessage,
+  performCreateGroup,
+  performJoinGroup,
+  groupStatus,
   familyStatus,
   performMarry,
   performHaveChild,
@@ -390,6 +393,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     state.strength,
     state.inventory.some((e) => e.itemId === "pack-horse"),
   );
+  const group = await groupStatus(env.DB, params.characterId!);
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
@@ -413,6 +417,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     social,
     office,
     family,
+    group,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -550,6 +555,12 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "joinGuild":
       result = await performJoinGuild(env.DB, characterId, String(body?.guildId ?? ""));
+      break;
+    case "createGroup":
+      result = await performCreateGroup(env.DB, characterId, String(body?.name ?? ""), body?.objective ? String(body.objective) : null);
+      break;
+    case "joinGroup":
+      result = await performJoinGroup(env.DB, characterId, String(body?.groupId ?? ""));
       break;
     case "activity":
       result = await performActivity(env.DB, characterId, String(body?.kind ?? "tavern") as "tavern" | "market" | "tournament" | "festival" | "fair" | "gambling");

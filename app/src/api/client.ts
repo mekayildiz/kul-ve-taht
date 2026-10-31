@@ -182,6 +182,14 @@ export interface FamilyDto {
   children: number;
 }
 
+export interface GroupDto {
+  id: string;
+  name: string;
+  leaderCharacterId: string;
+  objective: string | null;
+  members: string[];
+}
+
 export interface ChatMessageDto {
   id: string;
   channelKind: string;
@@ -212,6 +220,7 @@ export interface PlayStateResponse {
   social: SocialDto[];
   office: OfficeDto | null;
   family: FamilyDto | null;
+  group: GroupDto | null;
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -295,6 +304,8 @@ export type PlayAction =
   | { action: "castSpell"; spellId: string }
   | { action: "temple"; service: "healing" | "knowledge" | "shelter" | "protection" }
   | { action: "joinGuild"; guildId: string }
+  | { action: "createGroup"; name: string; objective?: string | null }
+  | { action: "joinGroup"; groupId: string }
   | { action: "activity"; kind: string }
   | { action: "underworld"; underworldAction: string; security?: number; gangAffiliation?: boolean }
   | { action: "recruit"; unitType: string; strength: number }

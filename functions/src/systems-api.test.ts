@@ -606,3 +606,68 @@ describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
     expect(token).toBeTruthy();
   });
 });
+
+describe("Oyuncu gruplari ve lonca uyeligi (belge 16.2, 16.4)", () => {
+  const env = makeEnv();
+
+  it("grup kurma kurucuya grup ve liderlik verir (belge 16.4)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const res = await act(env, token, characterId, { action: "createGroup", name: "Kuzey Birligi" });
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detail.groupId).toBeTruthy();
+
+    const stateRes = await call(`/api/play/${characterId}/state`, env, auth(token));
+    const state = await readBody(stateRes);
+    expect(state.group.name).toBe("Kuzey Birligi");
+    expect(state.group.leaderCharacterId).toBe(characterId);
+    expect(state.group.members).toContain(characterId);
+  });
+
+  it("ikinci grup kurulamaz; kisa isim reddedilir (belge 16.4)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const short = await act(env, token, characterId, { action: "createGroup", name: "A" });
+    expect(short.status).toBe(400);
+    await act(env, token, characterId, { action: "createGroup", name: "Gecerli Grup" });
+    const again = await act(env, token, characterId, { action: "createGroup", name: "Ikinci Grup" });
+    expect(again.status).toBe(400);
+  });
+
+  it("gruba katilma uye ekler ve grup sohbetine erisim verir (belge 16.2)", async () => {
+    const a = await setupPlayer(env);
+    const created = await readBody(await act(env, a.token, a.characterId, { action: "createGroup", name: "Avci Birligi" }));
+    const groupId = created.detail.groupId as string;
+
+    const b = await setupPlayer(env);
+    // Uye olmadan grup kanalina yazamaz.
+    const before = await act(env, b.token, b.characterId, { action: "sendMessage", channel: "group", scopeId: groupId, body: "merhaba" });
+    expect(before.status).toBe(400);
+    // Katildiktan sonra yazabilir.
+    const joined = await act(env, b.token, b.characterId, { action: "joinGroup", groupId });
+    expect(joined.status).toBe(200);
+    const after = await act(env, b.token, b.characterId, { action: "sendMessage", channel: "group", scopeId: groupId, body: "merhaba" });
+    expect(after.status).toBe(200);
+  });
+
+  it("loncaya katilma lonca sohbet kanalini acar (belge 16.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 500);
+    // Lonca uzmanlik esigi ister (belge 13.3); test icin dogrudan verilir.
+    await env.DB.prepare(
+      "INSERT INTO character_state (character_id, health_json, inventory_json, gold, weapon_mastery, updated_at) VALUES (?,?,?,0,20,?) ON CONFLICT(character_id) DO UPDATE SET weapon_mastery = 20",
+    )
+      .bind(characterId, JSON.stringify({ health: 100, hunger: 0, fatigue: 0, injuries: [], diseases: [], alive: true, permanentConditions: [] }), JSON.stringify([]), Date.now())
+      .run();
+    // Lonca sohbeti uyelik oncesi kapali.
+    const before = await act(env, token, characterId, { action: "sendMessage", channel: "guild", body: "selam" });
+    expect(before.status).toBe(400);
+    const join = await act(env, token, characterId, { action: "joinGuild", guildId: "smiths" });
+    expect(join.status).toBe(200);
+    const membership = await env.DB.prepare("SELECT guild_id FROM character_guilds WHERE character_id = ?")
+      .bind(characterId)
+      .first<{ guild_id: string }>();
+    expect(membership?.guild_id).toBe("smiths");
+    const after = await act(env, token, characterId, { action: "sendMessage", channel: "guild", body: "selam" });
+    expect(after.status).toBe(200);
+  });
+});

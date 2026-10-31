@@ -210,6 +210,10 @@ export const en: typeof tr = {
     storageFull: "Storage is full; make room first.",
     monopoly: "Monopoly Factor",
     familyReputation: "House Reputation",
+    playerGroups: "Player Group",
+    createGroup: "Create Group",
+    noGroup: "You have no group yet.",
+    members: "Members",
   },
 };
 

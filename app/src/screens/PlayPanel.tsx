@@ -9,6 +9,7 @@ import {
   type ChatMessageDto,
   type DiplomacyDto,
   type FamilyDto,
+  type GroupDto,
   type StorageDto,
   type ItemDefDto,
   type MarketQuoteDto,
@@ -45,6 +46,7 @@ interface State {
   social: SocialDto[];
   office: OfficeDto | null;
   family: FamilyDto | null;
+  group: GroupDto | null;
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -74,6 +76,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     social: [],
     office: null,
     family: null,
+    group: null,
     storage: null,
     diplomacy: [],
     quests: [],
@@ -110,6 +113,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           social: res.social,
           office: res.office,
           family: res.family,
+          group: res.group,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -433,6 +437,27 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
               </li>
             ))}
           </ul>
+
+          <h3>{t.play.playerGroups}</h3>
+          {state.group ? (
+            <ul className="kvt-group">
+              <li>
+                <span>
+                  {state.group.name} — {t.play.members}: {state.group.members.length}
+                  {state.group.objective ? ` — ${state.group.objective}` : ""}
+                </span>
+              </li>
+            </ul>
+          ) : (
+            <p>{t.play.noGroup}</p>
+          )}
+          <div className="kvt-playactions">
+            {!state.group && (
+              <button type="button" onClick={() => act({ action: "createGroup", name: `${character.given_name} Grubu` }, t.play.committed)}>
+                {t.play.createGroup}
+              </button>
+            )}
+          </div>
 
           <h3>{t.play.activities}</h3>
           <ul className="kvt-activities">
