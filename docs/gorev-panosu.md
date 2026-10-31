@@ -109,3 +109,7 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.32 NPC yönetimi (belge 8.7): boş makamlar dünya turunda NPC'lerle doldurulur — `world-sim.ts` (`assignNpcOffices`)
 - [x] E8.33 Test: 4 yeni siyaset/makam testi — toplam 414 test geçiyor
 
+- [x] E8.34 Görev kataloğu ve günlüğü (belge 12.4, 18.3): ana hikâye/yan/iş/keşif/kriz görevleri, çok çözümlü hedefler, sunucu otoriteli ilerleme — `play/quests.ts`, `/api/quests`, `character_quests.progress_json`
+- [x] E8.35 Açık artırma (belge 9.3): sunucu otoriteli teklif doğrulama, rezerv fiyat, kapanınca eşya el değiştirir ve satıcıya altın geçer — `play/auctions.ts`, `/api/auctions`, `auctions.seller_id`
+- [x] E8.36 Pazar fiyatı bağlantısı (belge 9.2, 9.4): yerleşim bazlı arz/talep + bozulma çarpanı, alım-satım pazarı kalıcı günceller — `play/market-state.ts`, `/api/market?settlementId=`
+- [x] E8.37 Arayüz + test: görev günlüğü ve açık artırma panelleri (3 yeni arayüz testi) + 6 yeni API testi — toplam 423 test geçiyor

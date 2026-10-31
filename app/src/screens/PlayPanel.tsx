@@ -3,17 +3,21 @@ import type { Dictionary } from "../i18n";
 import {
   ApiClient,
   ApiRequestError,
+  type AuctionDto,
   type CatalogDto,
   type CharacterDto,
   type ChatMessageDto,
   type DiplomacyDto,
   type FamilyDto,
   type ItemDefDto,
+  type MarketQuoteDto,
   type OfficeDto,
   type PlayAction,
   type PlayStateDto,
   type PrisonDto,
   type PropertyDto,
+  type QuestCatalogEntryDto,
+  type QuestLogEntryDto,
   type RecipeDto,
   type ShipDto,
   type SocialDto,
@@ -41,6 +45,10 @@ interface State {
   office: OfficeDto | null;
   family: FamilyDto | null;
   diplomacy: DiplomacyDto[];
+  quests: QuestLogEntryDto[];
+  questCatalog: QuestCatalogEntryDto[];
+  auctions: AuctionDto[];
+  marketQuote: MarketQuoteDto | null;
   chat: ChatMessageDto[];
   chatDraft: string;
   message: string | null;
@@ -65,6 +73,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     office: null,
     family: null,
     diplomacy: [],
+    quests: [],
+    questCatalog: [],
+    auctions: [],
+    marketQuote: null,
     chat: [],
     chatDraft: "",
     message: null,
@@ -78,8 +90,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       client.playState(token, character.id),
       client.catalog().catch(() => null),
       client.chat(token, "global").catch(() => null),
+      client.quests(token, character.id).catch(() => null),
+      client.auctions().catch(() => null),
     ])
-      .then(([res, catalog, chat]) => {
+      .then(([res, catalog, chat, quests, auctions]) => {
         setState({
           play: res.state,
           items: res.items,
@@ -94,6 +108,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           office: res.office,
           family: res.family,
           diplomacy: res.diplomacy,
+          quests: quests?.log ?? [],
+          questCatalog: quests?.catalog ?? [],
+          auctions: auctions?.auctions ?? [],
+          marketQuote: null,
           chat: chat?.messages ?? [],
           chatDraft: "",
           message: null,
@@ -606,6 +624,73 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           disabled={state.chatDraft.trim().length === 0}
         >
           {t.play.sendMessage}
+        </button>
+      </div>
+
+      <h3>{t.play.quests} — {t.play.questLog}</h3>
+      {state.quests.length === 0 && <p>{t.play.noQuests}</p>}
+      <ul className="kvt-quests">
+        {state.quests.map((q) => (
+          <li key={q.questId}>
+            <strong>{q.title}</strong>{" "}
+            <span>{q.status === "completed" ? t.play.questCompleted : t.play.questActive}</span>
+            <ul>
+              {q.objectives.map((o) => (
+                <li key={o.id}>
+                  {o.description}: {o.progress}/{o.required}
+                </li>
+              ))}
+            </ul>
+            {q.status !== "completed" && (
+              <button type="button" onClick={() => act({ action: "claimQuest", questId: q.questId }, t.play.committed)}>
+                {t.play.claimQuest}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        {state.questCatalog
+          .filter((c) => !state.quests.some((q) => q.questId === c.id))
+          .map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => act({ action: "startQuest", questId: c.id }, t.play.committed)}
+              disabled={!play.health.alive}
+            >
+              {t.play.startQuest}: {c.title}
+            </button>
+          ))}
+      </div>
+
+      <h3>{t.play.auctions}</h3>
+      {state.auctions.length === 0 && <p>{t.play.noAuctions}</p>}
+      <ul className="kvt-auctions">
+        {state.auctions.map((a) => (
+          <li key={a.id}>
+            <span>
+              {a.itemId} x{a.quantity} — {t.play.currentBid}: {a.currentBid} ({t.play.reservePrice}: {a.reservePrice})
+            </span>
+            <button
+              type="button"
+              onClick={() => act({ action: "bidAuction", auctionId: a.id, amount: a.currentBid + 5 }, t.play.committed)}
+              disabled={!play.health.alive}
+            >
+              {t.play.bid}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <button
+          type="button"
+          onClick={() =>
+            act({ action: "createAuction", itemId: "iron-ore", quantity: 1, reservePrice: 10 }, t.play.committed)
+          }
+          disabled={!play.health.alive}
+        >
+          {t.play.createAuction}
         </button>
       </div>
     </section>

@@ -52,15 +52,5 @@ CREATE TABLE IF NOT EXISTS offices (
 CREATE INDEX IF NOT EXISTS idx_offices_holder ON offices (holder_id);
 CREATE INDEX IF NOT EXISTS idx_offices_settlement ON offices (settlement_id);
 
--- Gorevler (belge 18): sunucu otoriteli, kalici ilerleme.
-CREATE TABLE IF NOT EXISTS character_quests (
-  id           TEXT PRIMARY KEY,
-  character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
-  quest_id     TEXT NOT NULL,
-  stage        INTEGER NOT NULL DEFAULT 0,
-  status       TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'failed')),
-  started_day  INTEGER NOT NULL DEFAULT 1,
-  updated_day  INTEGER NOT NULL DEFAULT 1,
-  UNIQUE (character_id, quest_id)
-);
-CREATE INDEX IF NOT EXISTS idx_character_quests ON character_quests (character_id, status);
+-- NOT: `character_quests` tablosu 0001_core_schema.sql'da tanimlidir; burada
+-- yeniden tanimlanmaz. Gorev ilerleme kolonlari 0009'da eklenir.

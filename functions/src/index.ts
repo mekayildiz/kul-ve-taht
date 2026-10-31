@@ -45,6 +45,9 @@ import {
   lodgingQuote,
   type PlayResult,
 } from "./play/service";
+import { quoteMarket } from "./play/market-state";
+import { startQuest, claimQuestReward, questLog, advanceQuestByTag, QUEST_CATALOG } from "./play/quests";
+import { createAuction, bidAuction, listAuctions, settleDueAuctions } from "./play/auctions";
 import { ITEMS } from "./inventory/items";
 import {
   listUnits,
@@ -223,6 +226,7 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
     );
     // Dunya ilerledikce katmanli simulasyon calisir (belge 8.8, 9.4).
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
+    await settleDueAuctions(env.DB).catch(() => undefined);
   }
 
   return json({
@@ -383,8 +387,12 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   });
 });
 
-router.get("/api/market/:itemId", ({ params }: Ctx) => {
-  const quote = marketQuote(params.itemId!);
+/** Pazar fiyati: yerlesim baglami verilirse arz/talep ve bozulma carpani uygulanir (belge 9.2, 9.4). */
+router.get("/api/market/:itemId", async ({ params, url, env }: Ctx) => {
+  const settlementId = url.searchParams.get("settlementId");
+  const quote = settlementId
+    ? await quoteMarket(env.DB, settlementId, params.itemId!)
+    : marketQuote(params.itemId!);
   return quote ? json(quote) : error("not_found", "Esya bulunamadi.", 404);
 });
 
@@ -630,12 +638,92 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
         String(body?.diplomacyAction ?? "gift") as "gift" | "marriage" | "insult" | "threat" | "treaty",
       );
       break;
+    case "startQuest":
+      result = await startQuest(env.DB, characterId, String(body?.questId ?? ""));
+      break;
+    case "claimQuest":
+      result = await claimQuestReward(env.DB, characterId, String(body?.questId ?? ""));
+      break;
+    case "createAuction":
+      result = await createAuction(
+        env.DB,
+        characterId,
+        String(body?.itemId ?? ""),
+        Number(body?.quantity ?? 1),
+        Number(body?.reservePrice ?? 10),
+      );
+      break;
+    case "bidAuction":
+      result = await bidAuction(env.DB, characterId, String(body?.auctionId ?? ""), Number(body?.amount ?? 0));
+      break;
     default:
       return error("invalid_action", "Bilinmeyen aksiyon.", 400);
   }
 
   if (!result.ok) return playError(result);
+
+  // Aktif gorevlerin hedefleri, gerceklesen eylemle ilerler (belge 12.4).
+  // Etiket sunucuda eslesir; istemci ilerleme gonderemez (belge 21.1).
+  const questTag = questTagFor(action, body);
+  if (questTag) await advanceQuestByTag(env.DB, characterId, questTag).catch(() => undefined);
+
   return json({ ok: true, state: result.state, detail: result.detail });
+});
+
+/** Eylem -> gorev hedef etiketi eslemesi (belge 12.4). */
+function questTagFor(action: string, body: Record<string, unknown> | null): string | null {
+  switch (action) {
+    case "explore":
+      return `explore:${String(body?.site ?? "forest")}`;
+    case "hunt":
+      return `hunt:${String(body?.animal ?? "deer")}`;
+    case "craft":
+      return "craft:any";
+    case "trade":
+      return "trade:any";
+    case "fight":
+    case "duel":
+      return "fight:any";
+    default:
+      return null;
+  }
+}
+
+/** Gorev katalogu ve karakterin gunlugu (belge 12.4, 18.3). */
+router.get("/api/quests", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const characterId = new URL(request.url).searchParams.get("characterId");
+  const log = characterId ? await questLog(env.DB, characterId) : [];
+  return json({
+    catalog: QUEST_CATALOG.map((q) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      type: q.type,
+      rewardGold: q.rewardGold,
+      solutions: q.solutions,
+      objectives: q.objectives.map((o) => ({ id: o.id, description: o.description, required: o.required })),
+    })),
+    log,
+  });
+});
+
+/** Acik artirmalar: yerlesim verilirse o yerlesimdekiler (belge 9.3). */
+router.get("/api/auctions", async ({ url, env }: Ctx) => {
+  const settlementId = url.searchParams.get("settlementId") ?? undefined;
+  const auctions = await listAuctions(env.DB, settlementId);
+  return json({
+    auctions: auctions.map((a) => ({
+      id: a.id,
+      itemId: a.itemId,
+      quantity: a.quantity,
+      reservePrice: a.reservePrice,
+      currentBid: a.currentBid,
+      currentBidderId: a.currentBidderId,
+      closesDay: a.endsAtMs,
+    })),
+  });
 });
 
 /** Sistem katalogu: oyun icindeki tum veri setleri (istemci kesfi icin). */
@@ -697,6 +785,7 @@ export default {
       );
     }
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
+    await settleDueAuctions(env.DB).catch(() => undefined);
   },
 
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

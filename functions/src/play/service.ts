@@ -12,6 +12,7 @@ import { execute, queryOne } from "../db/client";
 import { healthyState, advanceDay, advanceHunger, eat, rest, type HealthState } from "../health/state";
 import { treatInjury, treatDisease } from "../health/treatment";
 import { addItem, removeItem, type InventoryEntry, itemDef, carryCapacity } from "../inventory/items";
+import { applyMarketTrade } from "./market-state";
 import { craft, recipeById, workIncome } from "../inventory/crafting";
 import { planTravel, lodgingCost, type TravelConditions } from "../travel/travel";
 import { explore, type ExplorationSite, EXPLORATION_SITES } from "../quests/system";
@@ -355,34 +356,58 @@ export async function performTrade(
   const def = itemDef(itemId);
   if (!def) return { ok: false, error: "unknown_item" };
   const qty = Math.max(1, Math.floor(quantity));
-  const market: MarketState = { itemId, settlementId: "local", supply: 20, demand: 20, baseValue: def.baseValue };
   const capacity = carryCapacity(state.strength, hasMount(state.inventory));
 
+  // Fiyat SUNUCUDA, yerlesimin guncel arz/talep ve bozulma carpaniyla hesaplanir
+  // (belge 9.2, 9.4). Islem pazari kalici olarak gunceller.
+  const settlement = await currentSettlement(db, characterId);
+  const day = await gameDayNumber(db);
+  const trade = settlement
+    ? await applyMarketTrade(db, settlement, itemId, qty, side, day)
+    : null;
+  const market: MarketState = { itemId, settlementId: settlement ?? "local", supply: 20, demand: 20, baseValue: def.baseValue };
+  const unitPrice = trade?.unitPrice ?? (side === "buy" ? buyPrice(market) : sellPrice(market));
+
   if (side === "buy") {
-    const cost = buyPrice(market) * qty;
+    const cost = unitPrice * qty;
     if (state.gold < cost) return { ok: false, error: "not_enough_gold" };
     const added = addItem(state.inventory, itemId, qty, capacity, state.strength, hasMount(state.inventory));
     if (!added.ok) return { ok: false, error: "invalid_action" };
     state.inventory = added.entries!;
     state.gold -= cost;
     await saveState(db, state, nowMs);
-    return { ok: true, state, detail: { cost, price: buyPrice(market) } };
+    return { ok: true, state, detail: { cost, price: unitPrice } };
   }
 
   const removed = removeItem(state.inventory, itemId, qty);
   if (!removed.ok) return { ok: false, error: "invalid_action" };
-  const gain = sellPrice(market) * qty;
+  const gain = unitPrice * qty;
   state.inventory = removed.entries!;
   state.gold += gain;
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { gain, price: sellPrice(market) } };
+  return { ok: true, state, detail: { gain, price: unitPrice } };
 }
 
+/** Taban fiyat teklifi (yerlesim baglami olmadan). */
 export function marketQuote(itemId: string): { buy: number; sell: number; base: number } | null {
   const def = itemDef(itemId);
   if (!def) return null;
   const market: MarketState = { itemId, settlementId: "local", supply: 20, demand: 20, baseValue: def.baseValue };
   return { buy: buyPrice(market), sell: sellPrice(market), base: def.baseValue };
+}
+
+async function currentSettlement(db: SqlDatabase, characterId: string): Promise<string | null> {
+  const row = await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  );
+  return row?.current_settlement ?? null;
+}
+
+async function gameDayNumber(db: SqlDatabase): Promise<number> {
+  const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
+  return clock?.game_day ?? 1;
 }
 
 export function lodgingQuote(settlementKind: string, nights: number): number {

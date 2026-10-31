@@ -215,6 +215,58 @@ export interface PlayStateResponse {
   diplomacy: DiplomacyDto[];
 }
 
+export interface QuestObjectiveDto {
+  id: string;
+  description: string;
+  progress: number;
+  required: number;
+}
+
+export interface QuestLogEntryDto {
+  questId: string;
+  title: string;
+  status: string;
+  stage: number;
+  objectives: QuestObjectiveDto[];
+}
+
+export interface QuestCatalogEntryDto {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  rewardGold: number;
+  solutions: string[];
+  objectives: { id: string; description: string; required: number }[];
+}
+
+export interface QuestsResponse {
+  catalog: QuestCatalogEntryDto[];
+  log: QuestLogEntryDto[];
+}
+
+export interface AuctionDto {
+  id: string;
+  itemId: string;
+  quantity: number;
+  reservePrice: number;
+  currentBid: number;
+  currentBidderId: string | null;
+  /** Artirmanin kapandigi dunya gunu. */
+  closesDay: number;
+}
+
+export interface MarketQuoteDto {
+  itemId: string;
+  settlementId?: string;
+  buy: number;
+  sell: number;
+  base: number;
+  supply?: number;
+  demand?: number;
+  disruption?: number;
+}
+
 export type PlayAction =
   | { action: "eat"; itemId: string }
   | { action: "rest"; hours: number }
@@ -255,7 +307,11 @@ export type PlayAction =
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }
-  | { action: "haveChild" };
+  | { action: "haveChild" }
+  | { action: "startQuest"; questId: string }
+  | { action: "claimQuest"; questId: string }
+  | { action: "createAuction"; itemId: string; quantity: number; reservePrice: number }
+  | { action: "bidAuction"; auctionId: string; amount: number };
 
 /** Sistem katalogu (E8): istemci hangi mahsul, buyu, lonca ve etkinliklerin oldugunu buradan ogrenir. */
 export interface CatalogDto {
@@ -396,5 +452,31 @@ export class ApiClient {
     const params = new URLSearchParams({ channel });
     if (scopeId) params.set("scopeId", scopeId);
     return this.request(`/api/chat?${params.toString()}`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Gorev katalogu ve karakter gunlugu (belge 12.4, 18.3). */
+  quests(token: string, characterId?: string): Promise<QuestsResponse> {
+    const params = new URLSearchParams();
+    if (characterId) params.set("characterId", characterId);
+    const suffix = params.toString();
+    return this.request(`/api/quests${suffix ? `?${suffix}` : ""}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** Acik artirmalar (belge 9.3). */
+  auctions(settlementId?: string): Promise<{ auctions: AuctionDto[] }> {
+    const params = new URLSearchParams();
+    if (settlementId) params.set("settlementId", settlementId);
+    const suffix = params.toString();
+    return this.request(`/api/auctions${suffix ? `?${suffix}` : ""}`);
+  }
+
+  /** Pazar fiyati; yerlesim verilirse bozulma carpani uygulanir (belge 9.2, 9.4). */
+  market(itemId: string, settlementId?: string): Promise<MarketQuoteDto> {
+    const params = new URLSearchParams();
+    if (settlementId) params.set("settlementId", settlementId);
+    const suffix = params.toString();
+    return this.request(`/api/market/${encodeURIComponent(itemId)}${suffix ? `?${suffix}` : ""}`);
   }
 }

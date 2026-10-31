@@ -401,3 +401,119 @@ describe("Belge 20 sistem baglantisi (askeri/ekonomi/adalet/dovus/sosyal/siyaset
     expect(detail.servicePoints).toBeGreaterThanOrEqual(70);
   });
 });
+
+/**
+ * Belge 12.4 / 9.3 kapsami: gorevler ve acik artirma sunucu otoriteli,
+ * kalici ve arayuzden erisilebilir olmalidir.
+ */
+describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
+  let env: Env;
+  beforeEach(() => {
+    env = makeEnv();
+  });
+
+  it("gorev katalogu doner ve gorev baslatilir (belge 12.4)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const catalog = await call("/api/quests", env, auth(token));
+    expect(catalog.status).toBe(200);
+    const body = await readBody(catalog);
+    expect(body.catalog.length).toBeGreaterThan(0);
+    expect(body.catalog[0].id).toBe("main-ashes-1");
+
+    const started = await act(env, token, characterId, { action: "startQuest", questId: "main-ashes-1" });
+    expect(started.status).toBe(200);
+
+    const log = await readBody(await call(`/api/quests?characterId=${characterId}`, env, auth(token)));
+    expect(log.log).toHaveLength(1);
+    expect(log.log[0].status).toBe("active");
+  });
+
+  it("gorev ilerlemesi gercek eylemle artar ve odul alinir (belge 12.4)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await act(env, token, characterId, { action: "startQuest", questId: "side-explore-1" });
+    // side-explore-1: harabe kesfi gerekir.
+    await act(env, token, characterId, { action: "explore", site: "ruin", preparedness: 50 });
+
+    const log = await readBody(await call(`/api/quests?characterId=${characterId}`, env, auth(token)));
+    const quest = log.log.find((q: any) => q.questId === "side-explore-1");
+    expect(quest.objectives[0].progress).toBeGreaterThanOrEqual(1);
+
+    const before = await env.DB.prepare("SELECT gold FROM character_state WHERE character_id = ?").bind(characterId).first<{ gold: number }>();
+    const claim = await act(env, token, characterId, { action: "claimQuest", questId: "side-explore-1" });
+    expect(claim.status).toBe(200);
+    const after = await env.DB.prepare("SELECT gold FROM character_state WHERE character_id = ?").bind(characterId).first<{ gold: number }>();
+    expect(after!.gold).toBeGreaterThan(before!.gold);
+  });
+
+  it("tamamlanmamis gorevin odulu verilmez (belge 12.4)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await act(env, token, characterId, { action: "startQuest", questId: "main-ashes-1" });
+    const claim = await act(env, token, characterId, { action: "claimQuest", questId: "main-ashes-1" });
+    expect(claim.status).toBe(400);
+    expect((await readBody(claim)).error.reason).toBe("objectives_incomplete");
+  });
+
+  it("acik artirma acilir, teklif alinir ve kapaninca esya el degistirir (belge 9.3)", async () => {
+    const seller = await setupPlayer(env);
+    await grantGold(env, seller.characterId, 200);
+    // Satici bir esya alir ve artirmaya koyar.
+    await act(env, seller.token, seller.characterId, { action: "trade", itemId: "bread", quantity: 5, side: "buy" });
+    const created = await act(env, seller.token, seller.characterId, {
+      action: "createAuction",
+      itemId: "bread",
+      quantity: 3,
+      reservePrice: 5,
+    });
+    expect(created.status).toBe(200);
+    const auctionId = (await readBody(created)).detail.auctionId as string;
+
+    const list = await readBody(await call("/api/auctions", env, auth(seller.token)));
+    expect(list.auctions.some((a: any) => a.id === auctionId)).toBe(true);
+
+    const buyer = await setupPlayer(env);
+    await grantGold(env, buyer.characterId, 100);
+    const bid = await act(env, buyer.token, buyer.characterId, { action: "bidAuction", auctionId, amount: 12 });
+    expect(bid.status).toBe(200);
+
+    // Artirma suresini gecir ve coz.
+    await env.DB.prepare("UPDATE auctions SET closes_day = 0 WHERE id = ?").bind(auctionId).run();
+    const { settleDueAuctions } = await import("./play/auctions");
+    const settled = await settleDueAuctions(env.DB);
+    expect(settled).toBeGreaterThan(0);
+
+    const winnerInv = await env.DB.prepare("SELECT inventory_json FROM character_state WHERE character_id = ?")
+      .bind(buyer.characterId)
+      .first<{ inventory_json: string }>();
+    expect(winnerInv!.inventory_json).toContain("bread");
+  });
+
+  it("rezerv altindaki teklif reddedilir (belge 9.3)", async () => {
+    const seller = await setupPlayer(env);
+    await grantGold(env, seller.characterId, 200);
+    await act(env, seller.token, seller.characterId, { action: "trade", itemId: "bread", quantity: 5, side: "buy" });
+    const created = await act(env, seller.token, seller.characterId, {
+      action: "createAuction",
+      itemId: "bread",
+      quantity: 2,
+      reservePrice: 50,
+    });
+    const auctionId = (await readBody(created)).detail.auctionId as string;
+
+    const buyer = await setupPlayer(env);
+    await grantGold(env, buyer.characterId, 100);
+    const bid = await act(env, buyer.token, buyer.characterId, { action: "bidAuction", auctionId, amount: 10 });
+    expect(bid.status).toBe(400);
+    expect((await readBody(bid)).error.reason).toBe("below_reserve");
+  });
+
+  it("pazar fiyati bozulma carpaniyla yukselir (belge 9.2, 9.4)", async () => {
+    await setupPlayer(env);
+    const base = await readBody(await call("/api/market/bread", env));
+    await env.DB.prepare(
+      "INSERT INTO market_state (settlement_id, item_id, supply, demand, updated_day) VALUES ('varkhenn-drahkmar','*',25,100,1)",
+    ).run();
+    const disrupted = await readBody(await call("/api/market/bread?settlementId=varkhenn-drahkmar", env));
+    expect(disrupted.buy).toBeGreaterThan(base.buy);
+    expect(disrupted.disruption).toBeGreaterThan(1);
+  });
+});

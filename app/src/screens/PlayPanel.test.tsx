@@ -269,3 +269,69 @@ describe("PlayPanel", () => {
     expect(sent!.body).toBe("Merhaba");
   });
 });
+
+describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
+  const questsResponse = {
+    catalog: [
+      { id: "side-explore-1", title: "Kayip Yerler", description: "Harabe bul", type: "exploration", rewardGold: 50, solutions: [], objectives: [{ id: "ruins", description: "Harabeleri kesfet", required: 1 }] },
+    ],
+    log: [
+      {
+        questId: "side-explore-1",
+        title: "Kayip Yerler",
+        status: "active",
+        stage: 0,
+        objectives: [{ id: "ruins", description: "Harabeleri kesfet", progress: 0, required: 1 }],
+      },
+    ],
+  };
+
+  const auctionsResponse = {
+    auctions: [{ id: "a-1", itemId: "iron-ore", quantity: 2, reservePrice: 10, currentBid: 12, currentBidderId: null, closesDay: 5 }],
+  };
+
+  it("görev günlüğünü ve ödül düğmesini gösterir", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json(questsResponse);
+      if (path.startsWith("/api/auctions")) return json(auctionsResponse);
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kayip Yerler")).toBeInTheDocument());
+    expect(screen.getByText(/Ödülü Al/)).toBeInTheDocument();
+    expect(screen.getByText(/En Yüksek Teklif: 12/)).toBeInTheDocument();
+  });
+
+  it("görevi başlatma aksiyonu gönderir", async () => {
+    const sent: unknown[] = [];
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: questsResponse.catalog, log: [] });
+      if (path.startsWith("/api/auctions")) return json({ auctions: [] });
+      if (path.startsWith("/api/catalog")) return json({}, 404);
+      if (init?.body) sent.push(JSON.parse(String(init.body)));
+      return json({ ok: true, state: playState() });
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(/Görevi Başlat/)).toBeInTheDocument());
+    await userEvent.click(screen.getByText(/Görevi Başlat/));
+    await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "startQuest")).toBe(true));
+  });
+
+  it("açık artırmaya teklif gönderir", async () => {
+    const sent: unknown[] = [];
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      if (path.startsWith("/api/auctions")) return json(auctionsResponse);
+      if (path.startsWith("/api/catalog")) return json({}, 404);
+      if (init?.body) sent.push(JSON.parse(String(init.body)));
+      return json({ ok: true, state: playState() });
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Teklif Ver")).toBeInTheDocument());
+    await userEvent.click(screen.getByText("Teklif Ver"));
+    await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "bidAuction")).toBe(true));
+  });
+});
