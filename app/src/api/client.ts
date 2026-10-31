@@ -122,11 +122,72 @@ export interface PlayStateDto {
   underworldRep: number;
 }
 
+export interface UnitDto {
+  id: string;
+  unitType: string;
+  strength: number;
+  morale: number;
+  supply: number;
+  experience: number;
+}
+
+export interface ShipDto {
+  id: string;
+  shipClass: string;
+  condition: number;
+}
+
+export interface PropertyDto {
+  id: string;
+  propertyType: string;
+  settlementId: string | null;
+  value: number;
+  taxRate: number;
+}
+
+export interface LoanDto {
+  principal: number;
+  outstanding: number;
+  active: boolean;
+}
+
+export interface PrisonDto {
+  settlementId: string | null;
+  daysRemaining: number;
+  escapeAttempts: number;
+}
+
+export interface SocialDto {
+  targetId: string;
+  kind: string;
+}
+
+export interface OfficeDto {
+  kingdomId: string | null;
+  title: string;
+  rank: string;
+  servicePoints: number;
+}
+
+export interface DiplomacyDto {
+  from: string;
+  to: string;
+  stance: string;
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
   items: ItemDefDto[];
   recipes: RecipeDto[];
   explorationSites: string[];
+  units: UnitDto[];
+  ships: ShipDto[];
+  properties: PropertyDto[];
+  loan: LoanDto | null;
+  prison: PrisonDto | null;
+  social: SocialDto[];
+  office: OfficeDto | null;
+  diplomacy: DiplomacyDto[];
 }
 
 export type PlayAction =
@@ -148,7 +209,25 @@ export type PlayAction =
   | { action: "temple"; service: "healing" | "knowledge" | "shelter" | "protection" }
   | { action: "joinGuild"; guildId: string }
   | { action: "activity"; kind: string }
-  | { action: "underworld"; underworldAction: string; security?: number; gangAffiliation?: boolean };
+  | { action: "underworld"; underworldAction: string; security?: number; gangAffiliation?: boolean }
+  | { action: "recruit"; unitType: string; strength: number }
+  | { action: "resupply" }
+  | { action: "battle"; terrain?: string }
+  | { action: "siege"; siegeEngines?: number }
+  | { action: "buildShip"; shipClass: string }
+  | { action: "navalBattle" }
+  | { action: "takeLoan"; amount: number }
+  | { action: "repayLoan" }
+  | { action: "buyProperty"; propertyType: string }
+  | { action: "runBusiness" }
+  | { action: "payTaxes" }
+  | { action: "crime"; crimeType: string; evidence?: number }
+  | { action: "escape"; bribe?: number }
+  | { action: "fight"; opponentStrength?: number }
+  | { action: "duel"; consented: boolean; opponentStrength?: number }
+  | { action: "setRelationship"; targetId: string; kind: string }
+  | { action: "seekOffice"; title: string }
+  | { action: "diplomacy"; kingdomId: string; diplomacyAction: string };
 
 /** Sistem katalogu (E8): istemci hangi mahsul, buyu, lonca ve etkinliklerin oldugunu buradan ogrenir. */
 export interface CatalogDto {

@@ -15,6 +15,7 @@ ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
   - `auth/` kimlik, `db/` veri katmanı, `world/` dünya verisi,
   - `world/settlement-profile.ts` — belge 20: 130 yerleşimin tam profili (nüfus/ekonomi/yönetim/güvenlik/ulaşım),
   - `play/` kalıcı oynanış durumu (istemci OTORİTE DEĞİLDİR),
+  - `play/systems.ts` — belge 20: askeri/ekonomi/adalet/dövüş/sosyal/siyaset sistemlerinin kalıcı bağlantısı (sunucu otoriteli),
   - `economy/` pazar + mülk/şirket + `economy/extras.ts` (depolama/açık artırma/kira/tekel/bütçe),
   - `military/` ordu/savaş, `npc/` simülasyon,
   - `family/` hanedan/miras, `politics/` makam/konsey, `social/` sohbet,

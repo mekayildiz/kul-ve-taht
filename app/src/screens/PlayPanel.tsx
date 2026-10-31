@@ -5,10 +5,17 @@ import {
   ApiRequestError,
   type CatalogDto,
   type CharacterDto,
+  type DiplomacyDto,
   type ItemDefDto,
+  type OfficeDto,
   type PlayAction,
   type PlayStateDto,
+  type PrisonDto,
+  type PropertyDto,
   type RecipeDto,
+  type ShipDto,
+  type SocialDto,
+  type UnitDto,
 } from "../api/client";
 
 export interface PlayPanelProps {
@@ -24,6 +31,13 @@ interface State {
   recipes: RecipeDto[];
   sites: string[];
   catalog: CatalogDto | null;
+  units: UnitDto[];
+  ships: ShipDto[];
+  properties: PropertyDto[];
+  prison: PrisonDto | null;
+  social: SocialDto[];
+  office: OfficeDto | null;
+  diplomacy: DiplomacyDto[];
   message: string | null;
   error: string | null;
   loading: boolean;
@@ -38,6 +52,13 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     recipes: [],
     sites: [],
     catalog: null,
+    units: [],
+    ships: [],
+    properties: [],
+    prison: null,
+    social: [],
+    office: null,
+    diplomacy: [],
     message: null,
     error: null,
     loading: true,
@@ -53,6 +74,13 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           recipes: res.recipes,
           sites: res.explorationSites,
           catalog,
+          units: res.units,
+          ships: res.ships,
+          properties: res.properties,
+          prison: res.prison,
+          social: res.social,
+          office: res.office,
+          diplomacy: res.diplomacy,
           message: null,
           error: null,
           loading: false,
@@ -74,8 +102,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       setState((prev) => ({ ...prev, error: null, message: null }));
       client
         .playAction(token, character.id, action)
-        .then((res) => {
-          setState((prev) => ({ ...prev, play: res.state, message: successMessage }));
+        .then(() => {
+          setState((prev) => ({ ...prev, message: successMessage }));
+          load();
         })
         .catch((error: unknown) => {
           const code = error instanceof ApiRequestError ? error.code : "unknown";
@@ -375,6 +404,146 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           </ul>
         </>
       )}
+
+      {/* Belge 20: askeri, ekonomi, adalet, dovus, sosyal ve siyaset sistemleri. */}
+      <h3>{t.play.military}</h3>
+      {state.prison && (
+        <p className="kvt-error" role="alert">
+          {t.play.prison}: {state.prison.daysRemaining} {t.play.prisonDays}
+        </p>
+      )}
+      <ul className="kvt-units">
+        {state.units.map((unit) => (
+          <li key={unit.id}>
+            <span>
+              {unit.unitType} × {unit.strength} — {t.play.morale}: {unit.morale}, {t.play.supply}: {unit.supply}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <button
+          type="button"
+          onClick={() => act({ action: "recruit", unitType: "infantry", strength: 10 }, t.play.committed)}
+          disabled={!play.health.alive}
+        >
+          {t.play.recruit}
+        </button>
+        <button type="button" onClick={() => act({ action: "resupply" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.resupply}
+        </button>
+        <button type="button" onClick={() => act({ action: "battle", terrain: "open" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.battle}
+        </button>
+        <button type="button" onClick={() => act({ action: "siege", siegeEngines: 10 }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.siege}
+        </button>
+        <button type="button" onClick={() => act({ action: "buildShip", shipClass: "galley" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.buildShip}
+        </button>
+        <button type="button" onClick={() => act({ action: "navalBattle" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.navalBattle}
+        </button>
+      </div>
+      {state.ships.length > 0 && (
+        <ul className="kvt-ships">
+          {state.ships.map((ship) => (
+            <li key={ship.id}>
+              <span>
+                {ship.shipClass} — {ship.condition}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>
+        {t.play.economy} — {t.play.debts}: {play.debts}
+      </h3>
+      <ul className="kvt-properties">
+        {state.properties.map((prop) => (
+          <li key={prop.id}>
+            <span>
+              {prop.propertyType} — {prop.value} {t.play.gold}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "takeLoan", amount: 100 }, t.play.committed)}>
+          {t.play.takeLoan}
+        </button>
+        <button type="button" onClick={() => act({ action: "repayLoan" }, t.play.committed)}>
+          {t.play.repayLoan}
+        </button>
+        <button type="button" onClick={() => act({ action: "buyProperty", propertyType: "business" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.buyProperty}
+        </button>
+        <button type="button" onClick={() => act({ action: "runBusiness" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.runBusiness}
+        </button>
+        <button type="button" onClick={() => act({ action: "payTaxes" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.payTaxes}
+        </button>
+      </div>
+
+      <h3>{t.play.justice}</h3>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "crime", crimeType: "theft", evidence: 20 }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.crime}
+        </button>
+        <button type="button" onClick={() => act({ action: "escape", bribe: 0 }, t.play.committed)}>
+          {t.play.escape}
+        </button>
+      </div>
+
+      <h3>{t.play.combat}</h3>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "fight", opponentStrength: 8 }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.fight}
+        </button>
+        <button type="button" onClick={() => act({ action: "duel", consented: true, opponentStrength: 8 }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.duel}
+        </button>
+      </div>
+
+      <h3>{t.play.social}</h3>
+      {state.social.length === 0 && <p>{t.play.socialEmpty}</p>}
+      <ul className="kvt-social">
+        {state.social.map((s) => (
+          <li key={`${s.targetId}-${s.kind}`}>
+            <span>
+              {s.targetId} — {s.kind}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "setRelationship", targetId: "npc-1", kind: "friend" }, t.play.committed)}>
+          {t.play.addFriend}
+        </button>
+      </div>
+
+      <h3>
+        {t.play.politics} — {t.play.office}: {state.office ? `${state.office.title} (${state.office.rank})` : t.play.none}
+      </h3>
+      <ul className="kvt-diplomacy">
+        {state.diplomacy.map((d) => (
+          <li key={d.from}>
+            <span>
+              {d.from} — {t.play.stance}: {d.stance}
+            </span>
+            <button type="button" onClick={() => act({ action: "diplomacy", kingdomId: d.from, diplomacyAction: "gift" }, t.play.committed)}>
+              {t.play.sendGift}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "seekOffice", title: "Memur" }, t.play.committed)}>
+          {t.play.seekOffice}
+        </button>
+      </div>
     </section>
   );
 }

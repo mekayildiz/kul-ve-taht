@@ -42,8 +42,37 @@ import {
   performUnderworldAct,
   marketQuote,
   lodgingQuote,
+  type PlayResult,
 } from "./play/service";
 import { ITEMS } from "./inventory/items";
+import {
+  listUnits,
+  performRecruit,
+  performResupply,
+  performBattle,
+  performSiege,
+  listShips,
+  performBuildShip,
+  performNavalBattle,
+  performTakeLoan,
+  performRepayLoan,
+  loanSummary,
+  listProperties,
+  performBuyProperty,
+  performRunBusiness,
+  performPayTaxes,
+  prisonStatus,
+  performCrime,
+  performEscape,
+  performFight,
+  duelAllowed,
+  listSocial,
+  performSetRelationship,
+  officeStatus,
+  performSeekOffice,
+  diplomacyStances,
+  performDiplomacy,
+} from "./play/systems";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -289,9 +318,12 @@ async function ownsCharacter(env: Env, accountId: string, characterId: string): 
   return row !== null;
 }
 
-function playError(result: { error?: string }): Response {
+function playError(result: { error?: string; detail?: Record<string, unknown> }): Response {
   const status = result.error === "character_not_found" ? 404 : result.error === "not_enough_gold" ? 402 : 400;
-  return error(result.error ?? "invalid_action", "Aksiyon tamamlanamadi.", status);
+  const code = result.error ?? "invalid_action";
+  // "reason" alt kodu istemciye tasinir (ornek: consent_required, not_imprisoned).
+  const reason = typeof result.detail?.reason === "string" ? result.detail.reason : undefined;
+  return json({ error: { code, message: "Aksiyon tamamlanamadi.", ...(reason ? { reason } : {}) } }, status);
 }
 
 /** Karakterin tam oynanis durumu (saglik, envanter, altin). */
@@ -303,7 +335,29 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   }
   const state = await getPlayState(env.DB, params.characterId!);
   if (!state) return error("not_found", "Karakter bulunamadi.", 404);
-  return json({ state, items: ITEMS, recipes: RECIPES, explorationSites: EXPLORATION_SITES });
+  const [units, ships, properties, loan, prison, social, office] = await Promise.all([
+    listUnits(env.DB, params.characterId!),
+    listShips(env.DB, params.characterId!),
+    listProperties(env.DB, params.characterId!),
+    loanSummary(env.DB, params.characterId!),
+    prisonStatus(env.DB, params.characterId!),
+    listSocial(env.DB, params.characterId!),
+    officeStatus(env.DB, params.characterId!),
+  ]);
+  return json({
+    state,
+    items: ITEMS,
+    recipes: RECIPES,
+    explorationSites: EXPLORATION_SITES,
+    units,
+    ships,
+    properties,
+    loan,
+    prison,
+    social,
+    office,
+    diplomacy: await diplomacyStances(),
+  });
 });
 
 router.get("/api/market/:itemId", ({ params }: Ctx) => {
@@ -442,6 +496,93 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
         String(body?.underworldAction ?? "theft") as "theft" | "smuggling" | "fraud" | "assassination" | "black_market",
         Number(body?.security ?? 50),
         Boolean(body?.gangAffiliation),
+      );
+      break;
+    case "recruit":
+      result = await performRecruit(
+        env.DB,
+        characterId,
+        String(body?.unitType ?? "infantry") as "infantry" | "cavalry" | "archer" | "siege" | "naval",
+        Number(body?.strength ?? 10),
+      );
+      break;
+    case "resupply":
+      result = await performResupply(env.DB, characterId);
+      break;
+    case "battle":
+      result = await performBattle(env.DB, characterId, (body?.terrain as "open" | "forest" | "mountain" | "fortified" | "naval") ?? "open");
+      break;
+    case "siege":
+      result = await performSiege(env.DB, characterId, Number(body?.siegeEngines ?? 5));
+      break;
+    case "buildShip":
+      result = await performBuildShip(env.DB, characterId, String(body?.shipClass ?? "galley") as "galley" | "longship" | "caravel" | "flagship");
+      break;
+    case "navalBattle":
+      result = await performNavalBattle(env.DB, characterId);
+      break;
+    case "takeLoan":
+      result = await performTakeLoan(env.DB, characterId, Number(body?.amount ?? 100));
+      break;
+    case "repayLoan":
+      result = await performRepayLoan(env.DB, characterId);
+      break;
+    case "buyProperty":
+      result = await performBuyProperty(
+        env.DB,
+        characterId,
+        String(body?.propertyType ?? "house") as "house" | "business" | "farm" | "mine" | "ship" | "warehouse",
+      );
+      break;
+    case "runBusiness":
+      result = await performRunBusiness(env.DB, characterId);
+      break;
+    case "payTaxes":
+      result = await performPayTaxes(env.DB, characterId);
+      break;
+    case "crime":
+      result = await performCrime(
+        env.DB,
+        characterId,
+        String(body?.crimeType ?? "theft") as "theft" | "smuggling" | "fraud" | "assassination" | "banditry" | "black_market" | "dark_magic",
+        Number(body?.evidence ?? 30),
+      );
+      break;
+    case "escape":
+      result = await performEscape(env.DB, characterId, Number(body?.bribe ?? 0));
+      break;
+    case "fight":
+      result = await performFight(env.DB, characterId, Number(body?.opponentStrength ?? 8));
+      break;
+    case "duel": {
+      const consent = Boolean(body?.consented);
+      const check = await duelAllowed(env.DB, characterId, consent);
+      result = check.allowed
+        ? await performFight(env.DB, characterId, Number(body?.opponentStrength ?? 8))
+        : ({
+            ok: false,
+            error: "invalid_action",
+            detail: { reason: check.safeCity ? "consent_required" : "pvp_not_allowed" },
+          } satisfies PlayResult);
+      break;
+    }
+    case "setRelationship":
+      result = await performSetRelationship(
+        env.DB,
+        characterId,
+        String(body?.targetId ?? ""),
+        String(body?.kind ?? "friend") as "friend" | "enemy" | "ally" | "trade_partner",
+      );
+      break;
+    case "seekOffice":
+      result = await performSeekOffice(env.DB, characterId, String(body?.title ?? "Memur"));
+      break;
+    case "diplomacy":
+      result = await performDiplomacy(
+        env.DB,
+        characterId,
+        String(body?.kingdomId ?? ""),
+        String(body?.diplomacyAction ?? "gift") as "gift" | "marriage" | "insult" | "threat" | "treaty",
       );
       break;
     default:

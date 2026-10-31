@@ -85,4 +85,12 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.8 Arayüz: tarım, av, büyü, tapınak, lonca, şehir etkinlikleri ve yeraltı panelleri — `app/src/screens/PlayPanel.tsx` (6 arayüz testi)
 - [x] E8.9 i18n: tüm yeni anahtarlar TR + EN (anahtar eşitliği testi)
 - [x] E8.10 Yerel uçtan uca doğrulama: Miniflare'de gerçek kayıt → karakter → aksiyon akışı çalıştırıldı
+- [x] E8.11 Askeri sistem bağlantısı (belge 14.5, 11): birlik toplama, ikmal, kara savaşı, kuşatma, gemi inşası, deniz savaşı — `play/systems.ts` (sunucu otoriteli), `/api/play/:id/action` + state ucu
+- [x] E8.12 Ekonomi bağlantısı (belge 9.6–9.12): kredi alma/ödeme, mülk satın alma, işletme geliri, vergi — `play/systems.ts`
+- [x] E8.13 Adalet bağlantısı (belge 13.4–13.5): suç işleme, yakalanma, yargılama, hapis, kaçış — `play/systems.ts`
+- [x] E8.14 Dövüş bağlantısı (belge 14.1–14.4, 16.5): tekil dövüş ve güvenli şehir/riza kurallı düello — `play/systems.ts`
+- [x] E8.15 Sosyal ve siyasi bağlantı (belge 10, 16.3–16.4): ilişki kurma, makam/rütbe, diplomasi — `play/systems.ts`
+- [x] E8.16 Arayüz genişletmesi: askeri, ekonomi, adalet, dövüş, sosyal ve siyaset panelleri — `PlayPanel.tsx` (8 arayüz testi)
+- [x] E8.17 Veritabanı: yeni kalıcı tablolar (`character_units`, `character_ships`, `character_loans`, `character_properties`, `character_prison`, `character_social`, `character_offices`, `character_family`) — `db/migrations/0007_systems_state.sql`
+- [x] E8.18 API testleri: 19 yeni uçtan uca test (`systems-api.test.ts`) — toplam 390 test geçiyor
 

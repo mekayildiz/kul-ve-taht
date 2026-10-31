@@ -51,6 +51,14 @@ const stateResponse = {
   items: [{ id: "bread", name: "Ekmek", category: "food", baseValue: 2, nutrition: 25 }],
   recipes: [{ id: "craft-bread", output: "bread", outputQuantity: 4, baseChance: 90 }],
   explorationSites: ["forest", "cave"],
+  units: [],
+  ships: [],
+  properties: [],
+  loan: null,
+  prison: null,
+  social: [],
+  office: null,
+  diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 
 describe("PlayPanel", () => {
@@ -68,13 +76,15 @@ describe("PlayPanel", () => {
 
   it("keşif aksiyonu gönderir ve durumu günceller", async () => {
     let called = false;
+    let gold = 20;
     const client = clientWith((path, init) => {
-      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.endsWith("/state")) return json({ ...stateResponse, state: playState({ gold }) });
       if (path.endsWith("/action")) {
         called = true;
         const body = JSON.parse(String(init?.body)) as { action: string };
         expect(body.action).toBe("explore");
-        return json({ ok: true, state: playState({ gold: 35 }), detail: { site: "forest" } });
+        gold = 35;
+        return json({ ok: true, state: playState({ gold }), detail: { site: "forest" } });
       }
       return json({}, 404);
     });
@@ -162,5 +172,53 @@ describe("PlayPanel", () => {
     expect(sent!.action).toBe("plant");
     expect(sent!.crop).toBe("wheat");
     expect(sent!.season).toBe("spring");
+  });
+
+  it("askeri, ekonomi, adalet ve siyaset panellerini gösterir (belge 20)", async () => {
+    const withSystems = {
+      ...stateResponse,
+      units: [{ id: "u1", unitType: "infantry", strength: 20, morale: 100, supply: 100, experience: 0 }],
+      ships: [{ id: "s1", shipClass: "galley", condition: 100 }],
+      properties: [{ id: "p1", propertyType: "business", settlementId: "varkhenn-drahkmar", value: 800, taxRate: 0.02 }],
+      office: { kingdomId: "varkhenn", title: "Vergi Memuru", rank: "soldier", servicePoints: 25 },
+    };
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(withSystems);
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.military)).toBeTruthy());
+    expect(screen.getByText(/infantry/)).toBeTruthy();
+    expect(screen.getByText(t.play.economy, { exact: false })).toBeTruthy();
+    expect(screen.getByText(/business/)).toBeTruthy();
+    expect(screen.getByText(t.play.justice)).toBeTruthy();
+    expect(screen.getAllByText(t.play.combat).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Vergi Memuru/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.play.recruit })).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.play.takeLoan })).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.play.fight })).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.play.seekOffice })).toBeTruthy();
+  });
+
+  it("savaş aksiyonu sunucuya doğru gövdeyle gider (belge 20)", async () => {
+    let sent: Record<string, unknown> | null = null;
+    const withUnits = {
+      ...stateResponse,
+      units: [{ id: "u1", unitType: "infantry", strength: 20, morale: 100, supply: 100, experience: 0 }],
+    };
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(withUnits);
+      if (path.endsWith("/action")) {
+        sent = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return json({ ok: true, state: playState(), detail: {} });
+      }
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.battle)).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: t.play.battle }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent!.action).toBe("battle");
+    expect(sent!.terrain).toBe("open");
   });
 });

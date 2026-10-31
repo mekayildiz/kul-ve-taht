@@ -57,7 +57,7 @@ export interface PlayResult {
   detail?: Record<string, unknown>;
 }
 
-async function loadState(db: SqlDatabase, characterId: string, nowMs: number): Promise<PlayState | null> {
+export async function loadState(db: SqlDatabase, characterId: string, nowMs: number): Promise<PlayState | null> {
   const character = await queryOne<{ id: string; alive: number }>(
     db,
     "SELECT id, alive FROM characters WHERE id = ?",
@@ -124,7 +124,7 @@ async function loadState(db: SqlDatabase, characterId: string, nowMs: number): P
   };
 }
 
-async function saveState(db: SqlDatabase, state: PlayState, nowMs: number): Promise<void> {
+export async function saveState(db: SqlDatabase, state: PlayState, nowMs: number): Promise<void> {
   await execute(
     db,
     `INSERT INTO character_state (character_id, health_json, inventory_json, gold, debts, reputation, weapon, weapon_mastery, magic_level, energy, magic_paths_json, underworld_rep, updated_at)
