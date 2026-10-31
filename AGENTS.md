@@ -13,10 +13,13 @@ ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
 
 - `functions/src/` — Worker arka ucu. `index.ts` yönlendirici.
   - `auth/` kimlik, `db/` veri katmanı, `world/` dünya verisi,
+  - `world/settlement-profile.ts` — belge 20: 130 yerleşimin tam profili (nüfus/ekonomi/yönetim/güvenlik/ulaşım),
   - `play/` kalıcı oynanış durumu (istemci OTORİTE DEĞİLDİR),
-  - `economy/` pazar + mülk/şirket, `military/` ordu/savaş, `npc/` simülasyon,
+  - `economy/` pazar + mülk/şirket + `economy/extras.ts` (depolama/açık artırma/kira/tekel/bütçe),
+  - `military/` ordu/savaş, `npc/` simülasyon,
   - `family/` hanedan/miras, `politics/` makam/konsey, `social/` sohbet,
-  - `quests/`, `inventory/`, `health/`, `justice/`, `travel/`, `assets/` görsel kayıt,
+  - `livelihood/` tarım/hayvancılık/av, `magic/` büyü/din/lonca, `underworld/` yeraltı,
+  - `notify/` bildirim özeti, `quests/`, `inventory/`, `health/`, `justice/`, `travel/`, `assets/` görsel kayıt,
   - `quota/` 0 TL kota koruması.
 - `app/src/` — React arayüz (ekranlar, i18n TR/EN, API istemcisi).
 - `db/migrations/` — D1 şeması + referans veri (130 yerleşim).
@@ -27,7 +30,13 @@ ve 26 (yapay zekâ araç koordinasyonu) bölümleri asla değiştirilmez.
 ```bash
 npm run verify   # lint + typecheck + build + test + 0 TL denetimi (zorunlu)
 npx vitest run <dosya>   # tek test dosyası
+npm run dev:api          # yerel Worker (Miniflare; hesap gerekmez, ücretsiz)
+npm run db:migrate:local # yerel D1'e migration uygula
+npm run deploy:api       # üretim Worker yayını (ücretsiz katman)
+npm run deploy:web       # Cloudflare Pages yayını (ücretsiz katman)
 ```
+
+Yayın adımları: `docs/yayin-kilavuzu.md`.
 
 ## Kurallar
 

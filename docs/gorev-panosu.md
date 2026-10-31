@@ -69,3 +69,20 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E7.6 Kabul ölçütleri geçişi (belge 25) — `docs/kabul-olcutleri.md` (10 ölçüt kanıta bağlandı)
 
 **Kural:** Test edilmeyen hiçbir görev "tamamlandı" işaretlenmez.
+
+## E8 – Ertelenen özelliklerin nihai kapsama alınması
+
+Belgede ertelenmiş sayılan ancak nihai kapsamda istenen sistemler. Her biri
+sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
+
+- [x] E8.1 Geçim/üretim: tarım (ekim/hasat), hayvancılık, avcılık, evcilleştirme, kıtlık riski — `livelihood/production.ts` (12 test)
+- [x] E8.2 Büyü ve inanç: büyü yolları, öğrenme/kullanma, enerji, kara büyü suçu, tapınak hizmetleri, loncalar — `magic/lore.ts` (13 test)
+- [x] E8.3 Ekonomi tamamlayıcıları: depolama/bozulma, açık artırma, kira, tekel, piyasa bozulması, devlet bütçesi, yolsuzluk — `economy/extras.ts` (12 test)
+- [x] E8.4 Bildirimler: öncelik eşikli, arka planı tek satırda toplayan özet (belge 19) — `notify/notifications.ts` (5 test) + `/api/notifications`, `/api/notifications/read`
+- [x] E8.5 Yeraltı ve suç örgütleri: hırsızlık/kaçakçılık/dolandırıcılık/suikast/karaborsa, çete itibarı — `underworld/gangs.ts` (10 test)
+- [x] E8.6 Belge 20: 130 yerleşimin **tamamı** için nüfus/ekonomi/yönetim/güvenlik/ulaşım/mevsim/siyasi bağlılık profili — `world/settlement-profile.ts` (7 test)
+- [x] E8.7 Oynanış katmanı bağlantısı: 12 yeni sunucu-taraflı aksiyon + `/api/catalog` keşif ucu — `play/service.ts`, `index.ts` (14 API testi)
+- [x] E8.8 Arayüz: tarım, av, büyü, tapınak, lonca, şehir etkinlikleri ve yeraltı panelleri — `app/src/screens/PlayPanel.tsx` (6 arayüz testi)
+- [x] E8.9 i18n: tüm yeni anahtarlar TR + EN (anahtar eşitliği testi)
+- [x] E8.10 Yerel uçtan uca doğrulama: Miniflare'de gerçek kayıt → karakter → aksiyon akışı çalıştırıldı
+
