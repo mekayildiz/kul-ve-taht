@@ -248,3 +248,31 @@ Gerçek üretim kaynakları (`wrangler d1 create`, `r2 bucket create`,
 `wrangler deploy`) **ücretsiz** Cloudflare hesap yetkilendirmesi
 (`npx wrangler login`) gerektirir. Yetkilendirme olmadan tüm sistemler Miniflare
 ile yerel olarak çalışır ve doğrulanmıştır (bkz. `docs/yayin-kilavuzu.md`).
+
+## E11 – Üretim ortamına geçiş hazırlığı
+
+Yayın öncesi üretime özgü iki gerçek hata bulundu ve giderildi; dağıtım tek
+komuta indirildi.
+
+- [x] E11.1 Arayüz üretim tabanı düzeltmesi: derleme `http://localhost:8787`
+  adresini gömüyordu; tek kaynaklı yayında tarayıcı kendi localhost'una istek
+  atıp başarısız olurdu. Artık üretimde boş taban (göreli `/api` yolları),
+  yerelde `localhost:8787` (`app/src/shell/App.tsx`). Aynı kaynaklı tarayıcı
+  akışı doğrulandı: kayıt → karakter → oyun aksiyonu.
+- [x] E11.2 Gizli anahtar hijyeni: `functions/wrangler.toml` içindeki
+  `SESSION_SECRET` varsayılanı kaldırıldı; üretimde yalnızca
+  `wrangler secret put` ile ayarlanır, yerelde `functions/.dev.vars` (git dışı).
+- [x] E11.3 Tek komutlu idempotent dağıtım: `scripts/deploy-production.mjs`
+  (`npm run deploy:production`) — yetki kontrolü, D1/R2 oluşturma (varsa atla),
+  `database_id` yazımı, `SESSION_SECRET` üretimi (varsa koru), uzak migration,
+  deploy ve canlı `/api/health` kontrolü. Ücretli adım yok.
+- [x] E11.4 Yönlendirme doğrulaması: `[assets]` + `not_found_handling =
+  single-page-application` ile statik varlık önce sunulur, `/api/*` Worker'a
+  düşer (CF dokümantasyonu ile doğrulandı; yerelde teyit edildi).
+- [ ] E11.5 Üretim kaynaklarının oluşturulması ve dağıtım (kullanıcı yetkisi
+  bekliyor): `npx wrangler login` sonrası `npm run deploy:production`.
+- [ ] E11.6 Canlı doğrulama (belge 25): kayıt, giriş, karakter, oyun aksiyonu,
+  kalıcılık ve çok oyunculu bağlantıların üretim adresinde teyidi.
+
+Doğrulama: `npm run verify` → 52 dosya / 500 test geçti, 0 TL denetimi geçti;
+korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
