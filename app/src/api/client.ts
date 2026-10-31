@@ -459,6 +459,7 @@ export interface PlayStateResponse {
   diplomacy: DiplomacyDto[];
   directory: PlayerSummaryDto[];
   personality: PersonalityDto;
+  heir: string | null;
 }
 
 export interface StorageDto {

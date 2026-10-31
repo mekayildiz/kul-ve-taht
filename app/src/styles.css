@@ -297,3 +297,8 @@ body {
 .kvt-personality progress {
   flex: 1;
 }
+
+.kvt-heir {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}

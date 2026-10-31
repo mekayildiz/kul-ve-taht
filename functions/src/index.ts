@@ -139,6 +139,7 @@ import {
 import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
 import { playerDirectory } from "./play/directory";
 import { loadPersonality } from "./play/personality";
+import { heirOf } from "./play/succession";
 import {
   childList,
   performRecordChild,
@@ -498,10 +499,11 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   const group = await groupStatus(env.DB, params.characterId!);
   const appearance = await appearanceStatus(env.DB, params.characterId!);
   const companies = await companyList(env.DB, params.characterId!);
-  const [rentals, titleDisputes, personality] = await Promise.all([
+  const [rentals, titleDisputes, personality, heir] = await Promise.all([
     rentalList(env.DB, params.characterId!),
     titleDisputeList(env.DB, params.characterId!),
     loadPersonality(env.DB, params.characterId!),
+    heirOf(env.DB, params.characterId!),
   ]);
   const [bank, escrows, peerLoans] = await Promise.all([
     bankSummary(env.DB, params.characterId!),
@@ -559,6 +561,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     motions,
     directory,
     personality,
+    heir,
     storage,
     diplomacy: await diplomacyStances(),
   });

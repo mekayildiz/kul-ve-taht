@@ -79,6 +79,7 @@ interface State {
   diplomacy: DiplomacyDto[];
   directory: PlayerSummaryDto[];
   personality: PersonalityDto;
+  heir: string | null;
   target: string;
   dataSaver: boolean;
   quests: QuestLogEntryDto[];
@@ -155,6 +156,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     diplomacy: [],
     directory: [],
     personality: { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
+    heir: null,
     target: "",
     dataSaver: false,
     quests: [],
@@ -210,6 +212,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           diplomacy: res.diplomacy,
           directory: res.directory ?? [],
           personality: res.personality ?? { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
+          heir: res.heir ?? null,
           quests: quests?.log ?? [],
           questCatalog: quests?.catalog ?? [],
           auctions: auctions?.auctions ?? [],
@@ -333,6 +336,12 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       {!play.health.alive && (
         <p className="kvt-error" role="alert">
           {t.play.deadBanner}
+        </p>
+      )}
+
+      {state.heir && (
+        <p className="kvt-heir">
+          {t.play.heir}: <strong>{state.heir}</strong>
         </p>
       )}
 
