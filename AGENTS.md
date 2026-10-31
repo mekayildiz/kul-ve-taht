@@ -101,3 +101,26 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
   acik alanlar) doner ve `/api/play/:id/state.directory` icinde yer alir.
 - Arayuzdeki hedef secici bu listeyi kullanir; takas, karsilikli kredi, emanet,
   tapu uyusmazligi, ortaklik ve grup katilma gibi islemler bu kimligi kullanir.
+
+## Parola hash: PBKDF2 platform siniri (KRITIK)
+
+- Cloudflare **workerd WebCrypto, PBKDF2'de 100.000 iterasyonun uzerini
+  reddeder**: `NotSupportedError: Pbkdf2 failed: iteration counts above 100000
+  are not supported`. Uretimde yakalanmayan bu istisna Worker hatasi 1101 ve
+  HTTP 500'e donusur (arayuzde genel hata gorunur).
+- Bu nedenle `auth/password.ts` icindeki `PBKDF2.iterations` **100.000**
+  (platform ust siniri) olarak sabitlenmistir; OWASP'in 600.000 onerisi bu
+  ortamda UYGULANAMAZ. `PBKDF2_MAX_ITERATIONS` korumasi asimi erken, anlasilir
+  bir `RangeError` ile engeller.
+- Hash islemi **PASSWORD_HASH_GATE Durable Object**'inde calisir (Worker HTTP
+  istegi Free planda 10 ms CPU ile sinirli; 100k PBKDF2 ~15 ms). Worker kendi
+  CPU butcesini asmaz; DO'nun 30 s butcesi kullanilir.
+- Hash, hesap kimligine gore 16 shard'a dagitilir (`auth/rate-limit.ts`
+  `hashShardFor`). Hiz siniri **hesap bazlidir** (bir shard'i paylasan farkli
+  hesaplar birbirini etkilemez).
+- Kayit/giris yollari hasher'i `createGateHasher(env.PASSWORD_HASH_GATE, ...)`
+  ile alir (`auth/hash-gate.ts`); namespace yoksa (birim testi) yerel hasher'a
+  duser. Yeni bir auth yolu eklerken bu sarmalayiciyi kullanin.
+- Regresyon testleri: `auth/hash-gate.test.ts` (platform siniri + DO akisi),
+  `auth-e2e.test.ts` (kayit→giris→oturum). Uretimde dogrulama: `wrangler tail`
+  ile `outcome: ok`, istisna yok.

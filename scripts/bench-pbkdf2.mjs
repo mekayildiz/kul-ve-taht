@@ -1,9 +1,14 @@
 /**
- * PBKDF2 performans olcumu (R2 duzeltmesi).
+ * PBKDF2 performans olcumu.
  *
  * Amac: Durable Object invocation CPU butcesi (30 s) icinde kalirken
- * OWASP duzeyinde guvenlik saglayan iterasyon sayisini GERCEK olcumle
- * dogrulamak. Tahmin yerine olcum esas alinir.
+ * guvenli iterasyon sayisini GERCEK olcumle dogrulamak.
+ *
+ * ONEMLI PLATFORM SINIRI: workerd WebCrypto, 100.000 uzeri PBKDF2
+ * iterasyonunu REDDEDER ("iteration counts above 100000 are not supported").
+ * Bu nedenle uretimde kullanilabilen en yuksek deger 100.000'dir; OWASP'in
+ * 600.000 onerisi Cloudflare Workers'ta uygulanamaz. 210_000/600_000 yalnizca
+ * bu sinirin DOGRULANMASI icin (yerel Node olcumu) listelenir.
  *
  * Calistirma: node scripts/bench-pbkdf2.mjs
  */
@@ -11,6 +16,7 @@
 import { webcrypto } from "node:crypto";
 
 const { subtle } = webcrypto;
+// workerd ust siniri 100_000; digerleri yalnizca karsilastirma/kanit icin.
 const CANDIDATES = [100_000, 210_000, 600_000];
 const SAMPLES = 5;
 const DO_CPU_BUDGET_MS = 30_000;
