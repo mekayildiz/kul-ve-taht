@@ -27,6 +27,7 @@ Bundle `--all` ile alınır (main + çalışma dalı). `/workspace/backups/` alt
 | `POST /repos/.../git/refs` (dal oluştur) | ❌ `Resource not accessible by integration` |
 | `PUT /repos/.../contents/probe.txt` | ❌ `Resource not accessible by integration` |
 | `git push` | ❌ `403 Permission ... denied` |
+| `GET /repos/...` (okuma) | ✅ `HTTP 200` (depo erişilebilir, salt-okunur) |
 
 **Gerçek neden:** `GITHUB_TOKEN` bir **GitHub App kurulum/user-to-server
 belirtecidir**; kullanıcı kimliği görünse de **`contents: write`** izni yoktur.
