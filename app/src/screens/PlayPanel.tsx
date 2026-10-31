@@ -26,7 +26,9 @@ import {
   type ItemDefDto,
   type MarketQuoteDto,
   type OfficeDto,
+  type PeerLoanDto,
   type PlayAction,
+  type PlayerSummaryDto,
   type PlayStateDto,
   type PrisonDto,
   type PropertyDto,
@@ -62,6 +64,7 @@ interface State {
   appearance: AppearanceDto | null;
   bank: BankAccountDto[];
   escrows: EscrowDto[];
+  peerLoans: PeerLoanDto[];
   companies: CompanyDto[];
   rentals: RentalDto[];
   titleDisputes: TitleDisputeDto[];
@@ -73,6 +76,9 @@ interface State {
   notifications: NotificationDigestDto | null;
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
+  directory: PlayerSummaryDto[];
+  target: string;
+  dataSaver: boolean;
   quests: QuestLogEntryDto[];
   questCatalog: QuestCatalogEntryDto[];
   auctions: AuctionDto[];
@@ -85,6 +91,26 @@ interface State {
 }
 
 const PROFESSIONS = ["farmer", "blacksmith", "hunter", "miner", "merchant", "healer", "soldier", "scholar", "craftsman"];
+
+// Statik gorsel varliklar (belge 17.4): Cloudflare Pages /assets/... yolundan sunar.
+// Esya kategorisi -> ikon eslemesi; haritada olmayanlar icin 'gold' ikonu kullanilir.
+const ASSET_BASE = "/assets";
+const CATEGORY_ICON: Record<string, string> = {
+  weapon: "sword",
+  armor: "shield",
+  food: "heart",
+  medicine: "heart",
+  material: "gold",
+  luxury: "gold",
+  mount: "horse",
+  book: "scroll",
+};
+function iconForCategory(category: string | undefined): string {
+  return CATEGORY_ICON[category ?? ""] ?? "gold";
+}
+function iconSrc(icon: string, dataSaver: boolean): string {
+  return `${ASSET_BASE}/icons/${icon}${dataSaver ? "-64" : ""}.webp`;
+}
 
 export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.Element {
   const [state, setState] = useState<State>({
@@ -104,6 +130,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     appearance: null,
     bank: [],
     escrows: [],
+    peerLoans: [],
     companies: [],
     rentals: [],
     titleDisputes: [],
@@ -115,6 +142,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     notifications: null,
     storage: null,
     diplomacy: [],
+    directory: [],
+    target: "",
+    dataSaver: false,
     quests: [],
     questCatalog: [],
     auctions: [],
@@ -154,6 +184,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           appearance: res.appearance,
           bank: res.bank,
           escrows: res.escrows,
+          peerLoans: res.peerLoans ?? [],
           companies: res.companies,
           rentals: res.rentals,
           titleDisputes: res.titleDisputes,
@@ -165,6 +196,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           notifications,
           storage: res.storage,
           diplomacy: res.diplomacy,
+          directory: res.directory ?? [],
           quests: quests?.log ?? [],
           questCatalog: quests?.catalog ?? [],
           auctions: auctions?.auctions ?? [],
@@ -174,6 +206,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           message: null,
           error: null,
           loading: false,
+          target: "",
+          dataSaver: false,
         });
       })
       .catch((error: unknown) => {
@@ -222,6 +256,14 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const play = state.play;
   const itemName = (id: string): string => state.items.find((i) => i.id === id)?.name ?? id;
+  const itemCategory = (id: string): string | undefined => state.items.find((i) => i.id === id)?.category;
+  // Portre: karakter kimligine gore havuzdan deterministik atanir (belge 17.2).
+  const portraitIndex = ((): number => {
+    let hash = 0;
+    for (let i = 0; i < character.id.length; i += 1) hash = (hash * 31 + character.id.charCodeAt(i)) >>> 0;
+    return hash % 40;
+  })();
+  const portraitSrc = `${ASSET_BASE}/portraits/pool-${String(portraitIndex).padStart(2, "0")}${state.dataSaver ? "-96" : ""}.webp`;
   // Bildirim ozeti eksik/bozuk gelebilir (uc nokta istege bagli); guvenli oku.
   const notifVisible = Array.isArray(state.notifications?.visible) ? state.notifications.visible : [];
 
@@ -230,6 +272,17 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       <h2>
         {character.given_name} {character.surname}
       </h2>
+      <div className="kvt-portrait-row">
+        <img className="kvt-portrait" src={portraitSrc} alt={`${t.play.portrait}: ${character.given_name}`} width={96} height={96} loading="lazy" />
+        <label className="kvt-datasaver">
+          <input
+            type="checkbox"
+            checked={state.dataSaver}
+            onChange={(e) => setState((prev) => ({ ...prev, dataSaver: e.target.checked }))}
+          />
+          {t.play.dataSaver}
+        </label>
+      </div>
 
       <div className="kvt-vitals">
         <div>
@@ -295,6 +348,41 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         </p>
       )}
 
+      <h3>{t.play.chooseTarget}</h3>
+      {state.directory.length === 0 ? (
+        <p>{t.play.noTargets}</p>
+      ) : (
+        <label className="kvt-target">
+          {t.play.target}
+          <select value={state.target} onChange={(e) => setState((prev) => ({ ...prev, target: e.target.value }))}>
+            <option value="">—</option>
+            {state.directory.map((p2) => (
+              <option key={p2.characterId} value={p2.characterId}>
+                {p2.givenName} {p2.surname} ({p2.currentSettlement ?? "?"}, {p2.ageYears})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "eat", itemId: "bread" }, t.play.committed)} disabled={!play.health.alive}>
+          {t.play.eat}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            act(
+              { action: "travel", toSettlementId: character.current_settlement ?? "varkhenn-drahkmar", season: "spring", weather: "clear", roadQuality: 70 },
+              t.play.committed,
+            )
+          }
+          disabled={!play.health.alive}
+        >
+          {t.play.travel}
+        </button>
+      </div>
+
       <div className="kvt-playactions">
         <button type="button" onClick={() => act({ action: "rest", hours: 6 }, t.play.rested)} disabled={!play.health.alive}>
           {t.play.rest}
@@ -322,6 +410,14 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       <ul className="kvt-inventory">
         {play.inventory.map((entry) => (
           <li key={entry.itemId}>
+            <img
+              className="kvt-itemicon"
+              src={iconSrc(iconForCategory(itemCategory(entry.itemId)), state.dataSaver)}
+              alt=""
+              width={24}
+              height={24}
+              loading="lazy"
+            />
             <span>
               {itemName(entry.itemId)} × {entry.quantity}
             </span>
@@ -508,6 +604,13 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
                 {t.play.createGroup}
               </button>
             )}
+            <button
+              type="button"
+              disabled={!state.target}
+              onClick={() => act({ action: "joinGroup", groupId: state.target }, t.play.committed)}
+            >
+              {t.play.joinGroup}
+            </button>
           </div>
 
           <h3>{t.play.activities}</h3>
@@ -601,15 +704,50 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       <h3>
         {t.play.economy} — {t.play.debts}: {play.debts}
       </h3>
-      <ul className="kvt-properties">
-        {state.properties.map((prop) => (
-          <li key={prop.id}>
-            <span>
-              {prop.propertyType} — {prop.value} {t.play.gold}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {state.properties.length === 0 ? (
+        <p>{t.play.noProperties}</p>
+      ) : (
+        <ul className="kvt-properties">
+          {state.properties.map((prop) => (
+            <li key={prop.id}>
+              <span>
+                {prop.propertyType} — {prop.value} {t.play.gold}
+              </span>
+              <button type="button" onClick={() => act({ action: "listForRent", propertyId: prop.id, monthlyRate: 10 }, t.play.committed)}>
+                {t.play.listForRent}
+              </button>
+              <button type="button" onClick={() => act({ action: "foreclose", propertyId: prop.id, debt: 50 }, t.play.committed)}>
+                {t.play.foreclose}
+              </button>
+              <button
+                type="button"
+                disabled={!state.target}
+                onClick={() => act({ action: "openTitleDispute", propertyId: prop.id, claimantB: state.target }, t.play.committed)}
+              >
+                {t.play.openTitleDispute}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>{t.play.titleDisputes}</h3>
+      {state.titleDisputes.length === 0 ? (
+        <p>{t.play.noDisputes}</p>
+      ) : (
+        <ul className="kvt-disputes">
+          {state.titleDisputes.map((d) => (
+            <li key={d.id}>
+              <span>
+                {t.play.property}: {d.propertyId.slice(0, 6)} — {d.status}
+              </span>
+              <button type="button" onClick={() => act({ action: "resolveTitleDispute", disputeId: d.id }, t.play.committed)}>
+                {t.play.resolveTitleDispute}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="kvt-playactions">
         <button type="button" onClick={() => act({ action: "takeLoan", amount: 100 }, t.play.committed)}>
           {t.play.takeLoan}
@@ -702,7 +840,42 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         <button type="button" onClick={() => act({ action: "deposit", amount: 50, kind: "vault" }, t.play.committed)}>
           {t.play.vault} +50
         </button>
+        <button
+          type="button"
+          disabled={!state.target}
+          onClick={() => act({ action: "openEscrow", toId: state.target, amount: 50, condition: "trade" }, t.play.committed)}
+        >
+          {t.play.openEscrow}
+        </button>
+        <button
+          type="button"
+          disabled={!state.target}
+          onClick={() => act({ action: "peerLoan", borrowerId: state.target, principal: 100, interestRate: 5, days: 30 }, t.play.committed)}
+        >
+          {t.play.peerLoan}
+        </button>
       </div>
+
+      <h3>{t.play.peerLoans}</h3>
+      {state.peerLoans.length === 0 ? (
+        <p>{t.play.noPeerLoans}</p>
+      ) : (
+        <ul className="kvt-peerloans">
+          {state.peerLoans.map((l) => (
+            <li key={l.id}>
+              <span>
+                {t.play.borrower}: {l.borrowerId.slice(0, 6)} — {t.play.outstanding}: {l.outstanding} {t.play.gold}
+              </span>
+              <button type="button" onClick={() => act({ action: "repayPeerLoan", loanId: l.id }, t.play.committed)}>
+                {t.play.repayPeerLoan}
+              </button>
+              <button type="button" onClick={() => act({ action: "collectDefault", loanId: l.id }, t.play.committed)}>
+                {t.play.collectDefault}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {state.escrows.length > 0 && (
         <ul className="kvt-escrow">
           {state.escrows.map((e) => (
@@ -744,6 +917,16 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
               <button type="button" onClick={() => act({ action: "openBranch", companyId: c.id, settlementId: character.current_settlement ?? "varkhenn-drahkmar" }, t.play.committed)}>
                 {t.play.openBranch}
               </button>
+              <button
+                type="button"
+                disabled={!state.target}
+                onClick={() => act({ action: "addPartner", companyId: c.id, partnerId: state.target, share: 10 }, t.play.committed)}
+              >
+                {t.play.addPartner}
+              </button>
+              <button type="button" onClick={() => act({ action: "acquireCompany", companyId: c.id, allPartnersAgree: true }, t.play.committed)}>
+                {t.play.acquireCompany}
+              </button>
             </li>
           ))}
         </ul>
@@ -764,6 +947,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           <div className="kvt-playactions">
             <button type="button" onClick={() => act({ action: "collectRent" }, t.play.committed)}>
               {t.play.collectRent}
+            </button>
+            <button type="button" onClick={() => act({ action: "autoForecloseTaxes" }, t.play.committed)}>
+              {t.play.autoForecloseTaxes}
             </button>
           </div>
         </>
@@ -795,16 +981,97 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
               ))}
             </ul>
           )}
-          {state.notifications.backgroundSummary && <p className="kvt-notif-bg">{state.notifications.backgroundSummary}</p>}
+          {state.notifications.backgroundSummary && (
+            <p className="kvt-notif-bg">
+              <strong>{t.play.backgroundEvents}:</strong> {state.notifications.backgroundSummary}
+            </p>
+          )}
+          {notifVisible.some((n) => !n.read) && (
+            <button
+              type="button"
+              onClick={() => {
+                void client
+                  .markNotificationsRead(token, notifVisible.filter((n) => !n.read).map((n) => n.id))
+                  .then(() => load());
+              }}
+            >
+              {t.play.markAllRead}
+            </button>
+          )}
         </section>
       )}
 
       <h3>{t.play.multiplayer}</h3>
+      <div className="kvt-playactions">
+        <button
+          type="button"
+          disabled={!state.target}
+          onClick={() => act({ action: "offerTrade", toId: state.target, offerGold: 20, offerItems: [], requestGold: 0, requestItems: [] }, t.play.committed)}
+        >
+          {t.play.offerTrade}
+        </button>
+        <button type="button" onClick={() => act({ action: "createAlliance", name: "Kül Paktı" }, t.play.committed)}>
+          {t.play.createAlliance}
+        </button>
+        <button
+          type="button"
+          disabled={!state.target}
+          onClick={() => act({ action: "joinAlliance", allianceId: state.target }, t.play.committed)}
+        >
+          {t.play.joinAlliance}
+        </button>
+      </div>
+
+      <h3>{t.play.kingdoms}</h3>
+      <ul className="kvt-relations-list">
+        {state.relations.map((r) => (
+          <li key={`${r.fromKingdomId}-${r.toKingdomId}`}>
+            <span>
+              {r.fromKingdomId} → {r.toKingdomId}: {r.stance} ({r.affinity})
+            </span>
+            <button type="button" onClick={() => act({ action: "formAlliance", fromKingdomId: r.fromKingdomId, toKingdomId: r.toKingdomId }, t.play.committed)}>
+              {t.play.formAlliance}
+            </button>
+            <button type="button" onClick={() => act({ action: "declareWar", fromKingdomId: r.fromKingdomId, toKingdomId: r.toKingdomId }, t.play.committed)}>
+              {t.play.declareWar}
+            </button>
+            <button type="button" onClick={() => act({ action: "makePeace", fromKingdomId: r.fromKingdomId, toKingdomId: r.toKingdomId }, t.play.committed)}>
+              {t.play.makePeace}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <h3>{t.play.motions}</h3>
+      {state.motions.length === 0 ? (
+        <p>{t.play.noMotions}</p>
+      ) : (
+        <ul className="kvt-motions">
+          {state.motions.map((m) => (
+            <li key={m.id}>
+              <span>
+                {m.title} — {m.status} ({m.yesWeight}/{m.noWeight})
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="kvt-playactions">
+        <button type="button" onClick={() => act({ action: "councilMotion", title: "Vergi Artışı", quorum: 3 }, t.play.committed)}>
+          {t.play.councilMotion}
+        </button>
+        <button type="button" onClick={() => act({ action: "resignOffice" }, t.play.committed)} disabled={!state.office}>
+          {t.play.resignOffice}
+        </button>
+      </div>
+
       {state.alliance && (
         <p className="kvt-alliance">
           {t.play.alliance}: {state.alliance.name} ({state.alliance.members.length})
         </p>
       )}
+      <h3>{t.play.pendingOffers}</h3>
+      {state.trades.length === 0 && <p>{t.play.noTrades}</p>}
       {state.trades.length > 0 && (
         <ul className="kvt-trades">
           {state.trades.map((tr) => (
@@ -884,7 +1151,18 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         >
           {t.play.haveChild}
         </button>
+        <button
+          type="button"
+          onClick={() => act({ action: "recordChild", name: "Çocuk", parentAttention: 60, wetNurseQuality: 60 }, t.play.committed)}
+          disabled={!play.health.alive}
+        >
+          {t.play.recordChild}
+        </button>
+        <button type="button" onClick={() => act({ action: "recordDeath", note: "yaşlılık" }, t.play.committed)}>
+          {t.play.recordDeath}
+        </button>
       </div>
+
 
       <h3>{t.play.chat} — {t.play.globalChannel}</h3>
       {state.chat.length === 0 && <p>{t.play.chatEmpty}</p>}

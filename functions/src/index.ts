@@ -137,6 +137,7 @@ import {
   allianceStatus,
 } from "./play/multiplayer-extras";
 import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
+import { playerDirectory } from "./play/directory";
 import {
   childList,
   performRecordChild,
@@ -510,12 +511,13 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     "SELECT current_settlement FROM characters WHERE id = ?",
     params.characterId!,
   ))?.current_settlement?.split("-")[0] ?? "varkhenn";
-  const [trades, alliance, children, relations, motions] = await Promise.all([
+  const [trades, alliance, children, relations, motions, directory] = await Promise.all([
     tradeOffers(env.DB, params.characterId!),
     allianceStatus(env.DB, params.characterId!),
     childList(env.DB, params.characterId!),
     kingdomRelations(env.DB),
     motionList(env.DB, kingdomId),
+    playerDirectory(env.DB, params.characterId!, 50),
   ]);
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
@@ -553,6 +555,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     children,
     relations,
     motions,
+    directory,
     storage,
     diplomacy: await diplomacyStances(),
   });

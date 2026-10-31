@@ -74,6 +74,9 @@ const stateResponse = {
   motions: [],
   notifications: null,
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
+  directory: [
+    { characterId: "ch-2", givenName: "Mira", surname: "Sol", currentSettlement: "aurelith-velmora", ageYears: 20, generation: 1 },
+  ],
 };
 
 describe("PlayPanel", () => {
@@ -341,6 +344,41 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     await userEvent.click(screen.getByRole("button", { name: `${t.play.markRead}: Takas teklifi geldi` }));
     await waitFor(() => expect(sent).toHaveLength(1));
     expect((sent[0] as { ids: string[] }).ids).toEqual(["n1"]);
+  });
+
+  it("hedef secici diger oyunculari listeler ve takas teklifi gonderir (belge 16)", async () => {
+    const sent: string[] = [];
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.endsWith("/action")) {
+        const body = JSON.parse(String(init?.body)) as { action: string; toId?: string };
+        sent.push(body.action);
+        if (body.action === "offerTrade") expect(body.toId).toBe("ch-2");
+        return json({ ok: true, state: playState(), detail: {} });
+      }
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    const select = screen.getByLabelText(t.play.target) as HTMLSelectElement;
+    await userEvent.selectOptions(select, "ch-2");
+    await userEvent.click(screen.getByRole("button", { name: t.play.offerTrade }));
+    await waitFor(() => expect(sent).toContain("offerTrade"));
+  });
+
+  it("portre ve esya ikonlarini gosterir (belge 17)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      return json({}, 404);
+    });
+    const { container } = render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    const portrait = container.querySelector("img.kvt-portrait") as HTMLImageElement;
+    expect(portrait).toBeTruthy();
+    expect(portrait.getAttribute("src")).toMatch(/^\/assets\/portraits\/pool-\d\d\.webp$/);
+    const icon = container.querySelector("img.kvt-itemicon") as HTMLImageElement;
+    expect(icon).toBeTruthy();
+    expect(icon.getAttribute("src")).toBe("/assets/icons/heart.webp");
   });
 
   it("görevi başlatma aksiyonu gönderir", async () => {

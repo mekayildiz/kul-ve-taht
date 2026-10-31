@@ -12,7 +12,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build -w @kvt/app && npm run build -w @kvt/functions",
+    "build": "npm run sync:assets && npm run build -w @kvt/app && npm run build -w @kvt/functions",
     "typecheck": "npm run typecheck -w @kvt/app && npm run typecheck -w @kvt/functions",
     "lint": "eslint .",
     "test": "vitest run",
@@ -25,7 +25,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply kul-ve-taht-db --remote --config functions/wrangler.toml",
     "deploy:api": "wrangler deploy --config functions/wrangler.toml",
     "deploy:web": "npm run build -w @kvt/app && wrangler pages deploy app/dist --project-name kul-ve-taht",
-    "dev:api": "wrangler dev --local --config functions/wrangler.toml"
+    "dev:api": "wrangler dev --local --config functions/wrangler.toml",
+    "sync:assets": "node scripts/sync-assets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

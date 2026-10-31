@@ -411,6 +411,15 @@ export interface ChatResponse {
   messages: ChatMessageDto[];
 }
 
+export interface PlayerSummaryDto {
+  characterId: string;
+  givenName: string;
+  surname: string;
+  currentSettlement: string | null;
+  ageYears: number;
+  generation: number;
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
   items: ItemDefDto[];
@@ -439,6 +448,7 @@ export interface PlayStateResponse {
   motions: MotionDto[];
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
+  directory: PlayerSummaryDto[];
 }
 
 export interface StorageDto {

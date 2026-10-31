@@ -219,3 +219,53 @@ body {
   font-weight: 600;
   padding-bottom: 4px;
 }
+
+/* Portre, esya ikonlari ve veri tasarrufu (belge 17). */
+.kvt-portrait-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kvt-portrait {
+  border: 2px solid var(--kvt-brown);
+  border-radius: 8px;
+  background: #1b1512;
+}
+
+.kvt-datasaver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.kvt-itemicon {
+  vertical-align: middle;
+  margin-right: 6px;
+  border-radius: 4px;
+}
+
+/* Hedef secici, karsilikli krediler, uyusmazlik ve onerge listeleri (belge 9, 11, 16). */
+.kvt-target {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.kvt-peerloans li,
+.kvt-disputes li,
+.kvt-motions li,
+.kvt-relations-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kvt-notifications button {
+  margin-top: 6px;
+}

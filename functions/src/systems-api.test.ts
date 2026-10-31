@@ -922,6 +922,22 @@ describe("Cok oyunculu: takas, ittifak, savas (belge 11, 16)", () => {
   });
 });
 
+describe("Oyuncu rehberi (belge 16)", () => {
+  const env = makeEnv();
+
+  it("durum yuku diger canli oyunculari hedef listesinde doner", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    const st = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    expect(Array.isArray(st.directory)).toBe(true);
+    const entry = st.directory.find((d: any) => d.characterId === b.characterId);
+    expect(entry).toBeTruthy();
+    expect(entry.givenName).toBe("Kael");
+    // Istekte bulunan karakterin kendisi listede yer almaz.
+    expect(st.directory.some((d: any) => d.characterId === a.characterId)).toBe(false);
+  });
+});
+
 describe("Cocuk gelisimi ve konsey (belge 7.3, 11)", () => {
   const env = makeEnv();
 

@@ -5,3 +5,6 @@ coverage/
 *.log
 .DS_Store
 .agent_tmp/
+
+# Uretilen gorsel varlik kopyasi (kaynak: assets/, sync-assets.mjs ile uretilir)
+app/public/assets/

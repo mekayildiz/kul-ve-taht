@@ -166,3 +166,17 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 - [x] E9.16 Yönetici arayüzleri (belge 20): bütçe/kota, pazar izleme, kullanıcı/karakter yönetimi panelleri — `functions/src/admin/console.ts` (+ test), `app/src/screens/AdminPanel.tsx` (+ 3 test), `/api/admin/*`, App kabuğu yönetim düğmesi
 - [x] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi + okundu işaretleme, öncelik eşiği/arka plan özeti, klavye erişimi, `aria-label`/`role="alert"`, tablo `scope` başlıkları — `PlayPanel.tsx`, `AdminPanel.tsx`, `client.notifications()`
 - [x] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük benzetimi, kota kullanım raporu, D1→R2 dump ve veri kayıpsız geri yükleme provası — `scripts/load-restore-rehearsal.mjs` (`npm run rehearsal:load-restore`; 88 tablo, 141 satır, veri kaybı yok, ücretsiz limit içinde)
+### P4 – Sunucu aksiyonlarının arayüze bağlanması (belge 9, 11, 16, 17, 19)
+
+Arka uçta var olan ancak arayüzde düğmesi/paneli bulunmayan aksiyonlar
+tamamlandı. Her düğme gerçek `/api/play/:id/action` çağrısı yapar ve testle
+doğrulanır (belge 20 teslim kriteri). Ayrıca statik görseller arayüze bağlandı.
+
+- [x] E9.19 Oyuncu rehberi (belge 16): hedefli işlemler (takas, karşılıklı kredi, emanet, tapu uyuşmazlığı, ortaklık, evlilik) için diğer canlı karakterlerin listesi; yalnızca herkese açık alanlar — `functions/src/play/directory.ts` (+ test), `/api/play/:id/state.directory`, `PlayPanel.tsx` hedef seçici
+- [x] E9.20 Banka/finans arayüzü (belge 20): emanet açma, karşılıklı kredi verme/geri ödeme, temerrüt tahsili düğmeleri + karşılıklı kredi listesi — `PlayPanel.tsx` (banka paneli), i18n TR+EN
+- [x] E9.21 Mülk arayüzü (belge 9.3): kiraya verme, haciz, tapu uyuşmazlığı açma/çözme, vergi haczi; tapu uyuşmazlığı listesi — `PlayPanel.tsx` (mülk paneli)
+- [x] E9.22 Şirket arayüzü (belge 20): ortak ekleme ve devralma (birleşme/satın alma) düğmeleri — `PlayPanel.tsx` (şirket paneli)
+- [x] E9.23 Çok oyunculu ve siyaset arayüzü (belge 11, 16): takas teklifi, ittifak oluşturma/katılma, savaş ilanı/barış, konsey önergesi, makamdan çekilme — `PlayPanel.tsx`, krallık ilişkileri ve önerge listeleri
+- [x] E9.24 Yaşam, aile ve grup arayüzü (belge 7.3, 10): yemek, seyahat, çocuk kaydı, ölüm kaydı, gruba katılma — `PlayPanel.tsx`
+- [x] E9.25 Görsel varlık tüketimi — oyun içi (belge 17): portre (karakter kimliğine göre havuzdan), envanter eşya ikonları, veri tasarrufu anahtarı (96/64px türev) — `PlayPanel.tsx`, `scripts/sync-assets.mjs` (assets/ → app/public/assets/), `app/src/styles.css`
+- [x] E9.26 Bildirim geçmişi iyileştirmesi (belge 19): arka plan olay başlığı + tümünü okundu işaretle — `PlayPanel.tsx`
