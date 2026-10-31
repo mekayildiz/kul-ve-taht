@@ -17,6 +17,10 @@ import { planTravel, lodgingCost, type TravelConditions } from "../travel/travel
 import { explore, type ExplorationSite, EXPLORATION_SITES } from "../quests/system";
 import { buyPrice, sellPrice, type MarketState } from "../economy/market";
 import { SETTLEMENTS } from "../world/settlements";
+import { KINGDOMS } from "../world/kingdoms";
+import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, type CropId, type Season, type Weather } from "../livelihood/production";
+import { GUILDS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
+import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
 
 export interface PlayState {
   characterId: string;
@@ -28,6 +32,14 @@ export interface PlayState {
   weapon: string;
   weaponMastery: number;
   strength: number;
+  /** Buyu ustalik seviyesi (belge 13.1). */
+  magicLevel: number;
+  /** Buyu enerjisi (mana). */
+  energy: number;
+  /** Ogrenilmis buyu yollari. */
+  magicPaths: MagicPath[];
+  /** Yeralti itibari (belge 13.4). */
+  underworldRep: number;
 }
 
 export type PlayError =
@@ -61,6 +73,10 @@ async function loadState(db: SqlDatabase, characterId: string, nowMs: number): P
     reputation: number;
     weapon: string;
     weapon_mastery: number;
+    magic_level: number;
+    energy: number;
+    magic_paths_json: string;
+    underworld_rep: number;
   }>(db, "SELECT * FROM character_state WHERE character_id = ?", characterId);
 
   if (!row) {
@@ -77,6 +93,10 @@ async function loadState(db: SqlDatabase, characterId: string, nowMs: number): P
       weapon: "unarmed",
       weaponMastery: 0,
       strength: 8,
+      magicLevel: 0,
+      energy: 100,
+      magicPaths: [],
+      underworldRep: 0,
     };
     await saveState(db, fresh, nowMs);
     return fresh;
@@ -97,18 +117,24 @@ async function loadState(db: SqlDatabase, characterId: string, nowMs: number): P
     weapon: row.weapon,
     weaponMastery: row.weapon_mastery,
     strength: attr?.strength ?? 8,
+    magicLevel: row.magic_level ?? 0,
+    energy: row.energy ?? 100,
+    magicPaths: JSON.parse(row.magic_paths_json ?? "[]") as MagicPath[],
+    underworldRep: row.underworld_rep ?? 0,
   };
 }
 
 async function saveState(db: SqlDatabase, state: PlayState, nowMs: number): Promise<void> {
   await execute(
     db,
-    `INSERT INTO character_state (character_id, health_json, inventory_json, gold, debts, reputation, weapon, weapon_mastery, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?)
+    `INSERT INTO character_state (character_id, health_json, inventory_json, gold, debts, reputation, weapon, weapon_mastery, magic_level, energy, magic_paths_json, underworld_rep, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(character_id) DO UPDATE SET
        health_json=excluded.health_json, inventory_json=excluded.inventory_json, gold=excluded.gold,
        debts=excluded.debts, reputation=excluded.reputation, weapon=excluded.weapon,
-       weapon_mastery=excluded.weapon_mastery, updated_at=excluded.updated_at`,
+       weapon_mastery=excluded.weapon_mastery, magic_level=excluded.magic_level, energy=excluded.energy,
+       magic_paths_json=excluded.magic_paths_json, underworld_rep=excluded.underworld_rep,
+       updated_at=excluded.updated_at`,
     state.characterId,
     JSON.stringify(state.health),
     JSON.stringify(state.inventory),
@@ -117,6 +143,10 @@ async function saveState(db: SqlDatabase, state: PlayState, nowMs: number): Prom
     state.reputation,
     state.weapon,
     state.weaponMastery,
+    state.magicLevel,
+    state.energy,
+    JSON.stringify(state.magicPaths),
+    state.underworldRep,
     nowMs,
   );
 }
@@ -357,4 +387,319 @@ export function marketQuote(itemId: string): { buy: number; sell: number; base: 
 
 export function lodgingQuote(settlementKind: string, nights: number): number {
   return lodgingCost(settlementKind, nights);
+}
+
+// --- Tarim, avcilik ve hayvancilik (E8, belge 12.3, 12.7) ---
+
+/** Ekim: mevsim/hava/toprak SUNUCUDA; tarla kalici duruma yazilir. */
+export async function performPlant(
+  db: SqlDatabase,
+  characterId: string,
+  crop: CropId,
+  season: Season,
+  weather: Weather,
+  soilQuality = 1,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const character = await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  );
+  const existing = await queryOne<{ ready_day: number; harvested: number }>(
+    db,
+    "SELECT ready_day, harvested FROM character_farm WHERE character_id = ?",
+    characterId,
+  );
+  if (existing && existing.harvested === 0) return { ok: false, error: "invalid_action", detail: { reason: "farm_busy" } };
+
+  const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
+  const gameDay = clock?.game_day ?? 1;
+  const result = plantCrop({ crop, season, weather, soilQuality, expertise: state.weaponMastery });
+  if (!result.ok) return { ok: false, error: "invalid_action", detail: { reason: result.reason } };
+
+  await execute(
+    db,
+    `INSERT INTO character_farm (character_id, crop, settlement_id, planted_day, ready_day, expected_yield, harvested, updated_at)
+     VALUES (?,?,?,?,?,?,0,?)
+     ON CONFLICT(character_id) DO UPDATE SET
+       crop=excluded.crop, settlement_id=excluded.settlement_id, planted_day=excluded.planted_day,
+       ready_day=excluded.ready_day, expected_yield=excluded.expected_yield, harvested=0,
+       updated_at=excluded.updated_at`,
+    characterId,
+    crop,
+    character?.current_settlement ?? null,
+    gameDay,
+    gameDay + result.growDays,
+    result.yieldAmount,
+    nowMs,
+  );
+  return { ok: true, state, detail: { crop, yield: result.yieldAmount, readyDay: gameDay + result.growDays } };
+}
+
+/** Hasat: yalnizca hazir oldugunda ve bir kez. Urun envantere eklenir. */
+export async function performHarvest(db: SqlDatabase, characterId: string, nowMs = Date.now()): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const farm = await queryOne<{ crop: string; ready_day: number; expected_yield: number; harvested: number }>(
+    db,
+    "SELECT crop, ready_day, expected_yield, harvested FROM character_farm WHERE character_id = ?",
+    characterId,
+  );
+  if (!farm || farm.harvested === 1) return { ok: false, error: "invalid_action", detail: { reason: "no_farm" } };
+  const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
+  if ((clock?.game_day ?? 1) < farm.ready_day) {
+    return { ok: false, error: "invalid_action", state, detail: { reason: "not_ready", readyDay: farm.ready_day } };
+  }
+  const itemId = farm.crop === "wheat" || farm.crop === "barley" ? "bread" : "dried-meat";
+  const capacity = carryCapacity(state.strength, hasMount(state.inventory));
+  const added = addItem(state.inventory, itemId, farm.expected_yield, capacity, state.strength, hasMount(state.inventory));
+  if (!added.ok) return { ok: false, error: "invalid_action", detail: { reason: "no_space" } };
+  state.inventory = added.entries!;
+  await execute(db, "UPDATE character_farm SET harvested = 1, updated_at = ? WHERE character_id = ?", nowMs, characterId);
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { itemId, quantity: farm.expected_yield } };
+}
+
+/** Av: ganimet ve yaralanma SUNUCUDA hesaplanir (belge 12.3). */
+export async function performHunt(
+  db: SqlDatabase,
+  characterId: string,
+  animal: AnimalId,
+  preparedness = 30,
+  roll = Math.random,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  if (!ANIMALS.some((a) => a.id === animal)) return { ok: false, error: "invalid_action" };
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  if (!state.health.alive) return { ok: false, error: "dead" };
+  const result = resolveHunt(animal, preparedness, state.weaponMastery, roll);
+  if (result.success) {
+    const capacity = carryCapacity(state.strength, hasMount(state.inventory));
+    for (const loot of result.loot) {
+      const added = addItem(state.inventory, loot.itemId, loot.quantity, capacity, state.strength, hasMount(state.inventory));
+      if (added.ok) state.inventory = added.entries!;
+    }
+  }
+  if (result.injury) {
+    state.health = {
+      ...state.health,
+      injuries: [
+        ...state.health.injuries,
+        {
+          id: crypto.randomUUID(),
+          kind: result.injury.kind,
+          severity: result.injury.severity,
+          bleeding: Math.round(result.injury.severity / 10),
+          infection: 0,
+          treated: false,
+          occurredGameDay: 0,
+        },
+      ],
+    };
+  }
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { animal, success: result.success, loot: result.loot, injury: result.injury } };
+}
+
+/** Evcillestirme: yem envanterden dusulur, hayvan kayda gecer (belge 12.3). */
+export async function performTame(
+  db: SqlDatabase,
+  characterId: string,
+  animal: AnimalId,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const hasFeed = state.inventory.some((e) => e.itemId === "bread" || e.itemId === "dried-meat");
+  const check = tameAnimal(animal, state.weaponMastery, hasFeed);
+  if (!check.ok) return { ok: false, error: "invalid_action", state, detail: { reason: check.reason } };
+  const removed = removeItem(state.inventory, "dried-meat", 1);
+  if (removed.ok) state.inventory = removed.entries!;
+  const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
+  await execute(
+    db,
+    "INSERT INTO character_livestock (id, character_id, animal, acquired_day, fed, updated_at) VALUES (?,?,?,?,1,?)",
+    crypto.randomUUID(),
+    characterId,
+    animal,
+    clock?.game_day ?? 1,
+    nowMs,
+  );
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { animal } };
+}
+
+// --- Buyu, tapinak, lonca ve sehir yasami (E8, belge 13, 15) ---
+
+/** Buyu ogrenme: kaynak, seviye ve krallik yasagi SUNUCUDA dogrulanir. */
+export async function performLearnSpell(
+  db: SqlDatabase,
+  characterId: string,
+  path: MagicPath,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const character = await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  );
+  const settlement = SETTLEMENTS.find((s) => s.id === character?.current_settlement);
+  const kingdomId = settlement?.kingdomId ?? "";
+  const hasBook = state.inventory.some((e) => e.itemId === "tome-of-medicine");
+  const hasMaster = Boolean(kingdomId && KINGDOMS.some((k) => k.id === kingdomId && k.resources.includes("Büyü bilgisi")));
+  const check = canLearnSpell(path, state.magicLevel, kingdomId, hasBook, hasMaster);
+  if (!check.ok) return { ok: false, error: "invalid_action", state, detail: { reason: check.reason } };
+  if (state.magicPaths.includes(path)) return { ok: false, error: "invalid_action", state, detail: { reason: "already_known" } };
+  state.magicPaths = [...state.magicPaths, path];
+  state.magicLevel += 1;
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { path, magicLevel: state.magicLevel } };
+}
+
+/** Buyu kullanma: enerji duser; sifa buyusu saglik/yaralari iyilestirir. */
+export async function performCastSpell(
+  db: SqlDatabase,
+  characterId: string,
+  spellId: string,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const result = castSpell(spellId, state.magicLevel, state.energy);
+  if (!result.ok) return { ok: false, error: "invalid_action", state, detail: { reason: result.reason } };
+  state.energy -= result.cost;
+  if (result.heals) {
+    state.health = {
+      ...state.health,
+      health: Math.min(100, state.health.health + result.power),
+      injuries: state.health.injuries.map((inj) => (inj.bleeding > 0 ? { ...inj, bleeding: Math.max(0, inj.bleeding - 2) } : inj)),
+    };
+  }
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { spellId, power: result.power, cost: result.cost } };
+}
+
+/** Karanlik sanat kullanimi krallikta suc sayilirsa kayda gecilir (belge 13.1). */
+export async function recordDarkMagicCrime(db: SqlDatabase, characterId: string, path: MagicPath): Promise<boolean> {
+  const character = await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  );
+  const settlement = SETTLEMENTS.find((s) => s.id === character?.current_settlement);
+  return settlement ? isDarkMagicCrime(path, settlement.kingdomId) : false;
+}
+
+/** Tapinak hizmeti: ucret dusulur, etki uygulanir (belge 13.2). */
+export async function performTempleService(
+  db: SqlDatabase,
+  characterId: string,
+  service: TempleService,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const check = templeService(service, state.gold);
+  if (!check.ok) return { ok: false, error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action" };
+  state.gold -= check.cost;
+  if (service === "healing") {
+    state.health = { ...state.health, health: Math.min(100, state.health.health + check.effect) };
+  } else if (service === "protection") {
+    state.reputation += check.effect;
+  } else if (service === "knowledge") {
+    state.weaponMastery += check.effect;
+  }
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { service, cost: check.cost } };
+}
+
+/** Lonca katilimi: aidat dusulur, uyelik kaydi olusur (belge 13.3). */
+export async function performJoinGuild(
+  db: SqlDatabase,
+  characterId: string,
+  guildId: string,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const check = canJoinGuild(guildId, state.weaponMastery, state.gold, state.reputation);
+  if (!check.ok) return { ok: false, error: check.reason === "cannot_afford_dues" ? "not_enough_gold" : "invalid_action", state, detail: { reason: check.reason } };
+  const guild = GUILDS.find((g) => g.id === guildId)!;
+  state.gold -= guild.dues;
+  state.reputation += 2;
+  await execute(
+    db,
+    "INSERT OR IGNORE INTO character_expertise (character_id, expertise, level) VALUES (?,?,?)",
+    characterId,
+    guild.profession,
+    1,
+  ).catch(() => undefined);
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { guildId, dues: guild.dues } };
+}
+
+/** Sehir etkinligi: kazanc/itibar SUNUCUDA; sans kumar/turnuvada (belge 15). */
+export async function performActivity(
+  db: SqlDatabase,
+  characterId: string,
+  kind: ActivityKind,
+  roll = Math.random,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const result = joinActivity(kind, state.gold, roll);
+  if (!result.ok) return { ok: false, error: "not_enough_gold", state, detail: { reason: result.reason } };
+  state.gold = Math.max(0, state.gold + result.goldDelta);
+  state.reputation += result.reputationDelta;
+  state.weaponMastery += result.xp;
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { kind, goldDelta: result.goldDelta, reputationDelta: result.reputationDelta, xp: result.xp } };
+}
+
+// --- Yeralti ve suc orgutleri (E8, belge 13.4) ---
+
+/** Yeralti eylemi: getiri, yakalanma ve suc kaydi SUNUCUDA (belge 13.4). */
+export async function performUnderworldAct(
+  db: SqlDatabase,
+  characterId: string,
+  action: UnderworldAction,
+  settlementSecurity = 50,
+  gangAffiliation = false,
+  roll = Math.random,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  const result = commitUnderworldAct(action, state.weaponMastery, settlementSecurity, gangAffiliation, roll);
+  if (!result.ok) return { ok: false, error: "invalid_action" };
+  state.gold += result.reward;
+  state.reputation += result.reputationDelta;
+  state.underworldRep += result.success ? 3 : 1;
+  await saveState(db, state, nowMs);
+  if (result.caught) {
+    await execute(
+      db,
+      `INSERT INTO world_event_log (id, event_type, settlement_id, severity, payload_json, game_day, created_at)
+       VALUES (?,?,?,?,?,?,?)`,
+      crypto.randomUUID(),
+      "crime",
+      null,
+      result.crimeSeverity,
+      JSON.stringify({ characterId, action, caught: true }),
+      0,
+      nowMs,
+    );
+  }
+  return {
+    ok: true,
+    state,
+    detail: { action, success: result.success, reward: result.reward, caught: result.caught, crimeSeverity: result.crimeSeverity },
+  };
 }

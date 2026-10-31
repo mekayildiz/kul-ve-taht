@@ -107,4 +107,60 @@ describe("PlayPanel", () => {
     await waitFor(() => expect(screen.getByText(t.play.deadBanner)).toBeTruthy());
     expect(screen.getByRole("button", { name: t.play.rest }).hasAttribute("disabled")).toBe(true);
   });
+
+  it("katalog geldiğinde tarım, büyü ve yeraltı panellerini gösterir (E8)", async () => {
+    const catalog = {
+      crops: [{ id: "wheat", name: "Buğday", season: "spring" }],
+      livestock: [{ id: "cattle", name: "Sığır" }],
+      animals: [{ id: "deer", name: "Geyik" }],
+      magicPaths: [{ id: "elemental", name: "Element Büyücülüğü", outlawedIn: [] }],
+      spells: [{ id: "flame-bolt", name: "Alev Oku", path: "elemental", level: 1 }],
+      guilds: [{ id: "smiths", name: "Demirciler Loncası", dues: 15 }],
+      activities: [{ kind: "festival", name: "Festival", cost: 5 }],
+      templeServices: [{ service: "healing", cost: 10 }],
+      underworldActions: [{ action: "theft", name: "Hırsızlık" }],
+    };
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path === "/api/catalog") return json(catalog);
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Buğday")).toBeTruthy());
+    expect(screen.getByText("Geyik")).toBeTruthy();
+    expect(screen.getByText("Element Büyücülüğü")).toBeTruthy();
+    expect(screen.getByText(/Demirciler Loncası/)).toBeTruthy();
+    expect(screen.getByText("Hırsızlık")).toBeTruthy();
+  });
+
+  it("ekim aksiyonu sunucuya doğru gövdeyle gider (E8)", async () => {
+    const catalog = {
+      crops: [{ id: "wheat", name: "Buğday", season: "spring" }],
+      livestock: [],
+      animals: [],
+      magicPaths: [],
+      spells: [],
+      guilds: [],
+      activities: [],
+      templeServices: [],
+      underworldActions: [],
+    };
+    let sent: Record<string, unknown> | null = null;
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path === "/api/catalog") return json(catalog);
+      if (path.endsWith("/action")) {
+        sent = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return json({ ok: true, state: playState(), detail: {} });
+      }
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Buğday")).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: t.play.plant }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent!.action).toBe("plant");
+    expect(sent!.crop).toBe("wheat");
+    expect(sent!.season).toBe("spring");
+  });
 });

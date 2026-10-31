@@ -3,6 +3,7 @@ import type { Dictionary } from "../i18n";
 import {
   ApiClient,
   ApiRequestError,
+  type CatalogDto,
   type CharacterDto,
   type ItemDefDto,
   type PlayAction,
@@ -22,6 +23,7 @@ interface State {
   items: ItemDefDto[];
   recipes: RecipeDto[];
   sites: string[];
+  catalog: CatalogDto | null;
   message: string | null;
   error: string | null;
   loading: boolean;
@@ -35,6 +37,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     items: [],
     recipes: [],
     sites: [],
+    catalog: null,
     message: null,
     error: null,
     loading: true,
@@ -42,14 +45,14 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const load = useCallback(() => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
-    client
-      .playState(token, character.id)
-      .then((res) => {
+    Promise.all([client.playState(token, character.id), client.catalog().catch(() => null)])
+      .then(([res, catalog]) => {
         setState({
           play: res.state,
           items: res.items,
           recipes: res.recipes,
           sites: res.explorationSites,
+          catalog,
           message: null,
           error: null,
           loading: false,
@@ -228,6 +231,150 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           </li>
         ))}
       </ul>
+
+      {state.catalog && (
+        <>
+          <h3>
+            {t.play.farm} · {t.play.magic} ({t.play.magicLevel}: {play.magicLevel}, {t.play.energy}: {play.energy})
+          </h3>
+          <ul className="kvt-farm">
+            {state.catalog.crops.slice(0, 4).map((crop) => (
+              <li key={crop.id}>
+                <span>{crop.name}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    act({ action: "plant", crop: crop.id, season: crop.season, weather: "clear" }, t.play.planted)
+                  }
+                  disabled={!play.health.alive}
+                >
+                  {t.play.plant}
+                </button>
+              </li>
+            ))}
+            <li>
+              <span>{t.play.harvest}</span>
+              <button type="button" onClick={() => act({ action: "harvest" }, t.play.harvested)} disabled={!play.health.alive}>
+                {t.play.harvest}
+              </button>
+            </li>
+          </ul>
+
+          <h3>{t.play.hunt}</h3>
+          <ul className="kvt-hunt">
+            {state.catalog.animals.map((animal) => (
+              <li key={animal.id}>
+                <span>{animal.name}</span>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "hunt", animal: animal.id, preparedness: 40 }, t.play.hunted)}
+                  disabled={!play.health.alive}
+                >
+                  {t.play.hunt}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "tame", animal: animal.id }, t.play.tamed)}
+                  disabled={!play.health.alive}
+                >
+                  {t.play.tame}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.play.magic}</h3>
+          <ul className="kvt-magic">
+            {state.catalog.magicPaths.map((path) => (
+              <li key={path.id}>
+                <span>{path.name}</span>
+                <button type="button" onClick={() => act({ action: "learnSpell", path: path.id }, t.play.learned)}>
+                  {t.play.learnSpell}
+                </button>
+              </li>
+            ))}
+            {state.catalog.spells.slice(0, 4).map((spell) => (
+              <li key={spell.id}>
+                <span>
+                  {spell.name} (L{spell.level})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "castSpell", spellId: spell.id }, t.play.cast)}
+                  disabled={!play.health.alive}
+                >
+                  {t.play.castSpell}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.play.temple}</h3>
+          <ul className="kvt-temple">
+            {state.catalog.templeServices.map((svc) => (
+              <li key={svc.service}>
+                <span>
+                  {svc.service} — {svc.cost} {t.play.gold}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "temple", service: svc.service as "healing" }, t.play.served)}
+                >
+                  {t.play.temple}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.play.guild}</h3>
+          <ul className="kvt-guild">
+            {state.catalog.guilds.map((guild) => (
+              <li key={guild.id}>
+                <span>
+                  {guild.name} — {guild.dues} {t.play.gold}
+                </span>
+                <button type="button" onClick={() => act({ action: "joinGuild", guildId: guild.id }, t.play.joined)}>
+                  {t.play.joinGuild}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.play.activities}</h3>
+          <ul className="kvt-activities">
+            {state.catalog.activities.map((activity) => (
+              <li key={activity.kind}>
+                <span>
+                  {activity.name} — {activity.cost} {t.play.gold}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "activity", kind: activity.kind }, t.play.committed)}
+                  disabled={!play.health.alive}
+                >
+                  {t.play.activities}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.play.underworld}</h3>
+          <ul className="kvt-underworld">
+            {state.catalog.underworldActions.map((ua) => (
+              <li key={ua.action}>
+                <span>{ua.name}</span>
+                <button
+                  type="button"
+                  onClick={() => act({ action: "underworld", underworldAction: ua.action, security: 50 }, t.play.committed)}
+                  disabled={!play.health.alive}
+                >
+                  {t.play.underworld}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

@@ -30,12 +30,25 @@ import {
   performTrade,
   performTreat,
   performTreatDisease,
+  performPlant,
+  performHarvest,
+  performHunt,
+  performTame,
+  performLearnSpell,
+  performCastSpell,
+  performTempleService,
+  performJoinGuild,
+  performActivity,
+  performUnderworldAct,
   marketQuote,
   lodgingQuote,
 } from "./play/service";
 import { ITEMS } from "./inventory/items";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
+import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
+import { MAGIC_PATHS, SPELLS, GUILDS, ACTIVITIES, TEMPLE_SERVICES } from "./magic/lore";
+import { UNDERWORLD_ACTIONS } from "./underworld/gangs";
 import {
   ASSET_CATALOG,
   portraitPoolCatalog,
@@ -337,6 +350,54 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
     case "treatDisease":
       result = await performTreatDisease(env.DB, characterId, String(body?.diseaseId ?? ""), Number(body?.quality ?? 50));
       break;
+    case "plant":
+      result = await performPlant(
+        env.DB,
+        characterId,
+        String(body?.crop ?? "wheat") as "wheat" | "barley" | "vegetable" | "fruit",
+        (body?.season as "spring" | "summer" | "autumn" | "winter") ?? "spring",
+        (body?.weather as "clear" | "rain" | "storm" | "fog" | "snow" | "heat") ?? "clear",
+        Number(body?.soilQuality ?? 1),
+      );
+      break;
+    case "harvest":
+      result = await performHarvest(env.DB, characterId);
+      break;
+    case "hunt":
+      result = await performHunt(
+        env.DB,
+        characterId,
+        String(body?.animal ?? "deer") as "wolf" | "bear" | "deer" | "boar" | "fox",
+        Number(body?.preparedness ?? 30),
+      );
+      break;
+    case "tame":
+      result = await performTame(env.DB, characterId, String(body?.animal ?? "fox") as "wolf" | "bear" | "deer" | "boar" | "fox");
+      break;
+    case "learnSpell":
+      result = await performLearnSpell(env.DB, characterId, String(body?.path ?? "elemental") as "elemental" | "spirit_caller" | "shamanism");
+      break;
+    case "castSpell":
+      result = await performCastSpell(env.DB, characterId, String(body?.spellId ?? ""));
+      break;
+    case "temple":
+      result = await performTempleService(env.DB, characterId, String(body?.service ?? "healing") as "healing" | "knowledge" | "shelter" | "protection");
+      break;
+    case "joinGuild":
+      result = await performJoinGuild(env.DB, characterId, String(body?.guildId ?? ""));
+      break;
+    case "activity":
+      result = await performActivity(env.DB, characterId, String(body?.kind ?? "tavern") as "tavern" | "market" | "tournament" | "festival" | "fair" | "gambling");
+      break;
+    case "underworld":
+      result = await performUnderworldAct(
+        env.DB,
+        characterId,
+        String(body?.underworldAction ?? "theft") as "theft" | "smuggling" | "fraud" | "assassination" | "black_market",
+        Number(body?.security ?? 50),
+        Boolean(body?.gangAffiliation),
+      );
+      break;
     default:
       return error("invalid_action", "Bilinmeyen aksiyon.", 400);
   }
@@ -344,6 +405,21 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
   if (!result.ok) return playError(result);
   return json({ ok: true, state: result.state, detail: result.detail });
 });
+
+/** Sistem katalogu: oyun icindeki tum veri setleri (istemci kesfi icin). */
+router.get("/api/catalog", () =>
+  json({
+    crops: CROPS,
+    livestock: LIVESTOCK,
+    animals: ANIMALS,
+    magicPaths: MAGIC_PATHS,
+    spells: SPELLS,
+    guilds: GUILDS,
+    activities: ACTIVITIES,
+    templeServices: TEMPLE_SERVICES,
+    underworldActions: UNDERWORLD_ACTIONS,
+  }),
+);
 
 router.get("/api/admin/quota", async ({ request, env }: Ctx) => {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";

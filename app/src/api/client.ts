@@ -116,6 +116,10 @@ export interface PlayStateDto {
   weapon: string;
   weaponMastery: number;
   strength: number;
+  magicLevel: number;
+  energy: number;
+  magicPaths: string[];
+  underworldRep: number;
 }
 
 export interface PlayStateResponse {
@@ -134,7 +138,30 @@ export type PlayAction =
   | { action: "explore"; site: string; preparedness: number }
   | { action: "trade"; itemId: string; quantity: number; side: "buy" | "sell" }
   | { action: "treat"; injuryId: string; method: "bandage" | "herb" | "surgery" | "rest"; quality: number }
-  | { action: "treatDisease"; diseaseId: string; quality: number };
+  | { action: "treatDisease"; diseaseId: string; quality: number }
+  | { action: "plant"; crop: string; season: string; weather: string; soilQuality?: number }
+  | { action: "harvest" }
+  | { action: "hunt"; animal: string; preparedness: number }
+  | { action: "tame"; animal: string }
+  | { action: "learnSpell"; path: string }
+  | { action: "castSpell"; spellId: string }
+  | { action: "temple"; service: "healing" | "knowledge" | "shelter" | "protection" }
+  | { action: "joinGuild"; guildId: string }
+  | { action: "activity"; kind: string }
+  | { action: "underworld"; underworldAction: string; security?: number; gangAffiliation?: boolean };
+
+/** Sistem katalogu (E8): istemci hangi mahsul, buyu, lonca ve etkinliklerin oldugunu buradan ogrenir. */
+export interface CatalogDto {
+  crops: { id: string; name: string; season: string }[];
+  livestock: { id: string; name: string }[];
+  animals: { id: string; name: string }[];
+  magicPaths: { id: string; name: string; outlawedIn: string[] }[];
+  spells: { id: string; name: string; path: string; level: number }[];
+  guilds: { id: string; name: string; dues: number }[];
+  activities: { kind: string; name: string; cost: number }[];
+  templeServices: { service: string; cost: number }[];
+  underworldActions: { action: string; name: string }[];
+}
 
 export interface PlayActionResult {
   ok: boolean;
@@ -250,5 +277,10 @@ export class ApiClient {
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify(action),
     });
+  }
+
+  /** Sistem katalogu (E8): mahsul, buyu, lonca, etkinlik ve yeralti listeleri. */
+  catalog(): Promise<CatalogDto> {
+    return this.request("/api/catalog");
   }
 }
