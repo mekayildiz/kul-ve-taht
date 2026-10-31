@@ -1,11 +1,51 @@
-# Kul ve Taht - Cloudflare Workers / Durable Objects / Workflows
-# YALNIZCA Workers Free plan ozellikleri. Ucretli plan ozelligi ETKIN DEGIL.
-# Bkz. docs/arac-kaydi.md ve docs/kota-butcesi.md
+# Kul ve Taht - Cloudflare Workers / Durable Objects / Workflows / D1 / R2
+#
+# YALNIZCA Workers FREE plan ozellikleri. Ucretli plana gecis tetikleyen
+# hicbir ayar yoktur. Yerel gelistirme (`wrangler dev`) Miniflare ile
+# D1/R2/DO/Workflows'i HESAP GEREKTIRMEDEN ve UCRETSIZ emule eder.
+#
+# Bkz. docs/kota-butcesi.md ve docs/karar-kayitlari.md (ADR-010).
+
 name = "kul-ve-taht-functions"
 main = "src/index.ts"
 compatibility_date = "2026-10-31"
 compatibility_flags = ["nodejs_compat"]
 
-# Not: D1 binding, R2 binding, Durable Object ve Workflow tanimlari
-# E1.2'de (Cloudflare ucretsiz katman yapilandirmasi) eklenecek.
-# Burada yalnizca iskelet ve plan notlari bulunur; hicbir ucretli ozellik yoktur.
+# --- D1 (SQLite) - yerel: .wrangler/state altinda emule edilir ---
+[[d1_databases]]
+binding = "DB"
+database_name = "kul-ve-taht-db"
+database_id = "local-kul-ve-taht-db"
+migrations_dir = "../db/migrations"
+
+# --- R2 (yedek ve gorsel depolama) ---
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "kul-ve-taht-backups"
+
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "kul-ve-taht-assets"
+
+# --- Durable Objects (parola hash kapisi; SQLite arka uc = Free plan) ---
+[[durable_objects.bindings]]
+name = "PASSWORD_HASH_GATE"
+class_name = "PasswordHashGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PasswordHashGate"]
+
+# --- Workflows (D1 -> R2 yedekleme) ---
+[[workflows]]
+name = "d1-backup"
+binding = "BACKUP_WORKFLOW"
+class_name = "BackupWorkflow"
+
+# --- Free plan sinirlari icinde kalma ---
+# Workers: 100.000 istek/gun, 10 ms CPU
+# D1: 5M okuma/gun, 100K yazma/gun, 5 GB
+# DO: 100.000 istek/gun, 13.000 GB-s/gun
+# Workflows: 3.000 adim/gun, 1 GB-ay
+[observability]
+enabled = true

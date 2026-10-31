@@ -12,10 +12,11 @@
  *    (16) farkli DO ornegine dagitilir (bkz. auth/rate-limit.ts hashShardFor).
  *  - Her DO, hesap basina eszamanli hash sayisini ve hiz sinirini uygular.
  *
- * NOT: Bu iskelet DO'dur; gercek binding ve runtime davranisi E1.2/E1.3'te
- * baglanir. Burada yalnizca arayuz ve guvenli akis tanimlidir.
+ * Saf is mantigi auth/password.ts ve auth/rate-limit.ts'te tutulur; bu sinif
+ * yalnizca Cloudflare Durable Object kabugudur.
  */
 
+import { DurableObject } from "cloudflare:workers";
 import { hashPassword, verifyPassword, type PasswordHash } from "../auth/password";
 import { checkLoginAllowed, DEFAULT_LOGIN_POLICY, type LoginAttemptState } from "../auth/rate-limit";
 
@@ -33,7 +34,7 @@ export interface HashResponse {
   error?: "rate_limited" | "concurrent_limit";
 }
 
-export class PasswordHashGate {
+export class PasswordHashGate extends DurableObject {
   private state: LoginAttemptState = {
     attemptsInWindow: 0,
     concurrentHashes: 0,
@@ -61,5 +62,13 @@ export class PasswordHashGate {
     } finally {
       this.state.concurrentHashes = Math.max(0, this.state.concurrentHashes - 1);
     }
+  }
+
+  override async fetch(request: Request): Promise<Response> {
+    const req = (await request.json()) as HashRequest;
+    const result = await this.handle(req, Date.now());
+    return new Response(JSON.stringify(result), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
   }
 }

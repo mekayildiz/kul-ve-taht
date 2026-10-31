@@ -15,6 +15,8 @@
  * (E1.3) ile DO icinde dogrulanmadan dusurulemez.
  */
 
+import { constantTimeEqual } from "./constant-time";
+
 export const PBKDF2 = {
   name: "PBKDF2" as const,
   hash: "SHA-256" as const,
@@ -75,8 +77,7 @@ export async function verifyPassword(password: string, stored: PasswordHash): Pr
   const salt = fromBase64(stored.saltB64);
   const expected = fromBase64(stored.hashB64);
   const actual = await deriveBits(password, salt, stored.iterations);
-  if (actual.length !== expected.length) return false;
-  return crypto.subtle.timingSafeEqual(actual, expected);
+  return constantTimeEqual(actual, expected);
 }
 
 export function serializeHash(hash: PasswordHash): string {

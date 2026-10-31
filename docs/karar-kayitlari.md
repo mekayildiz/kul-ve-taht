@@ -54,3 +54,54 @@ standart runner için geçerlidir.
 Hiçbir yapılandırma ücretli plana geçişi tetiklemez. Kota aşımında sistem
 yavaşlar, kuyruğa alır veya kritik olmayan işi durdurur (`functions/src/quota/guard.ts`).
 `scripts/check-no-paid-config.mjs` CI'da bunu denetler.
+
+---
+
+## ADR-011 — Taşınabilir sabit-zamanlı karşılaştırma
+
+**Bağlam:** `crypto.subtle.timingSafeEqual` standart WebCrypto'nun parçası
+değildir; yalnızca Cloudflare'e özgü bir uzantıdır ve Node/yerel test
+ortamında bulunmaz. `session.ts` ve `password.ts` bu API'yi kullanıyordu ve
+testler bu nedenle çöküyordu.
+
+**Karar:** `auth/constant-time.ts` içinde uzunluk-kontrollü, XOR tabanlı
+sabit-zamanlı karşılaştırma uygulandı. İki modül de bunu kullanır.
+
+**Sonuç:** Güvenlik korunur (zamanlama sızıntısı yok) ve kod hem Workers'ta
+hem Node testlerinde çalışır.
+
+## ADR-012 — Dünya saati referans noktası
+
+**Bağlam:** `world_clock.last_tick_real_ms` başlangıçta 0 (epoch) olduğu için
+ilk istekte 1970'ten bu yana geçen süre hesaplanıyor ve oyun yılı 231'e
+fırlıyordu (gerçek hata, yerel entegrasyon testinde yakalandı).
+
+**Karar:** `lastTickRealMs <= 0` ise saat "başlatılmamış" kabul edilir:
+ilerletme yapılmaz, referans noktası şimdiye ayarlanır.
+
+**Sonuç:** Yeni dünyada oyun günü 1'den başlar; sonraki istekler 6 gerçek
+saatte 1 oyun günü ilerler.
+
+## ADR-013 — Veri katmanı sağlayıcı bağımsızlığı
+
+**Bağlam:** Tasarım belgesi Supabase/PostgreSQL önerir; ancak 0 TL şartı ve
+D1'in Free plan sınırları nedeniyle SQLite ortak alt kümesi seçildi (ADR-005).
+
+**Karar:** Tüm sorgular `db/client.ts` arayüzünden geçer. `node:sqlite`
+tabanlı test donanımı (`test-support/sqlite-harness.ts`) gerçek SQLite
+motorunda şemayı, kısıtları ve sorguları doğrular. Otomatik sağlayıcı geçişi
+YOKTUR; D1 → Turso geçişi ancak bütünlük testleri geçince yapılır.
+
+**Sonuç:** Aynı repository kodu D1'de ve Turso'da çalışır; yerel testler
+hesap/ödeme gerektirmez.
+
+## ADR-014 — Hesaplar tablosunda rol ve durum
+
+**Bağlam:** `accounts.role` CHECK kısıtı `player|moderator|admin`; RLS
+olmadığı için yetkilendirme sunucu tarafında (`auth/authorize.ts`) uygulanır.
+
+**Karar:** `auth/service.ts` kayıt sırasında rolü daima `player` atar; rol
+yükseltme yalnızca yönetici işlemiyle ve `audit_log` kaydıyla yapılır.
+Askıya alınmış hesapların girişi `suspended` hatasıyla engellenir.
+
+**Sonuç:** İstemci rolü dayatamaz; ayrıcalık yükseltme denetim altındadır.

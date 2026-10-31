@@ -12,6 +12,8 @@ export const tr = {
     newJourney: "Yeni Yolculuk",
     continue: "Devam Et",
     settings: "Ayarlar",
+    login: "Giriş Yap",
+    register: "Kayıt Ol",
   },
   nav: {
     map: "Harita",
@@ -27,5 +29,43 @@ export const tr = {
   status: {
     loading: "Yükleniyor…",
     dataSaver: "Veri tasarrufu modu",
+    offline: "Sunucuya ulaşılamıyor.",
+    quotaLimited: "Yoğunluk nedeniyle geçici olarak sınırlandı. Lütfen sonra tekrar deneyin.",
   },
-} as const;
+  world: {
+    kingdoms: "Krallık",
+    freeCities: "Bağımsız şehir",
+    neutralZones: "Tarafsız bölge",
+    settlements: "Yerleşim",
+    gameTime: "Oyun zamanı",
+    year: "Yıl",
+    day: "Gün",
+  },
+  seasons: {
+    spring: "İlkbahar",
+    summer: "Yaz",
+    autumn: "Sonbahar",
+    winter: "Kış",
+  },
+  kinds: {
+    capital: "Başkent",
+    city: "Büyük şehir",
+    town: "Kasaba",
+    village: "Köy",
+    castle: "Kale",
+  },
+  auth: {
+    email: "E-posta",
+    password: "Parola",
+    passwordHint: "En az 12 karakter",
+    submitLogin: "Giriş Yap",
+    submitRegister: "Hesap Oluştur",
+    loggedInAs: "Giriş yapıldı",
+    logout: "Çıkış Yap",
+    errorInvalidCredentials: "E-posta veya parola hatalı.",
+    errorEmailTaken: "Bu e-posta zaten kayıtlı.",
+    errorWeakPassword: "Parola en az 12 karakter olmalıdır.",
+    errorInvalidEmail: "Geçerli bir e-posta girin.",
+    errorGeneric: "İşlem tamamlanamadı.",
+  },
+};

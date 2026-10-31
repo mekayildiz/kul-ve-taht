@@ -1,25 +1,35 @@
 import { useMemo, useState } from "react";
 import { DEFAULT_LOCALE, getDictionary, type Locale } from "../i18n";
+import { ApiClient } from "../api/client";
+import { AuthPanel } from "../screens/AuthPanel";
+import { WorldOverview } from "../screens/WorldOverview";
 
-type Screen = "title" | "intro" | "home";
+type Screen = "title" | "intro" | "auth" | "world";
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8787";
 
 export function App(): JSX.Element {
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [screen, setScreen] = useState<Screen>("title");
+  const [account, setAccount] = useState<{ token: string; accountId: string } | null>(null);
   const t = useMemo(() => getDictionary(locale), [locale]);
+  const client = useMemo(() => new ApiClient({ baseUrl: API_BASE_URL }), []);
 
   return (
     <div className="kvt-root">
       <header className="kvt-topbar">
         <span className="kvt-brand">{t.appTitle}</span>
-        <button
-          type="button"
-          className="kvt-lang"
-          onClick={() => setLocale((prev) => (prev === "tr" ? "en" : "tr"))}
-          aria-label="Dil değiştir / Switch language"
-        >
-          {locale === "tr" ? "TR" : "EN"}
-        </button>
+        <div className="kvt-topright">
+          {account && <span className="kvt-account">{t.auth.loggedInAs}</span>}
+          <button
+            type="button"
+            className="kvt-lang"
+            onClick={() => setLocale((prev) => (prev === "tr" ? "en" : "tr"))}
+            aria-label="Dil değiştir / Switch language"
+          >
+            {locale === "tr" ? "TR" : "EN"}
+          </button>
+        </div>
       </header>
 
       <main className="kvt-main">
@@ -31,11 +41,8 @@ export function App(): JSX.Element {
               <button type="button" onClick={() => setScreen("intro")}>
                 {t.menu.newJourney}
               </button>
-              <button type="button" disabled>
-                {t.menu.continue}
-              </button>
-              <button type="button" disabled>
-                {t.menu.settings}
+              <button type="button" onClick={() => setScreen("auth")}>
+                {t.menu.login}
               </button>
             </div>
           </section>
@@ -50,26 +57,34 @@ export function App(): JSX.Element {
               <li>{t.intro.part4}</li>
             </ol>
             <p className="kvt-closing">{t.intro.closing}</p>
-            <button type="button" onClick={() => setScreen("home")}>
-              {t.intro.part4}
+            <button type="button" onClick={() => setScreen("auth")}>
+              {t.menu.newJourney}
             </button>
           </section>
         )}
 
-        {screen === "home" && (
-          <section className="kvt-home">
-            <p>{t.status.loading}</p>
-            <p className="kvt-note">{t.status.dataSaver}: off</p>
-          </section>
+        {screen === "auth" && (
+          <AuthPanel
+            t={t}
+            client={client}
+            onAuthenticated={(token, accountId) => {
+              setAccount({ token, accountId });
+              setScreen("world");
+            }}
+          />
         )}
+
+        {screen === "world" && <WorldOverview t={t} client={client} />}
       </main>
 
       <nav className="kvt-bottomnav" aria-label="Ana gezinme">
-        {[t.nav.map, t.nav.character, t.nav.inventory, t.nav.quests, t.nav.chat].map((label) => (
-          <button key={label} type="button" className="kvt-navbtn" disabled>
-            {label}
-          </button>
-        ))}
+        {([["map", "world"], ["character", "world"], ["inventory", "world"], ["quests", "world"], ["chat", "world"]] as const).map(
+          ([key, target]) => (
+            <button key={key} type="button" className="kvt-navbtn" onClick={() => setScreen(target)}>
+              {t.nav[key]}
+            </button>
+          ),
+        )}
       </nav>
     </div>
   );

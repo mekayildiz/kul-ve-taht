@@ -3,6 +3,8 @@
  * Secret Workers Secret olarak tutulur (koda gomulmez).
  */
 
+import { constantTimeEqual } from "./constant-time";
+
 export interface SessionPayload {
   accountId: string;
   role: "player" | "moderator" | "admin";
@@ -51,7 +53,7 @@ export async function verifySessionToken(token: string, secret: string, nowMs: n
   const expected = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)));
   const provided = Uint8Array.from(b64urlDecodeToString(signature), (c) => c.charCodeAt(0));
   if (provided.length !== expected.length) return null;
-  if (!crypto.subtle.timingSafeEqual(provided, expected)) return null;
+  if (!constantTimeEqual(provided, expected)) return null;
 
   let parsed: SessionPayload;
   try {

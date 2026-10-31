@@ -8,19 +8,25 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E1.1 Monorepo iskeleti
 - [ ] E1.2 Cloudflare ücretsiz katman yapılandırması (Pages/Workers/D1/R2/DO/Workflows)
 - [ ] E1.3 Bağımsız oyuncu auth (kayıt/giriş/oturum) + PBKDF2 performans testi (DO içinde)
-- [ ] E1.4 Şema + migration (belge 21.2 varlık grupları)
+- [x] E1.4 Şema + migration (belge 21.2 varlık grupları) — 44 tablo, node:sqlite ile doğrulandı
 - [ ] E1.5 Sunucu taraflı authz çekirdeği (kimlik/rol/sahiplik/yetki) — D1'de RLS yok
-- [ ] E1.6 Dünya zamanı servisi (olay tabanlı; 6 sa = 1 oyun günü)
+- [x] E1.6 Dünya zamanı servisi (olay tabanlı; 6 sa = 1 oyun günü)
 - [ ] E1.7 Yedekleme: Time Travel + Workflows→R2 + **geri yükleme provası**
 - [ ] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema
 - [ ] E1.9 i18n (TR varsayılan + EN)
 - [ ] E1.10 Açılış + 4 bölümlük tanıtım
 - [ ] E1.11 Kota bütçe panosu (istek/CPU/D1 satır/DO)
 - [ ] E1.12 CI (lint/tip/test) + önizleme
+- [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri
+- [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
+- [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
+- [ ] E1.16 PBKDF2 performans ölçümü (DO içinde, 600k iterasyon, 10 ms CPU doğrulaması)
+- [ ] E1.17 D1 REST API export + Workflows→R2 yedekleme uçtan uca testi (Miniflare)
+- [ ] E1.18 Geri yükleme (restore) provası + veri bütünlüğü raporu
 
 ## E2 – Dünya ve karakter
-- [ ] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi
-- [ ] E2.2 **130 yerleşim/yapı** tam veri seti
+- [x] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi
+- [x] E2.2 **130 yerleşim/yapı** tam veri seti (E1.13'te tamamlandı)
 - [ ] E2.3 Harita verisi + statik illüstrasyon + bilgi paneli
 - [ ] E2.4 Karakter oluşturma (doğum yeri, geçmiş, aile)
 - [ ] E2.5 Kapsamlı görünüş editörü (ertelenmiş → nihai kapsam)

@@ -1,17 +1,21 @@
-export const en = {
+import type { tr } from "./tr";
+
+export const en: typeof tr = {
   appTitle: "Ash and Throne",
-  slogan: "Thrones fall. Kingdoms rise from their ashes.",
+  slogan: "Thrones fall. Kingdoms rise from ash.",
   intro: {
     part1: "The End of the Old Order",
-    part2: "Fire and Ashes",
+    part2: "Fire and Ash",
     part3: "A Fragile Peace",
     part4: "Your Story",
-    closing: "Thrones fall. Kingdoms rise from their ashes. What will you leave behind?",
+    closing: "Thrones fall. Kingdoms rise from ash. What will you leave behind?",
   },
   menu: {
     newJourney: "New Journey",
     continue: "Continue",
     settings: "Settings",
+    login: "Sign In",
+    register: "Sign Up",
   },
   nav: {
     map: "Map",
@@ -27,5 +31,43 @@ export const en = {
   status: {
     loading: "Loading…",
     dataSaver: "Data saver mode",
+    offline: "Cannot reach the server.",
+    quotaLimited: "Temporarily rate limited. Please try again later.",
   },
-} as const;
+  world: {
+    kingdoms: "Kingdoms",
+    freeCities: "Free cities",
+    neutralZones: "Neutral zones",
+    settlements: "Settlements",
+    gameTime: "Game time",
+    year: "Year",
+    day: "Day",
+  },
+  seasons: {
+    spring: "Spring",
+    summer: "Summer",
+    autumn: "Autumn",
+    winter: "Winter",
+  },
+  kinds: {
+    capital: "Capital",
+    city: "City",
+    town: "Town",
+    village: "Village",
+    castle: "Castle",
+  },
+  auth: {
+    email: "Email",
+    password: "Password",
+    passwordHint: "At least 12 characters",
+    submitLogin: "Sign In",
+    submitRegister: "Create Account",
+    loggedInAs: "Signed in",
+    logout: "Sign Out",
+    errorInvalidCredentials: "Incorrect email or password.",
+    errorEmailTaken: "This email is already registered.",
+    errorWeakPassword: "Password must be at least 12 characters.",
+    errorInvalidEmail: "Enter a valid email address.",
+    errorGeneric: "The operation could not be completed.",
+  },
+};

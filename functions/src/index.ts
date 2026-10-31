@@ -1,60 +1,142 @@
 /**
- * Kul ve Taht - Workers giris noktasi (E1 iskeleti).
+ * Kul ve Taht - Workers giris noktasi.
  *
- * Bu dosya yalnizca iskelettir: kimlik dogrulama, yetkilendirme, kota
- * korumasi ve yedekleme modullerini birbirine baglar. Gercek D1/R2/DO
- * binding'leri E1.2'de eklenir. Hicbir ucretli plan ozelligi kullanilmaz.
+ * Kimlik dogrulama, yetkilendirme, kota korumasi, dunya verisi ve yedekleme
+ * modullerini birbirine baglar. YALNIZCA Workers Free plan ozellikleri.
+ * Hicbir ucretli plan ozelligi kullanilmaz (bkz. ADR-010).
  */
 
-import { Router } from "./http/router";
+import { Router, type RouteContext } from "./http/router";
 import { json, error, noContent } from "./http/response";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
 import { verifySessionToken } from "./auth/session";
 import { authorize } from "./auth/authorize";
+import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES } from "./world";
+import { advanceWorldTime, seasonFor } from "./time/world-clock";
+import { queryOne, execute, type SqlDatabase } from "./db/client";
+import { registerAccount, loginAccount } from "./auth/service";
+
+export { PasswordHashGate } from "./durable/password-hash-gate";
+export { BackupWorkflow } from "./workflows/backup-workflow";
 
 export interface Env {
+  DB: SqlDatabase;
   SESSION_SECRET: string;
-  /** Ortam degiskeni: '1' ise sistem asiri yuk modunda. */
   OVERLOADED?: string;
-  /** Gunluk kalan istek butcesi (izleme servisi tarafindan guncellenir). */
   REQUESTS_REMAINING?: string;
 }
 
-const router = new Router();
+type Ctx = RouteContext<Env>;
+
+const router = new Router<Env>();
 
 router.get("/api/health", () =>
   json({ status: "ok", service: "kul-ve-taht-functions", paidFeatures: false }),
 );
 
-router.get("/api/world/time", () =>
-  json({
-    // 1 oyun gunu = 6 gercek saat; 1 oyun yili = 360 oyun gunu.
-    realHoursPerGameDay: 6,
-    gameDaysPerGameYear: 360,
-    realDaysPerGameYear: 90,
-  }),
+router.get("/api/world/summary", () => json(worldSummary()));
+
+router.get("/api/world/kingdoms", () => json({ kingdoms: KINGDOMS }));
+
+router.get("/api/world/settlements", ({ url }: Ctx) => {
+  const kingdomId = url.searchParams.get("kingdom");
+  const kind = url.searchParams.get("kind");
+  let list = SETTLEMENTS;
+  if (kingdomId) list = list.filter((s) => s.kingdomId === kingdomId);
+  if (kind) list = list.filter((s) => s.kind === kind);
+  return json({ count: list.length, settlements: list });
+});
+
+router.get("/api/world/places", () =>
+  json({ freeCities: FREE_CITIES, neutralZones: NEUTRAL_ZONES }),
 );
 
-router.get("/api/me", async ({ request }) => {
-  const secret = request.headers.get("x-session-secret") ?? "";
+router.get("/api/world/time", async ({ env }: Ctx) => {
+  if (!env?.DB) {
+    return json({ realHoursPerGameDay: 6, gameDaysPerGameYear: 360, source: "static" });
+  }
+  const row = await queryOne<{ game_day: number; game_year: number; last_tick_real_ms: number }>(
+    env.DB,
+    "SELECT game_day, game_year, last_tick_real_ms FROM world_clock WHERE id = 1",
+  );
+  if (!row) return error("clock_missing", "Dunya saati bulunamadi.", 500);
+
+  const advanced = advanceWorldTime(
+    { gameDay: row.game_day, gameYear: row.game_year, lastTickRealMs: row.last_tick_real_ms },
+    Date.now(),
+  );
+
+  if (advanced.advancedDays > 0) {
+    await execute(
+      env.DB,
+      "UPDATE world_clock SET game_day = ?, game_year = ?, last_tick_real_ms = ? WHERE id = 1",
+      advanced.gameDay,
+      advanced.gameYear,
+      advanced.lastTickRealMs,
+    );
+  }
+
+  return json({
+    gameDay: advanced.gameDay,
+    gameYear: advanced.gameYear,
+    season: seasonFor(advanced.gameDay),
+    advancedDays: advanced.advancedDays,
+  });
+});
+
+router.post("/api/auth/register", async ({ request, env }: Ctx) => {
+  const body = (await request.json().catch(() => null)) as
+    | { email?: string; password?: string; locale?: "tr" | "en" }
+    | null;
+  if (!body?.email || !body.password) {
+    return error("invalid_body", "E-posta ve parola zorunludur.", 400);
+  }
+  const result = await registerAccount(env.DB, {
+    email: body.email,
+    password: body.password,
+    ...(body.locale ? { locale: body.locale } : {}),
+  });
+  if (!result.ok) {
+    const status = result.error === "email_taken" ? 409 : 400;
+    return error(result.error, "Kayit tamamlanamadi.", status);
+  }
+  return json({ accountId: result.accountId }, 201);
+});
+
+router.post("/api/auth/login", async ({ request, env }: Ctx) => {
+  const body = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
+  if (!body?.email || !body.password) {
+    return error("invalid_body", "E-posta ve parola zorunludur.", 400);
+  }
+  const result = await loginAccount(env.DB, { email: body.email, password: body.password }, env.SESSION_SECRET);
+  if (!result.ok) {
+    const status = result.error === "suspended" ? 403 : 401;
+    return error(result.error, "Giris basarisiz.", status);
+  }
+  return json({ token: result.token, expiresAt: result.payload.expiresAt });
+});
+
+router.get("/api/me", async ({ request, env }: Ctx) => {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = await verifySessionToken(token, secret, Date.now());
+  const session = env?.SESSION_SECRET
+    ? await verifySessionToken(token, env.SESSION_SECRET, Date.now())
+    : null;
   const decision = authorize({ session, action: "profile:read" });
   if (!decision.allowed) return error("unauthorized", "Gecerli oturum yok.", 401);
   return json({ accountId: session?.accountId, role: session?.role });
 });
 
-function readQuotaState(env: Env): QuotaState {
-  const remaining = Number.parseInt(env.REQUESTS_REMAINING ?? "100000", 10);
+function readQuotaState(env: Env | undefined): QuotaState {
+  const remaining = Number.parseInt(env?.REQUESTS_REMAINING ?? "100000", 10);
   return {
     requestsRemainingToday: Number.isFinite(remaining) ? remaining : 100000,
     nonCriticalBudgetRemaining: 100000,
-    overloaded: env.OVERLOADED === "1",
+    overloaded: env?.OVERLOADED === "1",
   };
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const isCritical = url.pathname.startsWith("/api/auth") || url.pathname.startsWith("/api/trade");
 
@@ -63,7 +145,7 @@ export default {
     const guarded = quotaResponse(outcome);
     if (guarded) return guarded;
 
-    const handled = await router.handle(request);
+    const handled = await router.handle(request, env, ctx);
     if (handled) return handled;
 
     if (request.method === "OPTIONS") return noContent();
