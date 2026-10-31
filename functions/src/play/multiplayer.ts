@@ -10,6 +10,7 @@
 import type { SqlDatabase } from "../db/client";
 import { execute, queryOne, queryAll } from "../db/client";
 import { loadState, saveState, type PlayResult } from "./service";
+import { areMutualFriends } from "./multiplayer-extras";
 import { MAX_MESSAGE_LENGTH, validateMessage, canSendToChannel, canJoinGroup, type ChannelKind, type ChatChannel, type Group } from "../social/social";
 import { canMarry, MARRIAGE_MIN_AGE, DAYS_TO_ADULTHOOD, type FamilyMember } from "../family/dynasty";
 import { createNotification, type NotificationKind } from "../notify/notifications";
@@ -334,6 +335,13 @@ export async function performMarry(
   };
   if (!canMarry(self, spouse, spouseId === null ? true : bothConsent)) {
     return { ok: false, error: "invalid_action", state, detail: { reason: "marriage_not_allowed" } };
+  }
+
+  // Oyuncu-oyuncu evliligi KARSILIKLI RIZA gerektirir (belge 7.1). Riza,
+  // iki tarafta da kayitli arkadaslik bagidir (belge 16.3); boylece tek tarafli
+  // istekle evlilik kurulamaz. NPC evliliginde bu kapi uygulanmaz.
+  if (spouseId && !(await areMutualFriends(db, characterId, spouseId))) {
+    return { ok: false, error: "invalid_action", state, detail: { reason: "no_mutual_consent" } };
   }
 
   const existing = await familyStatus(db, characterId);

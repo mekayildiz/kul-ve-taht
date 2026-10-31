@@ -218,25 +218,27 @@ export async function performRejectTrade(db: SqlDatabase, characterId: string, o
 
 // --- Arkadaslik karsiliklilik dogrulamasi (belge 16, isMutual baglantisi) ---
 
-/** Iki karakter arasinda karsilikli arkadaslik var mi (belge 16). */
+/**
+ * Iki karakter arasinda KARSILIKLI arkadaslik var mi (belge 16.3). Kaynak,
+ * oynanista yazilan `character_social` tablosudur; arkadaslik iki tarafta da
+ * kayitli olmalidir (dusmanlik tek tarafli olabilir, arkadaslik olamaz).
+ */
 export async function areMutualFriends(db: SqlDatabase, aId: string, bId: string): Promise<boolean> {
-  const rowsA = await queryAll<{ from_character_id: string; to_character_id: string; kind: string; affinity: number }>(
+  const rows = await queryAll<{ character_id: string; target_id: string; kind: string }>(
     db,
-    "SELECT from_character_id, to_character_id, kind, affinity FROM relationships WHERE from_character_id = ?",
+    "SELECT character_id, target_id, kind FROM character_social WHERE character_id IN (?, ?)",
     aId,
-  );
-  const rowsB = await queryAll<{ from_character_id: string; to_character_id: string; kind: string; affinity: number }>(
-    db,
-    "SELECT from_character_id, to_character_id, kind, affinity FROM relationships WHERE from_character_id = ?",
     bId,
   );
-  const toRel = (r: { from_character_id: string; to_character_id: string; kind: string; affinity: number }): PlayerRelationship => ({
-    fromCharacterId: r.from_character_id,
-    toCharacterId: r.to_character_id,
+  const toRel = (r: { character_id: string; target_id: string; kind: string }): PlayerRelationship => ({
+    fromCharacterId: r.character_id,
+    toCharacterId: r.target_id,
     kind: r.kind as PlayerRelationship["kind"],
-    affinity: r.affinity,
+    affinity: 0,
   });
-  return isMutual(rowsA.map(toRel), rowsB.map(toRel));
+  const a = rows.filter((r) => r.character_id === aId).map(toRel);
+  const b = rows.filter((r) => r.character_id === bId).map(toRel);
+  return isMutual(a, b);
 }
 
 // --- Krallik ittifaki ve savas (belge 11) ---

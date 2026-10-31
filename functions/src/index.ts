@@ -22,6 +22,7 @@ import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 import {
   getPlayState,
+  advanceAllCharacters,
   performEat,
   performRest,
   performCraft,
@@ -46,7 +47,7 @@ import {
   type PlayResult,
 } from "./play/service";
 import { quoteMarket } from "./play/market-state";
-import { storageSummary, monopolyFactor, runKingdomBudget, interveneMarket } from "./play/storage";
+import { storageSummary, monopolyFactor, runKingdomBudget, interveneMarket, auditKingdomCorruption } from "./play/storage";
 import { startQuest, claimQuestReward, questLog, advanceQuestByTag, QUEST_CATALOG } from "./play/quests";
 import { createAuction, bidAuction, listAuctions, settleDueAuctions } from "./play/auctions";
 import { ITEMS } from "./inventory/items";
@@ -292,6 +293,9 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
     );
     // Dunya ilerledikce katmanli simulasyon calisir (belge 8.8, 9.4).
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
+    // Karakterlerin gunluk ilerlemesi (belge 6, 12.8): aclik, saglik, yaslanma
+    // ve olum/miras dunya saatine baglidir. Partili ve idempotent.
+    await advanceAllCharacters(env.DB, advanced.gameDay).catch(() => undefined);
     await settleDueAuctions(env.DB).catch(() => undefined);
     // Temerrut/iflas/tasfiye (belge 20): vadesi gecen krediler her turda
     // denetlenir; iflas eden borclunun varligi alacaklilara dagitilir.
@@ -360,6 +364,45 @@ router.post("/api/admin/budget/run", async ({ request, env }: Ctx) => {
   if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
   const result = await runKingdomBudget(env.DB, body.kingdomId);
   return result ? json(result) : error("not_found", "Krallik bulunamadi.", 404);
+});
+
+/**
+ * Yolsuzluk denetimi (belge 9.8): kayitli gelir ile hazineye ULASAN gercek
+ * gelir arasindaki fark, denetim gucuyle ortaya cikarilir; kaybolan kismi
+ * hazineye geri doner ve krallik yolsuzluk orani guncellenir. Denetim
+ * sonucu audit_log'a yazilir (belge 21.1). Yalnizca yonetici.
+ */
+router.post("/api/admin/corruption/audit", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { kingdomId?: string; auditStrength?: number; actualRevenue?: number } | null;
+  if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
+  const strength = Math.max(0, Math.min(1, body.auditStrength ?? 0.5));
+  // Gercek gelir verilmezse, yolsuzluk oranina gore kaybolan kısım varsayilir.
+  const kingdom = await queryOne<{ corruption: number; population: number }>(
+    env.DB,
+    `SELECT COALESCE(k.corruption,0.1) AS corruption, COALESCE(SUM(s.population),0) AS population
+     FROM kingdoms k LEFT JOIN settlements s ON s.kingdom_id = k.id WHERE k.id = ? GROUP BY k.id`,
+    body.kingdomId,
+  );
+  if (!kingdom) return error("not_found", "Krallik bulunamadi.", 404);
+  const recorded = Math.round((kingdom.population ?? 0) * 0.02);
+  const actualRevenue = body.actualRevenue ?? Math.round(recorded * (1 - (kingdom.corruption ?? 0.1)));
+  const result = await auditKingdomCorruption(env.DB, body.kingdomId, actualRevenue, strength);
+  if (!result) return error("not_found", "Krallik bulunamadi.", 404);
+  await execute(
+    env.DB,
+    "INSERT INTO audit_log (id, actor_id, action, target_type, target_id, detail, created_at) VALUES (?,?,?,?,?,?,?)",
+    crypto.randomUUID(),
+    session?.accountId ?? null,
+    "corruption_audit",
+    "kingdom",
+    body.kingdomId,
+    JSON.stringify({ recorded, actualRevenue, strength, detected: result.detected, newCorruption: result.newCorruption }),
+    Date.now(),
+  );
+  return json({ ...result, recorded, actualRevenue });
 });
 
 /** Devlet piyasa mudahalesi: hazineden tahil surerek fiyati baskir (belge 9.4, 9.9). */
@@ -695,6 +738,10 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "castSpell":
       result = await performCastSpell(env.DB, characterId, String(body?.spellId ?? ""));
+      // Kara buyu yasakli krallikta suc sayilir; tam yargi akisi islenir (belge 13.1).
+      if (result.ok && result.detail?.outlawed === true) {
+        await performCrime(env.DB, characterId, "dark_magic", 60);
+      }
       break;
     case "temple":
       result = await performTempleService(env.DB, characterId, String(body?.service ?? "healing") as "healing" | "knowledge" | "shelter" | "protection");
@@ -1084,6 +1131,8 @@ export default {
       );
     }
     await runWorldSimulation(env.DB, advanced.gameDay).catch(() => undefined);
+    // Karakter gunluk ilerlemesi (belge 6, 12.8); partili ve idempotent.
+    await advanceAllCharacters(env.DB, advanced.gameDay).catch(() => undefined);
     await settleDueAuctions(env.DB).catch(() => undefined);
     // Temerrut/iflas/tasfiye (belge 20): vadesi gecen krediler her turda
     // denetlenir; iflas eden borclunun varligi alacaklilara dagitilir.

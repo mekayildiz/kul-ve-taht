@@ -1,0 +1,102 @@
+{
+  "base": "http://localhost:8787",
+  "startedAt": "2026-10-31T15:19:35.778Z",
+  "endpoints": {
+    "register": {
+      "status": 201,
+      "ms": 147.012,
+      "bytes": 52
+    },
+    "health": {
+      "status": 200,
+      "ms": 10.066,
+      "bytes": 70
+    },
+    "worldSummary": {
+      "status": 200,
+      "ms": 9.651,
+      "bytes": 113
+    },
+    "worldSettlements": {
+      "status": 200,
+      "ms": 10.553,
+      "bytes": 18289
+    },
+    "worldTime": {
+      "status": 200,
+      "ms": 11.771,
+      "bytes": 61
+    },
+    "assetsCatalog": {
+      "status": 200,
+      "ms": 9.823,
+      "bytes": 8428
+    }
+  },
+  "load": {
+    "requests": 300,
+    "errors": 0,
+    "wallMs": 2726.314,
+    "rps": 110.039,
+    "totalBytes": 2016825,
+    "latencyMs": {
+      "n": 300,
+      "min": 7.339,
+      "max": 22.136,
+      "mean": 9.066,
+      "p50": 8.812,
+      "p95": 10.853
+    }
+  },
+  "quota": {
+    "day": "2026-10-31",
+    "rows": [
+      {
+        "metric": "requests",
+        "used": 730,
+        "limit": 100000,
+        "percentUsed": 0.7,
+        "state": "ok"
+      },
+      {
+        "metric": "d1_reads",
+        "used": 0,
+        "limit": 5000000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "d1_writes",
+        "used": 0,
+        "limit": 100000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "do_requests",
+        "used": 0,
+        "limit": 100000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "workflow_steps",
+        "used": 0,
+        "limit": 3000,
+        "percentUsed": 0,
+        "state": "ok"
+      }
+    ],
+    "requestsUsed": 730,
+    "requestsLimit": 100000,
+    "requestsPct": 0.73,
+    "withinFreeTier": true
+  },
+  "limits": {
+    "requests": 100000,
+    "d1_reads": 5000000,
+    "d1_writes": 100000
+  },
+  "withinFreeTier": true,
+  "finishedAt": "2026-10-31T15:19:38.719Z"
+}

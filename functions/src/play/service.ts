@@ -8,8 +8,8 @@
  */
 
 import type { SqlDatabase } from "../db/client";
-import { execute, queryOne } from "../db/client";
-import { healthyState, advanceDay, advanceHunger, eat, rest, addInjury, type HealthState } from "../health/state";
+import { execute, queryOne, queryAll } from "../db/client";
+import { healthyState, advanceDay, advanceHunger, eat, rest, addInjury, starvationDamage, type HealthState } from "../health/state";
 import { treatInjury, treatDisease, treatmentQuality } from "../health/treatment";
 import { addItem, removeItem, type InventoryEntry, itemDef, carryCapacity } from "../inventory/items";
 import { applyMarketTrade } from "./market-state";
@@ -22,7 +22,7 @@ import { buyPrice, sellPrice, type MarketState } from "../economy/market";
 import { SETTLEMENTS } from "../world/settlements";
 import { KINGDOMS } from "../world/kingdoms";
 import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, type CropId, type Season, type Weather } from "../livelihood/production";
-import { GUILDS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
+import { GUILDS, SPELLS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
 import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
 
 export interface PlayState {
@@ -207,20 +207,79 @@ export async function performRest(db: SqlDatabase, characterId: string, hours: n
   return { ok: true, state, detail: { hours: safeHours } };
 }
 
-/** Bir oyun gunu ilerletir: aclik, saglik toparlanma, yara iyilesmesi. */
-export async function advanceCharacterDay(db: SqlDatabase, characterId: string, nowMs = Date.now()): Promise<PlayResult> {
+/**
+ * Karakteri hedef oyun gunune kadar ilerletir: aclik, saglik toparlanma, yara
+ * iyilesmesi, uzun aclik hasari ve yaslanma (belge 6, 12.8). Dunya saati
+ * ilerlediginde cagrilir; `last_advanced_day` sayesinde ayni gun icin TEKRAR
+ * uygulanmaz (idempotent). Olum kalicidir ve miras islenir (belge 7.6).
+ */
+export async function advanceCharacterDay(
+  db: SqlDatabase,
+  characterId: string,
+  targetDay?: number,
+  nowMs = Date.now(),
+): Promise<PlayResult> {
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
+  const day = targetDay ?? (await gameDayNumber(db));
+  const row = await queryOne<{ last_advanced_day: number }>(
+    db,
+    "SELECT last_advanced_day FROM character_state WHERE character_id = ?",
+    characterId,
+  );
+  const last = row?.last_advanced_day ?? 0;
+  const delta = day - last;
+  if (delta <= 0) {
+    return { ok: true, state, detail: { advancedDays: 0, alive: state.health.alive, succession: null } };
+  }
+
   const wasAlive = state.health.alive;
-  state.health = advanceDay(advanceHunger(state.health, 1), 1);
+  // Aclik ilerler; uzun sureli aclik sagliktan duser (belge 12.8).
+  let health = advanceHunger(state.health, delta);
+  health = { ...health, health: Math.max(0, health.health - starvationDamage(health)) };
+  health = advanceDay(health, day);
+  state.health = health;
   await saveState(db, state, nowMs);
-  // Olum kalicidir; miras ve kusak devri islenir (belge 7.6).
+
+  // Yaslanma (belge 6): her 360 oyun gununde bir oyun yili.
+  const years = Math.floor(day / 360) - Math.floor(last / 360);
+  if (years > 0) {
+    await execute(db, "UPDATE characters SET age_years = age_years + ? WHERE id = ?", years, characterId);
+  }
+  await execute(db, "UPDATE character_state SET last_advanced_day = ? WHERE character_id = ?", day, characterId);
+
   let succession: Awaited<ReturnType<typeof settleDeath>> = null;
   if (wasAlive && !state.health.alive) {
-    const day = await gameDayNumber(db);
     succession = await settleDeath(db, characterId, "Karakter hayatini kaybetti.", day);
   }
-  return { ok: true, state, detail: { alive: state.health.alive, succession } };
+  return { ok: true, state, detail: { advancedDays: delta, alive: state.health.alive, succession } };
+}
+
+/**
+ * Dunya saati ilerlediginde butun canli karakterleri hedef gune kadar ilerletir
+ * (belge 6, 8.8). Partili calisir; tek turda yazma kotasini asmaz.
+ */
+export async function advanceAllCharacters(
+  db: SqlDatabase,
+  gameDay: number,
+  limit = 200,
+  nowMs = Date.now(),
+): Promise<number> {
+  const rows = await queryAll<{ character_id: string }>(
+    db,
+    `SELECT cs.character_id FROM character_state cs
+     JOIN characters c ON c.id = cs.character_id
+     WHERE c.alive = 1 AND cs.last_advanced_day < ?
+     ORDER BY cs.last_advanced_day ASC LIMIT ?`,
+    gameDay,
+    limit,
+  );
+  let processed = 0;
+  for (const row of rows) {
+    const res = await advanceCharacterDay(db, row.character_id, gameDay, nowMs);
+    if (res.ok) processed += 1;
+  }
+  return processed;
 }
 
 export async function performTreat(
@@ -667,7 +726,11 @@ export async function performCastSpell(
     };
   }
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { spellId, power: result.power, cost: result.cost } };
+  // Kara buyu yasakli krallikta suc sayilir; tam yargi akisi cagiran katmanda
+  // (performCrime) islenir (belge 13.1, 13.4). Burada yalnizca tespit edilir.
+  const spellPath = SPELLS.find((s) => s.id === spellId)?.path;
+  const outlawed = spellPath ? await recordDarkMagicCrime(db, characterId, spellPath) : false;
+  return { ok: true, state, detail: { spellId, power: result.power, cost: result.cost, outlawed } };
 }
 
 /** Karanlik sanat kullanimi krallikta suc sayilirsa kayda gecilir (belge 13.1). */

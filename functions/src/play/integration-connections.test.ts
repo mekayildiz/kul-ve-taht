@@ -10,10 +10,14 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { createTestDb } from "../test-support/sqlite-harness";
 import { seedWorld } from "../world/seed";
 import { execute, queryOne, type SqlDatabase } from "../db/client";
-import { performWork, performJoinGuild, loadState, saveState } from "./service";
+import { performWork, performJoinGuild, loadState, saveState, advanceCharacterDay, advanceAllCharacters, performCastSpell } from "./service";
 import { runKingdomBudget } from "./storage";
 import { runWorldSimulation } from "./world-sim";
-import { duelAllowed } from "./systems";
+import { duelAllowed, performSetRelationship } from "./systems";
+import { performMarry } from "./multiplayer";
+import { areMutualFriends } from "./multiplayer-extras";
+import { auditKingdomCorruption } from "./storage";
+import { execute as exec2, queryOne as q1 } from "../db/client";
 import { startQuest, advanceQuestByTag, claimQuestReward, questLog } from "./quests";
 import { loadPersonality } from "./personality";
 import { guildBenefits } from "../magic/lore";
@@ -22,14 +26,15 @@ async function newCharacter(db: SqlDatabase, id = "c1"): Promise<string> {
   const account = await queryOne<{ id: string }>(db, "SELECT id FROM accounts LIMIT 1");
   await execute(
     db,
-    `INSERT INTO characters (id, account_id, given_name, surname, birth_settlement, current_settlement, created_at)
-     VALUES (?,?,?,?,?,?,?)`,
+    `INSERT INTO characters (id, account_id, given_name, surname, birth_settlement, current_settlement, age_years, created_at)
+     VALUES (?,?,?,?,?,?,?,?)`,
     id,
     account?.id ?? null,
     "Kael",
     "Veyr",
     "varkhenn-drahkmar",
     "varkhenn-drahkmar",
+    16,
     0,
   );
   await execute(
@@ -124,5 +129,80 @@ describe("Bagli saf fonksiyonlar oynanista calisir (belge 9, 12, 14, 16)", () =>
 
     const consent = await duelAllowed(db, id, true);
     expect(consent.allowed).toBe(true);
+  });
+
+  it("karakter gunluk ilerlemesi dunya saatine baglidir ve idempotenttir (belge 6)", async () => {
+    const id = await newCharacter(db);
+    // Dunya gunu 1'den 5'e ilerledi; karakter aclik ve yaslanma ile ilerler.
+    const first = await advanceCharacterDay(db, id, 5);
+    expect(first.ok).toBe(true);
+    expect(first.detail!.advancedDays).toBe(5);
+
+    const hungry = (await loadState(db, id, Date.now()))!.health.hunger;
+    expect(hungry).toBeGreaterThan(0);
+
+    // Ayni gun icin tekrar cagrilirsa ilerleme YAPILMAZ (idempotent).
+    const again = await advanceCharacterDay(db, id, 5);
+    expect(again.detail!.advancedDays).toBe(0);
+    expect((await loadState(db, id, Date.now()))!.health.hunger).toBe(hungry);
+  });
+
+  it("dunya saati turunda butun canli karakterler ilerletilir (belge 6)", async () => {
+    const a = await newCharacter(db, "c-a");
+    await newCharacter(db, "c-b");
+    const processed = await advanceAllCharacters(db, 3);
+    expect(processed).toBeGreaterThanOrEqual(2);
+    const row = await q1<{ last_advanced_day: number }>(
+      db,
+      "SELECT last_advanced_day FROM character_state WHERE character_id = ?",
+      a,
+    );
+    expect(row!.last_advanced_day).toBe(3);
+  });
+
+  it("kara buyu yasakli krallikta suc sayilir (belge 13.1, 13.4)", async () => {
+    const id = await newCharacter(db);
+    // varkhenn ruh cagirmayi yasaklar; ogrenme yasagi nedeniyle once seviye verilir.
+    await exec2(db, "UPDATE character_state SET magic_level = 30, energy = 100 WHERE character_id = ?", id);
+    await exec2(
+      db,
+      "INSERT OR IGNORE INTO character_expertise (character_id, expertise, level, xp) VALUES (?,?,?,?)",
+      id, "spirit_caller", 30, 0,
+    );
+    const cast = await performCastSpell(db, id, "raise-spirit");
+    expect(cast.ok).toBe(true);
+    expect(cast.detail!.outlawed).toBe(true);
+
+    // Yasak olmayan yolda suc sayilmaz.
+    await exec2(db, "UPDATE character_state SET magic_level = 5, energy = 100 WHERE character_id = ?", id);
+    const ok = await performCastSpell(db, id, "flame-bolt");
+    expect(ok.ok).toBe(true);
+    expect(ok.detail!.outlawed).toBe(false);
+  });
+
+  it("oyuncu-oyuncu evliligi karsilikli arkadaslik ister (belge 7.1, 16.3)", async () => {
+    const a = await newCharacter(db, "c-a");
+    const b = await newCharacter(db, "c-b");
+    // Tek tarafli arkadaslik yeterli degildir.
+    await performSetRelationship(db, a, b, "friend");
+    expect(await areMutualFriends(db, a, b)).toBe(false);
+    const denied = await performMarry(db, a, "B Kisi", b, true);
+    expect(denied.ok).toBe(false);
+    expect(denied.detail!.reason).toBe("no_mutual_consent");
+
+    // Iki tarafli riza (karsilikli arkadaslik) ile evlilik kurulur.
+    await performSetRelationship(db, b, a, "friend");
+    expect(await areMutualFriends(db, a, b)).toBe(true);
+    const married = await performMarry(db, a, "B Kisi", b, true);
+    expect(married.ok).toBe(true);
+  });
+
+  it("yolsuzluk denetimi kayip geliri ortaya cikarir ve hazineye doner (belge 9.8)", async () => {
+    const before = await q1<{ treasury: number }>(db, "SELECT treasury FROM kingdoms WHERE id = 'varkhenn'");
+    const res = await auditKingdomCorruption(db, "varkhenn", 0, 0.5);
+    expect(res).not.toBeNull();
+    expect(res!.detected).toBeGreaterThan(0);
+    const after = await q1<{ treasury: number }>(db, "SELECT treasury FROM kingdoms WHERE id = 'varkhenn'");
+    expect(after!.treasury).toBe(before!.treasury + res!.detected);
   });
 });

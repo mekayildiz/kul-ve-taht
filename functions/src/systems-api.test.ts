@@ -564,6 +564,25 @@ describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
     expect((await readBody(run)).treasury).toBeGreaterThanOrEqual(0);
   });
 
+  it("yolsuzluk denetimi ucu kayip geliri hazineye kazandirir ve audit_log yazar (belge 9.8, 21.1)", async () => {
+    await setupPlayer(env);
+    const adminToken = await createSessionToken(
+      { accountId: "admin-1", role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
+      env.SESSION_SECRET,
+    );
+    const res = await call("/api/admin/corruption/audit", env, auth(adminToken, { kingdomId: "varkhenn", auditStrength: 1 }));
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detected).toBeGreaterThan(0);
+    expect(body.recorded).toBeGreaterThan(0);
+
+    const log = await env.DB.prepare(
+      "SELECT action, target_id FROM audit_log WHERE action = 'corruption_audit' ORDER BY created_at DESC LIMIT 1",
+    ).first() as { action: string; target_id: string } | null;
+    expect(log?.action).toBe("corruption_audit");
+    expect(log?.target_id).toBe("varkhenn");
+  });
+
   it("olum mirasi varislere aktarir ve mulku devreder (belge 7.6)", async () => {
     const { token, characterId, accountId } = await setupPlayer(env);
     const { settleDeath } = await import("./play/succession");

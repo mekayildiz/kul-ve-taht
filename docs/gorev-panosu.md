@@ -195,3 +195,20 @@ sistemlere bağlandı; her biri entegrasyon testiyle doğrulanır.
 - [x] E9.33 Kişilik kayması (belge 12.4): `applyPersonalityShift` görev sonucuyla kalıcı kişiliğe bağlandı + oyuncu arayüzü — `play/personality.ts`, `PlayPanel.tsx`, i18n TR+EN
 - [x] E9.34 Yaralanma yönetimi (belge 6.4): `addInjury` tüm yaralanma oluşturma noktalarına bağlandı — `play/service.ts`, `play/systems.ts`
 - [x] E9.35 Tedavi kalitesi (belge 6.5): `treatmentQuality` yara/hastalık tedavisine bağlandı (malzeme + yerleşim ortamı) — `play/service.ts`
+
+### P6 – G1–G6 boşluk kapatma ve gerçek ölçüm turu (belge 6, 7.6, 9.8, 13.1, 21.4, 25)
+
+Önceki turda "modül olarak var ama oynanışa bağlı değil" kalan son fonksiyonlar
+gerçek sistemlere bağlandı; ayrıca gerçek ağ ve kapalı test ölçümleri sayısal
+olarak kaydedildi.
+
+- [x] E9.36 G1 — Karakter günlük ilerlemesi dünya saatine bağlandı (belge 6, 12.8): `advanceCharacterDay` hedef oyun gününe göre açlık/açlık hasarı/toparlanma/yaşlanma uygular ve `last_advanced_day` ile idempotenttir; yeni `advanceAllCharacters` partili ilerletir; `/api/world/time` + saatlik cron turunda çalışır — `play/service.ts`, `db/migrations/0020_character_daily_advance.sql`, `index.ts`
+- [x] E9.37 G2 — `areMutualFriends` gerçek sisteme bağlandı (belge 7.1, 16.3): sorgu `character_social` tablosuna düzeltildi; oyuncu–oyuncu evliliği karşılıklı arkadaşlık ister — `play/multiplayer-extras.ts`, `play/multiplayer.ts`
+- [x] E9.38 G3 — `auditKingdomCorruption` gerçek sisteme bağlandı (belge 9.8, 21.1): yeni yönetici ucu `POST /api/admin/corruption/audit`; kayıp gelir hazineye döner, `audit_log`'a yazılır — `index.ts`, `play/storage.ts`
+- [x] E9.39 G4 — `recordDarkMagicCrime` gerçek sisteme bağlandı (belge 13.1, 13.4): yasaklı krallıkta kara büyü tespiti `performCastSpell`'de yapılır; `castSpell` aksiyonu tam yargı akışını (`performCrime`) tetikler — `play/service.ts`, `index.ts`
+- [x] E9.40 G5 — Gerçek ağ ve kapalı test ölçümleri (belge 21.4, 25): `scripts/network-measurement.mjs` (300 istek, 0 hata, ~102–110 istek/sn, p95 ~11 ms, kota %0,38) ve `scripts/closed-test.mjs` (14/14 adım geçti) → `docs/olcum/ag-olcumu.json`, `docs/olcum/kapali-test.json`
+- [x] E9.41 G6 — Analiz/plan belgesi güncellendi (yeni dosya açılmadı): `docs/analiz-ve-plan.md` §8
+
+Doğrulama: `npm run verify` → lint 0 hata, tip kontrolü temiz, build başarılı,
+**52 dosya / 497 test geçti**, 0 TL denetimi geçti; korunan belge md5
+`563e0708d1fdc3c833c92437586dacd2` değişmedi.

@@ -1,0 +1,120 @@
+{
+  "base": "http://localhost:8787",
+  "startedAt": "2026-10-31T15:19:31.772Z",
+  "characterId": "5cf1cdb0-318a-46f3-8cea-16b99944717a",
+  "steps": [
+    {
+      "name": "register",
+      "path": "/api/auth/register",
+      "status": 201,
+      "ms": 146.756,
+      "ok": true
+    },
+    {
+      "name": "seedWorld",
+      "path": "/api/admin/seed-world",
+      "status": 200,
+      "ms": 1455.645,
+      "ok": true
+    },
+    {
+      "name": "createCharacter",
+      "path": "/api/characters",
+      "status": 201,
+      "ms": 129.857,
+      "ok": true
+    },
+    {
+      "name": "action:work",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/action",
+      "status": 200,
+      "ms": 24.659,
+      "ok": true
+    },
+    {
+      "name": "action:rest",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/action",
+      "status": 200,
+      "ms": 25.323,
+      "ok": true
+    },
+    {
+      "name": "action:explore",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/action",
+      "status": 200,
+      "ms": 28.112,
+      "ok": true
+    },
+    {
+      "name": "action:trade",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/action",
+      "status": 200,
+      "ms": 30.316,
+      "ok": true
+    },
+    {
+      "name": "action:setRelationship",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/action",
+      "status": 200,
+      "ms": 20.096,
+      "ok": true
+    },
+    {
+      "name": "playState",
+      "path": "/api/play/5cf1cdb0-318a-46f3-8cea-16b99944717a/state",
+      "status": 200,
+      "ms": 45.271,
+      "ok": true
+    },
+    {
+      "name": "notifications",
+      "path": "/api/notifications",
+      "status": 200,
+      "ms": 9.753,
+      "ok": true
+    },
+    {
+      "name": "adminOverview",
+      "path": "/api/admin/overview",
+      "status": 200,
+      "ms": 15.433,
+      "ok": true
+    },
+    {
+      "name": "adminBudget",
+      "path": "/api/admin/budget/run",
+      "status": 200,
+      "ms": 17.08,
+      "ok": true
+    },
+    {
+      "name": "adminCorruptionAudit",
+      "path": "/api/admin/corruption/audit",
+      "status": 200,
+      "ms": 22.131,
+      "ok": true
+    },
+    {
+      "name": "adminQuota",
+      "path": "/api/admin/quota",
+      "status": 200,
+      "ms": 14.066,
+      "ok": true
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "failedSteps": []
+  },
+  "assertions": {
+    "characterCreated": true,
+    "playStateRead": true,
+    "socialListed": true,
+    "notificationsOk": true,
+    "corruptionDetected": true,
+    "quotaWithinFreeTier": true
+  },
+  "finishedAt": "2026-10-31T15:19:31.772Z"
+}
