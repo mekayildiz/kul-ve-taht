@@ -237,6 +237,24 @@ export interface PeerLoanDto {
   dueGameDay: number;
 }
 
+export interface CompanyPartnerDto {
+  ownerId: string;
+  ownerType: string;
+  share: number;
+}
+
+export interface CompanyDto {
+  id: string;
+  name: string;
+  capital: number;
+  partners: CompanyPartnerDto[];
+  controllingPartnerId: string | null;
+  valuation: number;
+  employees: number;
+  branches: number;
+  dailyPayroll: number;
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -280,6 +298,7 @@ export interface PlayStateResponse {
   bank: BankAccountDto[];
   escrows: EscrowDto[];
   peerLoans: PeerLoanDto[];
+  companies: CompanyDto[];
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -393,6 +412,12 @@ export type PlayAction =
   | { action: "peerLoan"; borrowerId: string; principal: number; interestRate: number; days: number }
   | { action: "repayPeerLoan"; loanId: string }
   | { action: "collectDefault"; loanId: string }
+  | { action: "foundCompany"; name: string; capital: number }
+  | { action: "addPartner"; companyId: string; partnerId: string; share: number }
+  | { action: "distributeProfit"; companyId: string }
+  | { action: "acquireCompany"; companyId: string; allPartnersAgree?: boolean }
+  | { action: "hireEmployee"; companyId: string; name: string; wage: number }
+  | { action: "openBranch"; companyId: string; settlementId: string }
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }

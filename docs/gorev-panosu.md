@@ -146,10 +146,10 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 - [x] E9.2 Emanet (escrow) (belge 20): taraflar arası güvenli işlem; emanet bir hesapta tutulur, koşul gerçekleşince serbest kalır — `economy/bank.ts`, `/api/escrow`
 - [x] E9.3 Faiz, temerrüt, iflas ve tasfiye (belge 20): gecikmiş borç temerrüde düşer; ödeyemeyen iflas eder, mülkleri tasfiye edilir — `economy/bank.ts`, `play/systems.ts`, `play/succession.ts`
 - [x] E9.4 Oyuncular/NPC'ler arası finansman (belge 20): borç verme/alma, alacaklı kaydı — `economy/bank.ts`, migration
-- [ ] E9.5 Şirket, ortaklık ve hisse (belge 20): şirket kurma, ortak hissesi, kâr dağıtımı, kontrol eşiği — `economy/property.ts` (mevcut saf fn'ler), `play/company.ts`, migration, `/api/companies`
-- [ ] E9.6 Birleşme/devralma ve kurumsal bürokrasi (belge 20): şirket birleşmesi, satın alma, devralma — `economy/property.ts` (`mergeCompanies`, `canAcquire`), `play/company.ts`
-- [ ] E9.7 İşletme: çalışanlar, şube ağı, işletmeler arası ortaklık (belge 20) — `play/company.ts`, `economy/property.ts`
-- [ ] E9.8 Bankacılık/şirket arayüzü ve testleri (belge 20) — `app/src/screens/PlayPanel.tsx`, i18n TR+EN
+- [x] E9.5 Şirket, ortaklık ve hisse (belge 20): şirket kurma, ortak hissesi, kâr dağıtımı, kontrol eşiği — `economy/property.ts` (mevcut saf fn'ler), `play/company.ts`, migration, `/api/companies`
+- [x] E9.6 Birleşme/devralma ve kurumsal bürokrasi (belge 20): şirket birleşmesi, satın alma, devralma — `economy/property.ts` (`mergeCompanies`, `canAcquire`), `play/company.ts`
+- [x] E9.7 İşletme: çalışanlar, şube ağı, işletmeler arası ortaklık (belge 20) — `play/company.ts`, `economy/property.ts`
+- [x] E9.8 Bankacılık/şirket arayüzü ve testleri (belge 20) — `app/src/screens/PlayPanel.tsx`, i18n TR+EN
 
 ### P2 – Mülk, çok oyunculu ve kalan saf fonksiyonlar (belge 9, 10, 16)
 

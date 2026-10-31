@@ -131,3 +131,53 @@ export function mergeCompanies(
     ),
   };
 }
+
+// --- Isletme: calisanlar ve sube agi (belge 20) ---
+
+export interface Employee {
+  id: string;
+  name: string;
+  /** Gunluk ucret. */
+  wage: number;
+  /** 0-100 beceri; geliri etkiler. */
+  skill: number;
+}
+
+/** Toplam gunluk ucret yuku. */
+export function payroll(employees: readonly Employee[]): number {
+  return employees.reduce((s, e) => s + Math.max(0, e.wage), 0);
+}
+
+/**
+ * Calisan verimlilik carpani: beceri ortalamasi 1.0-1.5 arasi gelir carpani
+ * verir (belge 20). Calisan yoksa notr 1.0.
+ */
+export function staffEfficiency(employees: readonly Employee[]): number {
+  if (employees.length === 0) return 1;
+  const avg = employees.reduce((s, e) => s + Math.max(0, Math.min(100, e.skill)), 0) / employees.length;
+  return 1 + (avg / 100) * 0.5;
+}
+
+export interface Branch {
+  id: string;
+  companyId: string;
+  settlementId: string;
+  /** Aylik isletme gideri. */
+  upkeep: number;
+}
+
+/**
+ * Sube agi net getirisi: her subenin pazar buyuklugune gore geliri, sabit
+ * gideri asarsa pozitif olur (belge 20). Azalan verim uygulanir.
+ */
+export function branchNetworkIncome(branches: readonly Branch[], marketFactor: number): number {
+  if (branches.length === 0) return 0;
+  let gross = 0;
+  for (const b of branches) {
+    const contribution = 120 * marketFactor - b.upkeep;
+    gross += contribution;
+  }
+  // Azalan verim: cok sube ayni pazari paylasir.
+  const dampened = gross / (1 + Math.max(0, branches.length - 1) * 0.08);
+  return Math.round(dampened);
+}

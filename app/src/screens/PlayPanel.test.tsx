@@ -64,6 +64,7 @@ const stateResponse = {
   bank: [],
   escrows: [],
   peerLoans: [],
+  companies: [],
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 

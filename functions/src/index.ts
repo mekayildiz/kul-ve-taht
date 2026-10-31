@@ -104,6 +104,15 @@ import {
   performCollectDefault,
   settleBankruptcies,
 } from "./play/bank";
+import {
+  companyList,
+  performFoundCompany,
+  performAddPartner,
+  performDistributeProfit,
+  performAcquireCompany,
+  performHireEmployee,
+  performOpenBranch,
+} from "./play/company";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -415,6 +424,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   );
   const group = await groupStatus(env.DB, params.characterId!);
   const appearance = await appearanceStatus(env.DB, params.characterId!);
+  const companies = await companyList(env.DB, params.characterId!);
   const [bank, escrows, peerLoans] = await Promise.all([
     bankSummary(env.DB, params.characterId!),
     escrowList(env.DB, params.characterId!),
@@ -448,6 +458,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     bank,
     escrows,
     peerLoans,
+    companies,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -709,6 +720,24 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "collectDefault":
       result = await performCollectDefault(env.DB, characterId, String(body?.loanId ?? ""));
+      break;
+    case "foundCompany":
+      result = await performFoundCompany(env.DB, characterId, String(body?.name ?? ""), Number(body?.capital ?? 0));
+      break;
+    case "addPartner":
+      result = await performAddPartner(env.DB, characterId, String(body?.companyId ?? ""), String(body?.partnerId ?? ""), Number(body?.share ?? 0));
+      break;
+    case "distributeProfit":
+      result = await performDistributeProfit(env.DB, characterId, String(body?.companyId ?? ""));
+      break;
+    case "acquireCompany":
+      result = await performAcquireCompany(env.DB, characterId, String(body?.companyId ?? ""), Boolean(body?.allPartnersAgree));
+      break;
+    case "hireEmployee":
+      result = await performHireEmployee(env.DB, characterId, String(body?.companyId ?? ""), String(body?.name ?? ""), Number(body?.wage ?? 5));
+      break;
+    case "openBranch":
+      result = await performOpenBranch(env.DB, characterId, String(body?.companyId ?? ""), String(body?.settlementId ?? ""));
       break;
     case "sendMessage":
       result = await performSendMessage(

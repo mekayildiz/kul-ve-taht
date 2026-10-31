@@ -94,3 +94,38 @@ describe("Mulkiyet ve sirket (belge 9, E4.5)", () => {
     expect(merged.propertyIds).toEqual(["p1"]);
   });
 });
+
+import { payroll, staffEfficiency, branchNetworkIncome, type Employee, type Branch } from "./property";
+
+describe("Isletme calisanlar ve sube agi (belge 20)", () => {
+  it("bordro toplam ucret yukunu hesaplar", () => {
+    const employees: Employee[] = [
+      { id: "e1", name: "Ali", wage: 5, skill: 20 },
+      { id: "e2", name: "Veli", wage: 8, skill: 60 },
+    ];
+    expect(payroll(employees)).toBe(13);
+    expect(payroll([])).toBe(0);
+  });
+
+  it("beceri verimliligi 1.0-1.5 arasi kalir, calisan yoksa notr", () => {
+    expect(staffEfficiency([])).toBe(1);
+    const low = staffEfficiency([{ id: "e", name: "x", wage: 5, skill: 0 }]);
+    const high = staffEfficiency([{ id: "e", name: "x", wage: 5, skill: 100 }]);
+    expect(low).toBe(1);
+    expect(high).toBeCloseTo(1.5, 5);
+  });
+
+  it("sube agi azalan verimle net gelir uretir", () => {
+    const branches: Branch[] = [
+      { id: "b1", companyId: "c", settlementId: "s1", upkeep: 20 },
+      { id: "b2", companyId: "c", settlementId: "s2", upkeep: 20 },
+    ];
+    expect(branchNetworkIncome([], 1)).toBe(0);
+    const one = branchNetworkIncome([branches[0]!], 1);
+    const two = branchNetworkIncome(branches, 1);
+    expect(one).toBe(100);
+    // Ikinci sube azalan verim nedeniyle eklediginden az katar.
+    expect(two).toBeGreaterThan(one);
+    expect(two).toBeLessThan(one * 2);
+  });
+});

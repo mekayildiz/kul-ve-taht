@@ -761,3 +761,58 @@ describe("Bankacilik, emanet ve finansman (belge 20)", () => {
     expect(lState.state.gold).toBeGreaterThan(700); // 1000-300 + (anapara+faiz)
   });
 });
+
+describe("Sirket, ortaklik ve birlesme (belge 20)", () => {
+  const env = makeEnv();
+
+  it("sirket kurar, ortak ekler ve kâr dagitir", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    await grantGold(env, a.characterId, 2000);
+    const founded = await act(env, a.token, a.characterId, { action: "foundCompany", name: "Demir Ticaret", capital: 500 });
+    expect(founded.status).toBe(200);
+    const companyId = (await readBody(founded)).detail.companyId as string;
+    const aState = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    expect(aState.state.gold).toBe(1500);
+    expect(aState.companies[0].capital).toBe(500);
+    expect(aState.companies[0].controllingPartnerId).toBe(a.characterId);
+
+    // Kontrol ortagi yeni ortak ekler.
+    const add = await act(env, a.token, a.characterId, { action: "addPartner", companyId, partnerId: b.characterId, share: 20 });
+    expect(add.status).toBe(200);
+    const detail = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    expect(detail.companies[0].partners.length).toBe(2);
+
+    // Kâr dagitimi ortagin payina gore yapilir.
+    const dist = await act(env, a.token, a.characterId, { action: "distributeProfit", companyId });
+    expect(dist.status).toBe(200);
+    const bState = await readBody(await call(`/api/play/${b.characterId}/state`, env, auth(b.token)));
+    expect(bState.state.gold).toBeGreaterThan(20);
+  });
+
+  it("calisan alir ve sube acar", async () => {
+    const a = await setupPlayer(env);
+    await grantGold(env, a.characterId, 1000);
+    const founded = await act(env, a.token, a.characterId, { action: "foundCompany", name: "Gumus Han", capital: 300 });
+    const companyId = (await readBody(founded)).detail.companyId as string;
+    const hire = await act(env, a.token, a.characterId, { action: "hireEmployee", companyId, name: "Kalfa", wage: 10 });
+    expect(hire.status).toBe(200);
+    const branch = await act(env, a.token, a.characterId, { action: "openBranch", companyId, settlementId: "varkhenn-drahkmar" });
+    expect(branch.status).toBe(200);
+    const state = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    expect(state.companies[0].employees).toBe(1);
+    expect(state.companies[0].branches).toBe(1);
+  });
+
+  it("kontrol payi olmayan ortak sirket islemi yapamaz", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    await grantGold(env, a.characterId, 1000);
+    const founded = await act(env, a.token, a.characterId, { action: "foundCompany", name: "Bakir Ortaklik", capital: 200 });
+    const companyId = (await readBody(founded)).detail.companyId as string;
+    await act(env, a.token, a.characterId, { action: "addPartner", companyId, partnerId: b.characterId, share: 30 });
+    // b kontrol payina sahip degil.
+    const denied = await act(env, b.token, b.characterId, { action: "hireEmployee", companyId, name: "Sahte", wage: 5 });
+    expect(denied.status).toBe(400);
+  });
+});

@@ -10,6 +10,7 @@ import {
   type DiplomacyDto,
   type AppearanceDto,
   type BankAccountDto,
+  type CompanyDto,
   type EscrowDto,
   type FamilyDto,
   type GroupDto,
@@ -53,6 +54,7 @@ interface State {
   appearance: AppearanceDto | null;
   bank: BankAccountDto[];
   escrows: EscrowDto[];
+  companies: CompanyDto[];
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -86,6 +88,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     appearance: null,
     bank: [],
     escrows: [],
+    companies: [],
     storage: null,
     diplomacy: [],
     quests: [],
@@ -126,6 +129,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           appearance: res.appearance,
           bank: res.bank,
           escrows: res.escrows,
+          companies: res.companies,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -676,6 +680,34 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
               </button>
               <button type="button" onClick={() => act({ action: "refundEscrow", escrowId: e.id }, t.play.committed)}>
                 {t.play.refund}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>{t.play.companies}</h3>
+      {state.companies.length === 0 ? (
+        <div className="kvt-playactions">
+          <button type="button" onClick={() => act({ action: "foundCompany", name: "Ticaret Evi", capital: 100 }, t.play.committed)}>
+            {t.play.foundCompany} (100)
+          </button>
+        </div>
+      ) : (
+        <ul className="kvt-companies">
+          {state.companies.map((c) => (
+            <li key={c.id}>
+              <span>
+                {c.name} — {t.play.capital}: {c.capital} {t.play.gold} / {t.play.employees}: {c.employees} / {t.play.branches}: {c.branches}
+              </span>
+              <button type="button" onClick={() => act({ action: "distributeProfit", companyId: c.id }, t.play.committed)}>
+                {t.play.distribute}
+              </button>
+              <button type="button" onClick={() => act({ action: "hireEmployee", companyId: c.id, name: "Kalfa", wage: 5 }, t.play.committed)}>
+                {t.play.hire}
+              </button>
+              <button type="button" onClick={() => act({ action: "openBranch", companyId: c.id, settlementId: character.current_settlement ?? "varkhenn-drahkmar" }, t.play.committed)}>
+                {t.play.openBranch}
               </button>
             </li>
           ))}
