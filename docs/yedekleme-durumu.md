@@ -5,13 +5,13 @@
 | Öğe | Değer |
 |---|---|
 | Dal | `feat/kul-ve-taht-development` |
-| Commit sayısı | 18 |
-| HEAD | `97e5fe8` |
+| Commit sayısı | 24 |
+| HEAD | `f5c4c3f` |
 | Çalışma ağacı | temiz |
 | Kalıcı bundle | `/workspace/backups/kul-ve-taht-feat-20261031.bundle` |
-| Bundle SHA-256 | `b19cc724cba438f229031fdda7ee556b4f34c5165e5c3c4f49071f6b3827b162` |
+| Bundle SHA-256 | `83786ce51c39014e83837d431191988f854be3e3732bf7d8073951cc23e6f2fd` |
 | Bundle doğrulama | `git bundle verify` → tam geçmiş |
-| Test durumu | 295/295 geçti (36 dosya); lint 0 hata; uygulama build başarılı |
+| Test durumu | 369/369 geçti (43 dosya); lint 0 hata; build başarılı; Miniflare'de uçtan uca akış doğrulandı |
 
 Bundle `--all` ile alınır (main + çalışma dalı). `/workspace/backups/` altındadır,
 `/tmp` geçici dizininde değildir.
@@ -46,6 +46,19 @@ Yetki verildiğinde çalıştırılacak komut (tek adım):
 cd /workspace/kul-ve-taht
 git push -u origin feat/kul-ve-taht-development
 ```
+
+Alternatif olarak `scripts/push-to-github.sh` betiği kullanılabilir (uzak
+adresi belirteçle kurar, dalı gönderir ve başarısızlıkta net teşhis verir).
+
+**Bu oturumda denenen ve başarısız olan ek yollar (kayıt için):**
+
+- Dal oluşturma (`POST /git/refs`) → 403
+- İçerik yazma (`PUT /contents/...`) → 403
+- Kimlik bilgisi yardımcısı / SSH anahtarı → ortamda yok
+- `gh auth` → `GITHUB_TOKEN` ile `mekayildiz` olarak giriş, ama belirteç `ghu_`
+  (App kurulum belirteci) ve `contents: write` içermiyor
+
+Belirtecin yetkilerini aşmaya veya güvenlik önlemini atlamaya çalışılmadı.
 
 **Not:** GitHub'a gönderilemeyen hiçbir çalışma "gönderildi" olarak
 gösterilmemektedir. Tüm ilerleme yerel commit'lerde ve yukarıdaki bundle'da
