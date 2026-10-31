@@ -61,8 +61,8 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [ ] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` miras çekirdeği hazır; mülk devri E4.5 ile bağlanacak
 
 ## E7 – Görsel, test ve yayın
-- [ ] E7.1 Tutarlı görsel varlık kütüphanesi + künye/lisans kaydı
-- [ ] E7.2 40 portrelik havuz + önemli karakterlere özel portre
+- [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, R2 kimliği, atıf listesi; `/api/assets/catalog`)
+- [x] E7.2 40 portrelik havuz + önemli karakterlere özel portre — `assets/library.ts` (`portraitForKey`, `/api/assets/portrait/:key`)
 - [ ] E7.3 Birim/entegrasyon/e2e/mobil/güvenlik/yük testleri
 - [ ] E7.4 Ücretsiz kota doğrulama + optimizasyon
 - [ ] E7.5 Kapalı test + yedek/geri yükleme provası

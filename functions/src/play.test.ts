@@ -157,3 +157,30 @@ describe("Oynanis uclari (E3-E6)", () => {
     expect(body.cost).toBe(16);
   });
 });
+
+describe("Gorsel varlik uclari (E7)", () => {
+  it("katalog yalnizca lisans uyumlu varliklar ve atif listesi doner", async () => {
+    const env = makeEnv();
+    const res = await call("/api/assets/catalog", env);
+    const body = (await res.json()) as { count: number; assets: { assetKey: string }[]; attributions: string[] };
+    expect(res.status).toBe(200);
+    expect(body.count).toBeGreaterThan(0);
+    expect(body.attributions.some((a) => a.includes("game-icons.net"))).toBe(true);
+  });
+
+  it("katalog kategori suzmesi yapar (portre havuzu 40)", async () => {
+    const env = makeEnv();
+    const res = await call("/api/assets/catalog?category=portrait", env);
+    const body = (await res.json()) as { count: number };
+    expect(body.count).toBe(40);
+  });
+
+  it("portre ucu siradan NPC icin havuz, onemli icin ozel portre doner", async () => {
+    const env = makeEnv();
+    const pool = (await (await call("/api/assets/portrait/npc-7", env)).json()) as { reserved: boolean; assetKey: string };
+    expect(pool.reserved).toBe(false);
+    expect(pool.assetKey.startsWith("portrait/pool/")).toBe(true);
+    const special = (await (await call("/api/assets/portrait/king?reserved=1", env)).json()) as { reserved: boolean };
+    expect(special.reserved).toBe(true);
+  });
+});

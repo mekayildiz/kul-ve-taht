@@ -36,6 +36,14 @@ import {
 import { ITEMS } from "./inventory/items";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
+import {
+  ASSET_CATALOG,
+  portraitPoolCatalog,
+  selectAssets,
+  attributionList,
+  portraitForKey,
+  type AssetCategory,
+} from "./assets/library";
 
 export { PasswordHashGate } from "./durable/password-hash-gate";
 export { BackupWorkflow } from "./workflows/backup-workflow";
@@ -248,6 +256,21 @@ router.get("/api/lodging", ({ url }: Ctx) => {
   const kind = url.searchParams.get("kind") ?? "town";
   const nights = Number.parseInt(url.searchParams.get("nights") ?? "1", 10);
   return json({ cost: lodgingQuote(kind, Number.isFinite(nights) ? nights : 1) });
+});
+
+/** Gorsel varlik katalogu (belge 17.4): yalnizca lisans uyumlu varliklar doner. */
+router.get("/api/assets/catalog", ({ url }: Ctx) => {
+  const category = url.searchParams.get("category") as AssetCategory | null;
+  const tag = url.searchParams.get("tag") ?? undefined;
+  const catalog = [...ASSET_CATALOG, ...portraitPoolCatalog()];
+  const selected = selectAssets(catalog, { ...(category ? { category } : {}), ...(tag ? { tag } : {}) });
+  return json({ count: selected.length, assets: selected, attributions: attributionList(selected) });
+});
+
+/** Portre atamasi: onemli karakter ozel, siradan NPC havuzdan (belge 17.2). */
+router.get("/api/assets/portrait/:key", ({ params, url }: Ctx) => {
+  const reserved = url.searchParams.get("reserved") === "1";
+  return json(portraitForKey(params.key!, reserved));
 });
 
 /** Oynanis aksiyonu: govde { action, ... } seklindedir; SUNUCUDA dogrulanir. */
