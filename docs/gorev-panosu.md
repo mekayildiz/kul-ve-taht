@@ -212,3 +212,39 @@ olarak kaydedildi.
 Doğrulama: `npm run verify` → lint 0 hata, tip kontrolü temiz, build başarılı,
 **52 dosya / 497 test geçti**, 0 TL denetimi geçti; korunan belge md5
 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+## E10 – Nihai teslim değerlendirmesi ve yayın (belge 20, 21.1, 26)
+
+Tüm proje, tasarım belgesinin zorunlu gereksinimleriyle karşılaştırıldı. Ana
+sistemlerin tamamı mevcut ve bağlıydı; bu turda bulunan zorunlu eksikler
+giderildi ve proje yayına hazır hale getirildi.
+
+- [x] E10.1 Nihai teslim değerlendirmesi (belge 20, 26): 130 yerleşim, ekonomi,
+  askerî/kuşatma/deniz, siyaset, aile/hanedan, büyü, adalet, yeraltı, görev,
+  açık artırma, pazar ve sosyal sistemlerin tamamı gerçek veriye + sunucu
+  mantığına bağlı; sahte düğme/ekran yok. Tek zorunlu eksik CORS idi.
+- [x] E10.2 CORS katmanı (belge 21.1, 26): ayrı kaynaklı (Pages) arayüzün
+  Workers API'ye erişebilmesi için `functions/src/http/cors.ts` eklendi; on
+  kontrol 204, `ALLOWED_ORIGIN` ile kaynak kilidi. Kimlik `Authorization`
+  başlığıyla olduğundan varsayılan `*` güvenlidir — `index.ts`, 3 test.
+- [x] E10.3 Tek kaynaklı SPA yayını (belge 18, 26): `functions/wrangler.toml`
+  `[assets]` bloğu `app/dist`'i aynı Worker'dan sunar; arayüz + API tek
+  kaynakta çalışır (ücretsiz, CORS sorunsuz). `docs/yayin-kilavuzu.md` güncellendi.
+- [x] E10.4 CI düzeltmesi (belge 26: otomatik testler geçmeli): testler gerçek
+  SQLite motoru (`node:sqlite`) kullandığından Node ≥ 22.5 gerekir; CI Node 24'e
+  sabitlendi (`.github/workflows/ci.yml`), `engines` ≥ 22.5 yapıldı. Böylece
+  `verify` iş akışı geçer.
+- [x] E10.5 Canlı doğrulama (belge 25): erişilebilir adreste tam oyuncu akışı
+  çalıştırıldı (kayıt → giriş → karakter → durum → aksiyon); CORS on kontrol ve
+  normal yanıt başlıkları doğrulandı.
+
+Doğrulama: `npm run verify` → lint 0 hata, tip temiz, build başarılı,
+**52 dosya / 500 test geçti**, 0 TL denetimi geçti; CI (`verify`) **geçti**.
+Korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+### Bilinen sınırlama (kullanıcı işlemi)
+
+Gerçek üretim kaynakları (`wrangler d1 create`, `r2 bucket create`,
+`wrangler deploy`) **ücretsiz** Cloudflare hesap yetkilendirmesi
+(`npx wrangler login`) gerektirir. Yetkilendirme olmadan tüm sistemler Miniflare
+ile yerel olarak çalışır ve doğrulanmıştır (bkz. `docs/yayin-kilavuzu.md`).

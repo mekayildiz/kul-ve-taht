@@ -44,6 +44,9 @@ Yayın adımları: `docs/yayin-kilavuzu.md`.
 ## Kurallar
 
 - **Test edilmeyen görev "tamamlandı" işaretlenmez.**
+- Testler gerçek SQLite motorunu (`node:sqlite`) kullanır; bu modül **Node ≥ 22.5**
+  gerektirir. CI (`.github/workflows/ci.yml`) bu yüzden Node 24 kullanır;
+  Node 20 ile testler `ERR_UNKNOWN_BUILTIN_MODULE` verir.
 - Her özellik sunucuda doğrulanır; istemciden gelen para/eşya/sahiplik yok sayılır.
 - Görseller yerel üretilir (`scripts/gen-assets.mjs`), CC0/self lisanslıdır;
   harici indirme veya atıf zorunluluğu yoktur.
@@ -54,6 +57,18 @@ Yayın adımları: `docs/yayin-kilavuzu.md`.
 
 `feat/kul-ve-taht-development` dalı `origin`'e gönderilebilir (push çalışır).
 Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
+
+## Yayın mimarisi (belge 18, 21.1)
+
+- **Tek kaynak (önerilen, ücretsiz):** `functions/wrangler.toml` içindeki
+  `[assets]` bloğu `app/dist`'i aynı Worker'dan sunar; arayüz + `/api/*` tek
+  kaynakta çalışır, tarayıcıda CORS sorunu olmaz. Önce `npm run build -w @kvt/app`.
+- **Ayrı kaynak (isteğe bağlı):** arayüz ayrı bir Pages projesinde barındırılırsa
+  `functions/src/http/cors.ts` devreye girer; `ALLOWED_ORIGIN` secret'ı ile
+  kaynak kilitlenir. Kimlik `Authorization` başlığıyla (çerez değil) olduğundan
+  varsayılan `*` güvenlidir.
+- Yerel geliştirme `npx wrangler dev --local --ip 0.0.0.0` ile yapılır; Miniflare
+  D1/R2/DO/Workflows'u hesap gerekmeden emüle eder.
 
 ## Dunya simulasyonu (belge 8/9/19)
 
