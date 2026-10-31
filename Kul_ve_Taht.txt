@@ -1,0 +1,1580 @@
+KÜL VE TAHT KAPSAMLI OYUN FİKRİ VE TASARIM BELGESİ Sürüm: 1.0 – Tasarım
+konsepti Tarih: 31 Ekim 2026
+
+RESMÎ SLOGAN “Tahtlar yıkılır. Krallıklar küllerinden doğar.”
+
+BELGENİN AMACI Bu belge, Kül ve Taht adlı çevrim içi, kalıcı dünyaya
+sahip, metin tabanlı ortaçağ-fantezi RPG/strateji oyununun temel
+vizyonunu, dünyasını, oynanış sistemlerini, teknik yaklaşımını, görsel
+kimliğini ve aşamalı geliştirme planını anlatır. Bir oyun geliştirme
+ekibine, bağımsız geliştiriciye veya oyun üretim aracına başlangıç
+tasarım dokümanı olarak verilebilir.
+
+Bu belge bir konsept ve tasarım hedefidir; tamamlanmış yazılım, kesin
+performans garantisi veya sınırsız ücretsiz altyapı taahhüdü değildir.
+Sayısal değerlerin bir bölümü tasarım başlangıç değeridir ve prototip
+testleriyle dengelenmelidir.
+
+====================================================================== 1.
+OYUNUN KİMLİĞİ VE TEMEL VİZYONU
+======================================================================
+
+Oyun adı: Kül ve Taht Tür: Çevrim içi, kalıcı dünya, metin tabanlı RPG +
+krallık/ekonomi simülasyonu + karakter yaşam simülasyonu + strateji.
+Tema: Ortaçağ, düşük/orta doz fantastik unsurlar, hanedan mücadeleleri,
+siyaset, ekonomi, keşif, aile ve kuşaklar. Platform: Öncelik mobil
+tarayıcı; ayrıca tablet ve masaüstü tarayıcı desteği. Görsel yaklaşım:
+2D veya 3D modellenmiş oynanış sahneleri yoktur. Oyun metin, anlatı,
+menüler, seçimler, tablolar, haritalar ve statik görsel
+illüstrasyonlarla oynanır. Çok oyunculu yapı: Oyuncuların aynı kalıcı
+dünyada yaşadığı, ticaret yaptığı, iletişim kurduğu, aileler ve gruplar
+kurduğu çevrim içi dünya. İlk bütçe hedefi: 0 TL. İlk sürüm ücretsiz
+servis katmanları ve açık kaynak/ücretsiz araçlarla geliştirilmelidir.
+Ücretsiz hizmetlerin kota, uykuya alma, depolama ve trafik sınırları
+olduğu kabul edilmelidir.
+
+ANA FİKİR Kül ve Taht, oyuncuyu tek bir ana hikâyeyi bitirmeye
+zorlamayan, kendi hayatını ve hedeflerini belirleyebildiği yaşayan bir
+ortaçağ dünyasına yerleştirir. Oyuncu bir asker, tüccar, zanaatkâr,
+çiftçi, gezgin, akademisyen, büyücü, soylu, siyasetçi veya zamanla
+hükümdar olabilir. Bunlar sabit sınıflar değildir; karakterin eğitimi,
+becerileri, ilişkileri, zamanı ve yaptığı seçimlerle şekillenir.
+
+Dünya yalnızca oyuncu çevrim içiyken yaşamaz. NPC’ler, hanedanlar,
+krallıklar, pazarlar ve yerleşimler oyuncular çevrim dışıyken de sınırlı
+ve kontrollü biçimde ilerler. Ancak bu simülasyon, ücretsiz altyapıyı
+tüketen her saniye çalışan devasa bir gerçek zamanlı simülasyon olarak
+tasarlanmamalıdır. Oyun dünyası olay tabanlı ve zaman dilimli
+güncellemelerle ilerlemelidir.
+
+OYUNCU ÖZGÜRLÜĞÜ - Ana hikâyeyi takip etmek zorunlu değildir. - Oyuncu
+barışçıl, ekonomik, askerî, siyasi veya keşif odaklı yaşayabilir. -
+Meslek ve uzmanlıklar birbirini tamamen dışlamaz. - Oyuncu bir krallığa
+bağlı kalmak zorunda değildir; seyahat edebilir, göç edebilir veya taraf
+değiştirebilir. - İtibar, ilişkiler ve geçmiş eylemler seçenekleri
+etkiler; ancak oyuncunun bütün geleceğini tek bir erken karara
+kilitlemez. - Oyuncu bir karakterini kaybettiğinde soyundan gelen bir
+karakterle veya yeni bir karakterle dünyaya dönebilir.
+
+TASARIM İLKELERİ 1. Oyuncu eylemlerinin sonuçları olmalı. 2. NPC’ler
+yalnızca görev veren dekoratif karakterler olmamalı; hedefleri,
+ilişkileri, işleri ve hafızaları bulunmalı. 3. Ekonomi yalnızca
+oyuncuların alışverişine bağlı kalmamalı; NPC üreticiler ve tüketiciler
+de sistemi ayakta tutmalı. 4. Oyuncu ve NPC aynı temel gelişim
+kurallarına tabi olmalı. 5. Kalıcı ölüm ve miras sistemi anlamlı risk
+yaratmalı; fakat sebepsiz ve rastgele kayıplar yaşanmamalı. 6. Görsel
+kalite ile düşük veri tüketimi birlikte düşünülmeli. 7. İlk sürüm küçük
+ama çalışan bir dünya olmalı; bütün kıta ve sistemler ilk günden
+etkinleştirilmemeli.
+
+======================================================================
+2. DÜNYA: VALEDORN
+======================================================================
+
+İlk kıta Valedorn’dur. Oyunun ilerleyen dönemlerinde başka kıtalar
+eklenebilir. Her kıtanın kendi siyasi yapısı, ticaret dengesi,
+kültürleri ve para sistemi olabilir.
+
+VALDORN’UN GENEL TARİHİ Valedorn uzun yıllar hanedanların, krallıkların
+ve bölgesel güçlerin mücadele ettiği bir kıtadır. Yakın tarihin en
+yıkıcı çatışması Kül Savaşı olarak bilinir. Savaş; şehirleri, ticaret
+yollarını, orduları ve hanedanları ağır biçimde etkiledi. Savaşın
+sonunda kıtayı tek bir gücün yönetmesi hedefi başarısız oldu; Birleşik
+Taht dağıldı, bazı hanedanlar çöktü, sınırlar ve yönetimler değişti.
+
+Kül Savaşı’nın ardından barış anlaşmaları birkaç kez bozuldu. Daha küçük
+bölgesel savaşlar, sınır çatışmaları ve siyasi krizler yaşandı; fakat
+hiçbiri Kül Savaşı’nın ölçeğine ulaşmadı. Her seferinde yeni bir
+uzlaşmayla barış yeniden kuruldu.
+
+OYUNUN BAŞLANGIÇ TARİHİ Oyun, Kül Savaşı’nın bitişinden 73 yıl sonra
+başlar. Böylece: - 20–72 yaş aralığındaki karakterler savaş sonrasında
+doğmuştur. - 73 yaş ve üzerindeki kişiler savaşı çocukken yaşamış
+olabilir. - Yaşlı NPC’ler savaşın tanıkları, gazileri veya dönemin aile
+hikâyelerini taşıyan kişiler olabilir. - Dünya yeniden kurulmuştur;
+ancak savaşın siyasi, ekonomik ve toplumsal izleri sürmektedir.
+
+KÜL SAVAŞI’NIN SİYASİ MİRASI Savaş, tek bir tarafın kesin zaferiyle
+bitmemiştir. Birleşik Taht fikri dağılmış, bağımsız krallıklar varlığını
+sürdürmüş, bazı sınırlar yeniden çizilmiştir. Savaşın ardından kurulan
+düzen kırılgandır. Eski düşmanlıklar, hanedan iddiaları, ticaret
+rekabeti ve sınır anlaşmazlıkları oyunun dinamik olaylarına temel
+oluşturur.
+
+======================================================================
+3. VALEDORN’UN SİYASİ HARİTASI
+======================================================================
+
+Valedorn’da beş büyük bağımsız krallık, bağımsız şehirler ve tarafsız
+bölgeler bulunur. Hiçbir krallık her alanda mutlak üstün değildir. Güç
+dengeleri savaş, ticaret, kıtlık, yönetim, diplomasi ve oyuncuların
+eylemleriyle değişebilir.
+
+3.1 VARKHENN – KUZEY KRALLIĞI Başkent: Drahkmar Hükümdar: Kral Aldric
+Veyr, 58 yaşında Hanedan: Veyr Yönetim: Feodal monarşi Arma: Gümüş
+boynuzlu siyah kurt. Bayrak: Siyah zemin, gümüş kurt ve koyu kırmızı
+kenar.
+
+Kimlik ve tarih: Veyr ailesi Kül Savaşı sırasında kuzey kalelerini
+birleştirerek krallığın parçalanmasını önlemiştir. Askerî gelenek,
+kaleler ve kuzey sınırlarının savunulması Varkhenn kimliğinin
+merkezindedir.
+
+Askerî yapı: - Ağır piyade. - Zırhlı süvari. - Kale ve geçit
+savunması. - Sınır garnizonları.
+
+Ekonomi: - Demir, kömür, gümüş. - Silah ve zırh üretimi. - Maden
+işletmeleri ve metal işçiliği.
+
+Zayıflıklar: - Sert iklim. - Kısa tarım mevsimi. - Yüksek askerî
+harcama. - Gıda tedarikinde dış bölgelere bağımlılık.
+
+Önemli soylu aileler: - Draven: Kuzey sınır kalelerini kontrol eder. -
+Haldrek: Büyük madenler ve demir işletmeleri. - Morcant: Eski askerî
+komutanlar ailesi.
+
+Veliaht: Prens Kaelen Veyr, 27 yaşında. Siyasi sorun: Kral
+yaşlanmaktadır; veliaht henüz yeterli siyasi desteği toplamamıştır.
+
+3.2 AURELITH – BATI KRALLIĞI Başkent: Velmora Hükümdar: Kraliçe
+Seraphine Valeris, 46 yaşında Hanedan: Valeris Yönetim: Konsey destekli
+monarşi Arma: Altın güneş önünde beyaz gemi. Bayrak: Lacivert zemin,
+altın güneş ve beyaz gemi.
+
+Kimlik ve tarih: Valeris ailesi batı limanlarını ve deniz ticaretini
+birleştirerek krallığın temel gücünü oluşturmuştur.
+
+Askerî yapı: - Güçlü donanma. - Deniz piyadeleri. - Paralı asker
+birlikleri. - Liman ve kıyı savunması.
+
+Ekonomi: - Deniz ticareti. - Gemi yapımı. - Balıkçılık. - Lüks mallar. -
+Finans ve ticaret aileleri.
+
+Zayıflıklar: - Zengin tüccar ailelerinin devlet kararları üzerinde aşırı
+etkisi. - Deniz ticaret yollarına ve liman güvenliğine bağımlılık.
+
+Önemli soylu/ticari aileler: - Merovain: Büyük ticaret filoları. -
+Thalor: Liman kentlerinde güçlü nüfuz. - Edevane: Kraliyet hazinesine
+borç veren bankacılık ailesi.
+
+Veliaht: Prenses Elira Valeris, 23 yaşında. Siyasi sorun: Tüccar konseyi
+kraliçenin karar yetkisini sınırlandırmak istemektedir.
+
+3.3 SOLMERYA – GÜNEY KRALLIĞI Başkent: Amsyra Hükümdar: Kral Edric
+Solvar, 52 yaşında Hanedan: Solvar Yönetim: Mutlak monarşi Arma: Altın
+başaklarla çevrili kırmızı güneş. Bayrak: Krem zemin, kırmızı ve altın
+arma.
+
+Kimlik ve tarih: Solvar ailesi Kül Savaşı sonrasında güneyin tarım
+kentlerini birleştirmiştir.
+
+Askerî yapı: - Büyük piyade ordusu. - Okçular. - Hafif süvari. - Geniş
+insan kaynağı.
+
+Ekonomi: - Tahıl, üzüm, zeytin. - Hayvancılık. - At yetiştiriciliği. -
+Gıda ticareti.
+
+Zayıflıklar: - Kalabalık nüfusun gıda ihtiyacı. - Su kaynaklarına
+bağımlılık. - Toprak sahibi soylular arasında arazi rekabeti.
+
+Önemli aileler: - Arven: Büyük tarım arazileri. - Belmor: Hayvancılık ve
+at yetiştiriciliği. - Deyrath: Önemli ordu komutanları.
+
+Veliaht: Prens Darion Solvar, 29 yaşında. Siyasi sorun: Büyük toprak
+sahipleri daha düşük vergi ve daha fazla özerklik istemektedir.
+
+3.4 ERYNDOR – DOĞU KRALLIĞI Başkent: Itheryn Hükümdar: Kraliçe Maerwynn
+Elaris, 41 yaşında Hanedan: Elaris Yönetim: Seçimli monarşi Arma: Gümüş
+ay önünde açık kitap. Bayrak: Koyu yeşil zemin, gümüş ay ve kitap.
+
+Kimlik ve tarih: Elaris ailesi akademiler ve büyü kurumlarıyla kurduğu
+ilişkiler sayesinde doğuyu bir arada tutmuştur.
+
+Askerî yapı: - Eğitimli profesyonel askerler. - Büyücüler. - İz
+sürücüler. - Savunma uzmanları.
+
+Ekonomi: - Eğitim ve araştırma. - Zanaatkârlık. - Tıp ve şifacılık. -
+Büyü bilgisi. - Uzmanlaşmış üretim.
+
+Zayıflıklar: - Sınırlı askerî insan gücü. - Akademiler arasında
+ideolojik görüş ayrılıkları.
+
+Önemli aileler: - Vaelthorn: Akademilerin eski koruyucuları. - Iskaryn:
+Büyü araştırmaları ve nadir metinler. - Otheryn: Hukuk ve eğitim
+kurumlarında nüfuz.
+
+Öne çıkan aday: Prenses Lyssara Elaris, 24 yaşında. Seçimli monarşi
+nedeniyle tahta geçişi otomatik değildir. Siyasi sorun: Soylular ile
+hükümdarı seçme hakkına sahip akademi temsilcileri arasında anlaşmazlık
+vardır.
+
+3.5 CAELVAR – MERKEZ KRALLIĞI Başkent: Caerthas Hükümdar: Kral Theron
+Caelmont, 49 yaşında Hanedan: Caelmont Yönetim: Mutlak hükümdar
+yetkileri bulunan, soylu konseyiyle çalışan monarşi. Arma: Altın taç
+takan kırmızı kartal. Bayrak: Koyu bordo zemin, altın kartal ve taç.
+
+Kimlik ve tarih: Caelmont ailesi savaş öncesi düzenin en eski
+hanedanlarından biridir ve savaş sonrasında merkezî topraklarını
+korumuştur.
+
+Askerî yapı: - Dengeli piyade. - Süvari. - Okçular. - Profesyonel
+muhafızlar.
+
+Ekonomi: - Yönetim ve bürokrasi. - Ticaret yolları. - Zanaatkârlık. -
+Vergiler. - Büyük pazarlar.
+
+Zayıflıklar: - Soylular arası güç mücadelesi. - Pahalı merkezî yönetim.
+
+Önemli aileler: - Ravencourt: Saray ve diplomasi. - Valtorien: Geniş
+topraklar ve kaleler. - Ashbourne: Üst düzey ordu komutası.
+
+Veliaht: Prens Vaelor Caelmont, 25 yaşında. Siyasi sorun: Soylular
+kraliyet konseyinin yetkilerinin genişletilmesini istemektedir.
+
+3.6 KRALLIKLAR ARASI İLİŞKİLER - Varkhenn – Caelvar: Eski sınır
+anlaşmazlıkları. - Aurelith – Solmerya: Güçlü ticaret ortaklığı. -
+Eryndor – Caelvar: Diplomatik ve akademik iş birliği. - Varkhenn –
+Aurelith: Maden, cevher ve silah ticareti. - Solmerya – Eryndor: Gıda
+karşılığında eğitim ve bilgi. - Aurelith – Caelvar: Ticaret yolları
+üzerinde rekabet.
+
+Bu ilişkiler sabit senaryo değildir. Hükümdarlar, konseyler, savaşlar,
+ticaret anlaşmaları ve oyuncu eylemleriyle değişebilir.
+
+3.7 BAĞIMSIZ ŞEHİRLER VE TARAFSIZ BÖLGELER - Ravenport: Büyük ticaret
+limanı olan bağımsız şehir devleti. - Thornwick: Madencilik ve
+zanaatkârlık merkezi olan bağımsız şehir. - Eldermere: Akademiler ve
+şifacılarla tanınan özgür şehir. - Ashenvale: Tarafsız orman bölgesi. -
+Greywatch Pass: Stratejik, tarafsız ticaret ve askerî geçit.
+
+Bağımsız şehirlerin kendi yöneticileri, yasaları, muhafızları ve
+ekonomileri bulunur. Tarafsızlıkları sonsuza kadar garanti değildir.
+
+======================================================================
+4. YERLEŞİM AĞI VE HARİTA
+======================================================================
+
+TAM DÜNYA HEDEFİ Her krallık için planlanan yerleşim hiyerarşisi: - 1
+başkent. - 3 büyük şehir. - 5 kasaba. - 12 köy. - 5 kale.
+
+Bu, krallık başına 26, beş krallık için toplam 130 yerleşim/önemli yapı
+hedefi anlamına gelir. Bağımsız şehirler ve tarafsız bölgeler buna
+eklenir.
+
+ÖNEMLİ TEKNİK VE ÜRÜN KARARI
+Valedorn dünyasındaki 5 krallığın her biri için 1 başkent, 3 büyük şehir, 5
+kasaba, 12 köy ve 5 kale olmak üzere toplam 26 yerleşim ve yapı bulunacaktır.
+Beş krallıkta toplam 130 yerleşim ve yapı yer alacaktır. Bu 130 yerleşimin
+tamamı oyunun bitmiş sürümünde aktif, işlevsel ve birbirleriyle bağlantılı
+olacaktır. Hiçbir yerleşim yalnızca harita üzerinde dekoratif veya işlevsiz
+olarak bırakılmayacaktır. Geliştirme sürecinde test ve optimizasyon amacıyla
+yerleşimler aşamalı olarak devreye alınabilir; ancak bu yöntem nihai oyunun
+kapsamını küçültmek veya bazı yerleşimleri oyundan çıkarmak için kullanılamaz.
+
+YERLEŞİM HİYERARŞİSİ Başkent: - Kraliyet sarayı veya yönetim merkezi. -
+Ana konsey ve bürokrasi. - Büyük pazar. - Ana garnizon. - Önemli
+akademi, liman veya üretim yapıları krallığın kimliğine göre
+bulunabilir.
+
+Büyük şehir: - Bölgesel yönetim. - Büyük pazar ve zanaat alanları. -
+Kışla, muhafız merkezi veya liman. - Birden fazla lonca ve önemli
+aile. - Yüksek nüfus ve gelişmiş hizmetler.
+
+Kasaba: - Yerel pazar. - Birkaç zanaat ve üretim işletmesi. - Han, ahır,
+muhafız noktası. - Çevredeki köylere hizmet.
+
+Köy: - Tarım, hayvancılık, ormancılık, madencilik veya balıkçılık gibi
+birincil üretim. - Sınırlı hizmetler. - Yerel aileler ve köy
+yöneticisi. - Güvenlik ve kaynak kapasitesi sınırlı.
+
+Kale: - Garnizon ve askerî komuta. - Sınır, geçit, yol veya stratejik
+alan kontrolü. - Depolar ve savunma kapasitesi. - Kale sahibi veya
+komutanın siyasi ilişkileri.
+
+HER YERLEŞİM İÇİN VERİLER - Adı ve harita konumu. - Bölge, krallık veya
+bağımsız statü. - Görsel/illüstrasyon kimliği. - Nüfus ve nüfus
+eğilimi. - Ekonomik durum. - Temel üretim ve tüketim. - Yerel yönetici
+veya NPC sorumlu. - Etkili aileler. - Güvenlik seviyesi ve muhafız
+gücü. - Pazar ve ticaret bağlantıları. - Yerel önemli NPC’ler. -
+Mevsimsel koşullar ve ulaşım. - Siyasi bağlılık ve olası huzursuzluk.
+
+HARİTA Valedorn haritası statik, yüksek kaliteli illüstrasyon olarak
+hazırlanır. Harita üzerinde şehir, kale, köy, liman, yol, dağ, orman,
+nehir, göl, kıyı ve keşfedilmemiş alanlar işaretlenir. Oyuncu bir
+noktayı seçtiğinde ilgili bilgi paneli açılır. Harita bir 3D sahne
+değildir.
+
+======================================================================
+5. OYUNCU BAŞLANGICI VE KARAKTER OLUŞTURMA
+======================================================================
+
+Karakter oluşturma yalnızca görünüş ve isim seçmekten ibaret değildir.
+Oyuncunun doğduğu yer, ailesi, çocukluğu, eğitimi ve aldığı kararlar
+başlangıç koşullarını oluşturur.
+
+5.1 DOĞUM YERİ SEÇİMİ – ANA BAŞLANGIÇ KARARI Oyuncu karakter
+oluştururken önce doğduğu yeri seçer. Seçim aşamalı olarak yapılır: 1.
+Krallık veya bağımsız bölge. 2. Bölge. 3. Şehir, kasaba veya köy.
+
+Her doğum yeri için oyuncuya açık ve karşılaştırılabilir bir bilgi
+paneli gösterilir: - Coğrafya ve iklim. - Bölgesel ekonomi ve temel
+üretim. - Siyasi durum. - Askerî durum ve güvenlik. - Toplumsal yapı ve
+kültürel eğilimler. - Eğitim, meslek ve uzmanlaşma fırsatları. -
+Karaktere sağlayacağı başlangıç artıları. - Karakterin karşılaşacağı
+başlangıç eksileri.
+
+Örnek: Kuzeydeki bir maden kasabasında doğan karakter, madencilik,
+dayanıklılık ve metal işçiliğiyle ilişkili başlangıç fırsatlarına sahip
+olabilir; sert iklim, sınırlı gıda çeşitliliği ve askerî yükümlülükler
+dezavantaj oluşturabilir. Güneydeki tarım köyünde doğan karakter, tarım,
+hayvancılık ve gıda ticareti konusunda avantaj kazanabilir; toprak
+sahiplerinin baskısı veya su kaynaklarına bağımlılık gibi koşullarla
+karşılaşabilir. Batı limanında doğan karakter deniz ticareti, denizcilik
+ve tüccar ilişkilerine daha kolay erişebilir; liman rekabeti ve ticari
+borç ilişkileri dezavantaj yaratabilir.
+
+Bu etkiler başlangıç avantajı ve fırsatlarıdır; karakteri bir mesleğe,
+sınıfa veya krallığa kilitlemez. Oyuncu ilerleyen dönemde başka alanları
+öğrenebilir ve başka bölgelere taşınabilir.
+
+5.2 KARAKTERİN ALTI KATMANLI YAPISI 1. Kimlik: İsim, soyadı,
+aile/hanedan bağlantısı, yaş ve temel kimlik. 2. Geçmiş: Doğum yeri,
+aile, çocukluk, olaylar, eğitim ve ergenlik kararları. 3. Temel
+özellikler: Yedi ana nitelik. 4. Kişilik: Davranış eğilimleri ve
+değerler. 5. Uzmanlık ve meslekler: Öğrenilen savaş, büyü, zanaat ve
+üretim alanları. 6. Yaşam ve itibar: İlişkiler, şöhret, sosyal konum,
+aile ve geçmiş eylemler.
+
+5.3 AİLE VE ÇOCUKLUK GEÇMİŞİ Oyuncunun ailesi ve çevresi başlangıç
+fırsatlarını etkiler: - Ailenin ekonomik durumu. - Ailenin mesleği ve
+toplumsal konumu. - Ailenin yaşadığı yer. - Ailenin krallık veya soylu
+ailelerle ilişkileri. - Çocuklukta yaşanan önemli olaylar. - Çocukluk
+eğitimi. - Ergenlikte verilen kararlar. - Yetişkinliğe geçerken oluşan
+başlangıç özellikleri.
+
+Önceki seçimler sonraki seçenekleri etkileyebilir. Örneğin asker
+ailesinde büyüyen karakter askerî eğitim fırsatlarına daha kolay
+erişebilir; ancak bu, başka bir meslek öğrenmesini engellemez.
+
+5.4 GÖRÜNÜŞ Karakterin fiziksel görünüşü: - Yüz şekli ve temel yüz
+özellikleri. - Ten, göz ve saç rengi. - Saç ve sakal modelleri. - Boy ve
+vücut yapısı. - Yara izleri ve dövmeler.
+
+Dış görünüş: - Başlangıç kıyafeti. - Zırh ve giysi görünümü. -
+Aksesuarlar. - Silah görünümü.
+
+Yaşlanma, yara izleri ve bazı oyun olayları karakterin görsel sunumuna
+yansıyabilir. Ayrıntılı karakter görünüş editörü, seçilebilir portrelerle birlikte
+kullanılmalıdır; yüz ve görünüş kişiselleştirmesi 20. bölümdeki tam
+kapsama dahildir.
+
+5.5 YEDİ TEMEL NİTELİK - Güç: Fiziksel kuvvet, yakın dövüş ve ağır
+yük. - Dayanıklılık: Yorgunluk, sağlık ve uzun süreli efor. - Çeviklik:
+Hareket, kaçınma, hız ve hassasiyet. - Zekâ: Öğrenme, araştırma, büyü ve
+problem çözme. - Algı: İz sürme, fark etme, keşif ve tehlike sezme. -
+Karizma: İkna, sosyal etkileşim ve pazarlık. - Liderlik: Birlik
+yönetimi, emir verme ve grup koordinasyonu.
+
+Şans ayrı bir temel nitelik değildir. Sonuçlar karakter becerisi,
+hazırlık, koşullar ve kontrollü rastlantı ile belirlenir.
+
+5.6 KİŞİLİK ÖZELLİKLERİ - Cesaret. - Merhamet. - Hırs. - Sadakat. -
+Disiplin. - Sabır.
+
+Bunlar sabit etiketler değildir. Karakterin seçimleri ve olayları
+kişilik eğilimlerini zaman içinde değiştirebilir. Diyalogları,
+ilişkileri ve bazı sonuçları etkiler.
+
+5.7 UZMANLIKLAR – SABİT SINIF YOK Karakter bir sınıfa kilitlenmez.
+Öğrenebileceği başlıca uzmanlık yolları: - Element Büyücüsü: Ateş, su,
+toprak, hava. - Ruh Çağıran: Ruhlar, ölüler ve karanlık sanatlar. -
+Şaman: Doğa, şifa ve destek. - Şövalye: Ağır zırh, iki elli ve ağır
+silahlar. - Kılıç Ustası: Tek el kılıç-kalkan veya çift silah. - Okçu:
+Yay ve arbalet. - Gölge Ustası: Gizlilik, hançer, sızma ve tuzak.
+
+Birden fazla yol öğrenilebilir; ancak ustalık zaman, eğitim, kaynak ve
+tecrübe ister. Karanlık sanatlar nadir kitaplar, özel öğretmenler veya
+gizli kurumlar gerektirebilir. Bazı krallıklar bu uygulamaları
+yasaklayabilir veya sınırlayabilir.
+
+5.8 MESLEKLER Üretim: - Demirci. - Marangoz. - Terzi. - Aşçı.
+
+Toplama: - Madenci. - Oduncu. - Avcı. - Otacı/bitki toplayıcı.
+
+Ticaret: - Tüccar. - Pazar esnafı. - Kervancı.
+
+Diğer: - Çiftçi. - Hayvan yetiştiricisi. - İnşaatçı.
+
+Bir karakter birden fazla meslek öğrenebilir. Meslek becerisi tecrübeyle
+artar; ustalık daha kaliteli ürünler ve gelişmiş tarifler açar.
+Meslekler savaş uzmanlıklarından bağımsızdır.
+
+5.9 İTİBAR VE İLİŞKİLER İtibar grupları: - Halk. - Tüccarlar. -
+Soylular. - Askerler.
+
+Oyuncunun eylemleri bu gruplarda farklı iz bırakabilir. Şöhret önemli
+olaylarla yayılır. İlişkiler arkadaşlık, düşmanlık, aile, evlilik,
+siyasi bağ ve sadakat gibi türlere ayrılır.
+
+======================================================================
+6. ZAMAN, YAŞLANMA VE ÖLÜM
+======================================================================
+
+Paylaşılan dünya zamanı: - 1 oyun günü = 6 gerçek saat. - 4 oyun günü =
+1 gerçek gün. - 1 oyun yılı = 360 oyun günü. - Karakter yaşı her 90
+gerçek günde bir oyun yılı artar.
+
+Bu zaman ölçeği, aile ve kuşak sistemini gerçek hayatta takip edilebilir
+hâle getirmek için tasarlanmıştır. Sunucu maliyetini azaltmak için bütün
+olayların saniye saniye simüle edilmesi gerekmez; olaylar zaman
+dilimleriyle işlenebilir.
+
+ÖLÜM Karakter savaş, hastalık, yaşlılık veya başka ölümcül olaylar
+nedeniyle ölebilir. Ölüm kalıcıdır; aynı karakter diriltilmez. Oyuncu: -
+Varsa varisiyle devam edebilir. - Yeni karakter oluşturabilir. - Aile,
+mülk, unvan ve miras kurallarına göre devam eden soyunu takip edebilir.
+
+Ölüm sistemi sebepsiz ve rastgele kayıplar üretmemelidir. Tehlike,
+hastalık ve savaş sonuçları oyuncuya anlaşılır biçimde sunulmalı;
+hazırlık, tedavi ve güvenlik riskleri azaltabilmelidir.
+
+======================================================================
+7. AİLE, EVLİLİK VE KUŞAKLAR
+======================================================================
+
+7.1 EVLİLİK - Oyuncu NPC ile evlenebilir. - Oyuncular karşılıklı rıza
+ile evlenebilir. - Evlilik romantik, ekonomik ve siyasi sonuçlar
+doğurabilir. - Hanedanlar evlilikle ittifak kurabilir. - Evlilik arazi,
+unvan, ticaret ayrıcalığı ve siyasi bağlar sağlayabilir. - Boşanma, eşin
+ölümü ve aile ilişkileri sonuç doğurur. - Eşler kendi kişiliklerine ve
+hedeflerine sahip bağımsız karakterlerdir.
+
+7.2 GEBELİK VE DOĞUM Gebelik ve çocuk sahibi olma karşılıklı rıza
+esasına dayanır. Gebelik sürecinde sağlık, beslenme, dinlenme,
+ebe/şifacı desteği ve doğum koşulları önemlidir. Doğum riski hazırlık ve
+yardım durumuna göre değişir. Gebelik süresinin kesin gerçek zaman
+karşılığı prototip dengelemesinde belirlenmelidir; dokümanda
+kesinleşmemiş süre uydurulmamalıdır.
+
+7.3 BEBEK BAKIMI VE SÜTANNE Sütanne yalnızca bebeği emziren bir hizmetli
+değildir; bebeğin bebeklik dönemindeki gelişimini etkileyen bakım
+sağlayıcısıdır. Sütannelerin nitelikleri ve becerileri farklıdır.
+Ücretleri bu özelliklere göre değişebilir. Ebeveyn ilgisi, bakım
+koşulları ve sütannenin nitelikleri gelişime katkı sağlar.
+
+Onaylanmış çocuk gelişim aşamaları: - Bebeklik: 9 gerçek gün. - Erken
+çocukluk: 18 gerçek gün. - Çocukluk: 27 gerçek gün. - Ergenlik: 36
+gerçek gün. - Yetişkinliğe geçiş dönemi: 90 gerçek gün.
+
+Bu aşamaların takvimde nasıl ardışık uygulanacağı ve yetişkinlik yaş
+sınırı, geliştirme aşamasında net bir veri kuralına bağlanmalıdır.
+Karakterlerin genel yaş ilerleme kuralı 90 gerçek günde bir oyun
+yılıdır.
+
+7.4 ÇOCUK EĞİTİMİ - Ebeveynler çocuklarına beceri öğretebilir. - Ücretli
+özel öğretmenler tutulabilir. - Savaş eğitmenleri, büyü ustaları,
+zanaatkârlar ve akademisyenler eğitim verebilir. - Okullar, akademiler,
+askerî eğitim alanları ve loncalar eğitim kurumu olabilir. - Öğretmen ve
+kurum kalitesi öğrenme hızını ve yetişkinlikteki başlangıç becerilerini
+etkiler.
+
+7.5 NPC’YE DÖNÜŞEN ÇOCUKLAR Oyuncu tarafından kontrol edilmeyen yetişkin
+çocuklar NPC olur. Ebeveynleri ölse veya oyuncu yeni karakter oluştursa
+da dünyada yaşamaya devam ederler. Kendi hedefleri, ilişkileri,
+meslekleri ve ekonomik faaliyetleri olur. Eski oyuncu karakterinin
+çocukları tüccar, zanaatkâr, asker, akademisyen veya soylu olabilir;
+evlenebilir, aile kurabilir ve kendi hanedan bağlarını geliştirebilir.
+
+Oyuncu yeni karakterle dünyaya döndüğünde eski karakterinin yetişkin NPC
+çocuklarıyla karşılaşabilir. Onlarla ticaret, diplomasi ve aile
+ilişkileri kurabilir. Çocuklar eski aile bağlarını hatırlar ve buna göre
+tepki verebilir.
+
+7.6 HANEDAN VE MİRAS - Aile soyadı ve aile arması. - Aile üyelerinin
+farklı şehir ve krallıklarda yaşaması. - Mülk, işletme, arazi, para,
+borç ve unvanların miras kalması. - Birden fazla varis varsa paylaşım ve
+veraset kuralları. - Vasiyet ve miras anlaşmazlıkları. - Evlilik yoluyla
+aileler arası siyasi bağlar. - Aile itibarının nesiller boyunca sürmesi
+veya düşmesi. - Sıradan bir ailenin zamanla güçlü bir hanedana
+dönüşebilmesi.
+
+Aile mirası ile taht veraseti birbirine bağlı olabilir, ancak aynı
+sistem değildir. Her krallığın kendine özgü veraset kuralları
+bulunabilir.
+
+7.7 AİLE İÇİ ÇATIŞMALAR - Kardeş rekabeti ve kıskançlık. - Ebeveyn-çocuk
+anlaşmazlıkları. - Miras mücadeleleri. - Sadakat ve ihanet. - Aile içi
+hizipler ve ittifaklar. - İhmal edilen ilişkilerin zayıflaması.
+
+Oyuncu arabuluculuk yapabilir veya taraf seçebilir. Bu olaylar kişilik,
+geçmiş, çıkar ve oyuncu davranışlarından doğmalı; sürekli rastgele sorun
+çıkaran bir sistem olmamalıdır.
+
+7.8 NPC AİLELERİNİN YAŞAMI NPC eşler, çocuklar ve aile üyeleri
+yaşlanabilir ve savaş, hastalık, salgın, kaza veya yaşlılık nedeniyle
+ölebilir. Oyuncu doktor, şifacı veya muhafız tutarak riskleri
+azaltabilir. Çevrim dışı simülasyonda aile üyeleri sebepsiz yere
+öldürülmemelidir.
+
+======================================================================
+8. NPC YAŞAM SİMÜLASYONU
+======================================================================
+
+NPC’ler yaşayan dünyanın temelidir. Her NPC’nin kimliği, geçmişi,
+kişiliği, hedefleri, ilişkileri ve ekonomik durumu bulunur.
+
+8.1 NPC KARAR MODELİ NPC davranışları beş ana etkene dayanır: 1.
+Kişilik. 2. İhtiyaçlar: Yiyecek, barınma, güvenlik, sosyal ilişkiler. 3.
+Ekonomi: Gelir, meslek, mülk, borç. 4. İlişkiler: Aile, arkadaşlık,
+düşmanlık, sadakat. 5. Hedefler: Servet, evlilik, güç, seyahat, hanedan
+kurma vb.
+
+Örnek: - Yoksullaşan tüccar meslek değiştirebilir. - Hırslı soylu siyasi
+güç arayabilir. - Ailesini korumak isteyen asker tehlikeli bir savaştan
+kaçınabilir. - Başarılı zanaatkâr yeni bir atölye açabilir.
+
+8.2 NPC HAFIZASI NPC’ler: - Kendilerine yapılan iyilikleri ve
+kötülükleri. - Aile, arkadaş ve düşmanlarını. - Oyuncunun geçmiş
+eylemlerini. - Önemli dünya olaylarını. hatırlayabilir.
+
+Güven ve güvensizlik deneyime dayanır. Önemli olayların bir bölümü aile
+kayıtları, söylentiler ve kuşaklar arası anlatılarla aktarılabilir.
+
+8.3 NPC’NİN OYUNCUYLA ETKİLEŞİMİ NPC’ler oyuncuya kendiliğinden: - İş
+veya ticaret teklifi sunabilir. - Yardım isteyebilir. - Borç verebilir
+veya borç isteyebilir. - Evlilik veya siyasi ittifak önerebilir. - İşe
+alınmak isteyebilir. - Arkadaş, rakip veya düşman olabilir. - İhanet
+edebilir veya yardım edebilir.
+
+8.4 HİYERARŞİ VE EMİR SİSTEMİ NPC’ler oyuncunun amiri veya eğitmeni
+olabilir: - Çırak, NPC ustanın yanında görev yapar. - Usta görev verir
+ve gelişimi denetler. - Öğretmen ve kurum yöneticileri eğitim sürecini
+yönetir. - Askerî komutanlar emir verebilir. - Oyuncu rütbe ve itibar
+kazanarak NPC’lerin üstüne çıkabilir. - Oyuncu emirleri reddedebilir
+veya kurumdan ayrılabilir; bunun sonuçları olabilir.
+
+8.5 NPC VE OYUNCU AYNI KURALLARA TABİ NPC’ler oyuncular gibi: - Nitelik
+geliştirir. - Uzmanlık öğrenir. - Meslek geliştirir. - Eğitim alır. -
+Askerî rütbe kazanır. - Ekonomik ve sosyal güç elde eder. - Yönetici
+veya hükümdar olabilir.
+
+NPC’lere oyuncuların erişemediği sınırsız gelişim veya özel güç
+verilmemelidir.
+
+8.6 NPC REKABETİ NPC’ler oyuncularla aynı makam, unvan ve liderlik
+pozisyonları için rekabet edebilir: - NPC asker general olabilir. - NPC
+tüccar oyuncuya rakip olabilir. - NPC öğrenci akademi yöneticisi
+olabilir. - NPC soylu siyasi rakip olabilir.
+
+8.7 YÖNETİMDE NPC’LER Oyun başladığında kral/kraliçeden en alt memura
+kadar bütün makamlar NPC’ler tarafından doldurulmuştur. Oyuncular
+otomatik olarak makam sahibi olmaz; eğitim, meslek, itibar, ilişkiler ve
+başarılarla yükselir.
+
+NPC hükümdarlar, bakanlar, valiler, komutanlar ve diplomatlar oyuncular
+çevrim dışıyken de yönetim kararları alır.
+
+8.8 PERFORMANS İÇİN NPC SİMÜLASYONU Her NPC’nin her dakika ayrıntılı
+yapay zekâ hesaplaması yapılmamalıdır. NPC simülasyonu önem düzeyine
+göre katmanlandırılmalıdır: - Önemli NPC: Daha ayrıntılı hedef, ilişki
+ve olay simülasyonu. - Yerel NPC: Yerleşim bazlı toplu faaliyet ve
+belirli aralıklarla karar. - Arka plan nüfusu: İstatistiksel/özet
+simülasyon.
+
+Çevrim dışı geçen zaman, tek tek bütün NPC’leri çalıştırmak yerine olay
+ve durum güncellemeleriyle işlenmelidir. Bu yaklaşım ücretsiz altyapının
+sınırlarına uyum için zorunludur.
+
+======================================================================
+9. EKONOMİ VE TİCARET
+======================================================================
+
+9.1 BÖLGESEL EKONOMİ Her krallık ve yerleşimin kendine özgü ekonomisi
+bulunur. Üretim, tüketim, arz ve talep fiyatları etkiler. Fiyatlar
+bölgeden bölgeye değişebilir.
+
+Ekonomi unsurları: - Üreticiler ve tüketiciler. - Pazarlar ve
+dükkânlar. - Tüccarlar ve kervanlar. - Vergiler ve gümrükler. -
+Ücretler, borç ve kredi. - Savaş, kıtlık ve ticaret yolu kesintileri. -
+Mevsim ve hava koşullarının üretime etkisi.
+
+NPC üreticiler ve tüketiciler ekonomi sistemini oyuncu sayısı az olsa
+bile çalışır tutar.
+
+9.2 ÜRETİM VE KAYNAKLAR Stratejik kaynak örnekleri: - Tahıl ve diğer
+gıdalar. - Demir ve diğer madenler. - Odun. - Tuz. - Kömür. - İlaç ve
+şifalı bitkiler. - Silah ve zırh. - Hayvanlar ve hayvansal ürünler.
+
+Üretim; mevsim, tarım arazisi, iş gücü, hava, güvenlik ve ham maddeye
+bağlıdır.
+
+9.3 STOK, DEPOLAMA VE BOZULMA - Depolama kapasitesi sınırlıdır. - Gıda
+ve bazı ürünler bozulabilir. - Güvenlik hırsızlık ve yağma riskini
+etkiler. - Taşıma kapasitesi ve nakliye maliyeti önemlidir. - Ağır ve
+değerli yükler haydutların ilgisini çekebilir.
+
+9.4 TEKEL VE EKONOMİK SAVAŞ Oyuncular veya NPC’ler bölgesel tahıl,
+demir, odun, tuz, kömür, ilaç ve silah stoklarını satın alarak fiyatları
+yükseltmeye veya kıtlık yaratmaya çalışabilir. Son stok birimleri daha
+pahalı hâle gelebilir.
+
+Buna karşı sistemler: - Yabancı tüccarların ucuz bölgeden mal
+getirmesi. - Hükümetlerin ihracat yasağı. - Stratejik stok. - Karne ve
+sınırlı satış. - İthalat. - Piyasaya devlet stoğu sürülmesi. - Depo
+güvenliği ve taşıma maliyeti.
+
+Tekel kurmak mümkün ama pahalı, riskli ve karşı önlemlerle bozulabilir
+olmalıdır.
+
+9.5 PARA BİRİMİ Valedorn kıtasındaki bütün krallıklar ortak bir para
+birimi kullanır. Gelecekte eklenecek kıtaların kendi para birimleri
+olabilir. Kıtalar arası ticarette döviz kuru ekonomi, savaş, ticaret ve
+kıtlık gibi etkenlerle değişebilir.
+
+9.6 BANKACILIK - Bankalar ve para değiştiriciler. - Kredi ve borç. -
+Faiz. - Kasa ve emanet. - Tüccar finansmanı. - Oyuncu/NPC arası borç
+verme ve tahsilat.
+
+Banka açmak için hükümdardan izin gerekir. Hükümdar nüfus, ekonomi,
+mevcut bankalar ve ihtiyaca göre karar verir. Talebi karşılayan yeterli
+banka varsa yeni lisans reddedilebilir.
+
+Krallık asgari ve azami faiz sınırı belirler; bankalar bu aralıkta faiz
+seçer. Aşırı borç veren veya kötü yöneten banka iflas edebilir. Mevduat
+sahipleri paralarının bir kısmını veya tamamını kaybedebilir; banka
+varlıkları tasfiye edilebilir veya başka kişilerce alınabilir.
+
+Zengin banka sahipleri siyaset üzerinde nüfuz kurabilir, hükümdarlara
+borç verebilir, savaş veya projeleri finanse edebilir. Servet otomatik
+makam veya dokunulmazlık sağlamaz.
+
+9.7 VERGİLER VE KRALİYET HAZİNESİ Hükümdar şu alanlarda vergi
+belirleyebilir: - Gelir ve mülk. - Ticaret ve pazar. - İşletmeler. -
+Kervan ve geçiş. - Arazi sahipleri. - Bankalar ve büyük finans
+kuruluşları.
+
+Aşırı vergi halk memnuniyetini, ticareti ve işletme büyümesini
+düşürebilir.
+
+Vergiler krallık hazinesine akar. Hazine şu alanlarda harcama yapar: -
+Ordu ve savunma. - Halkın refahı ve gıda rezervi. - Altyapı. - Eğitim,
+sağlık ve araştırma. - Diplomasi ve savaş. - Saray ve kraliyet ailesi.
+
+Bir alana aşırı harcama diğer alanları kısıtlar.
+
+9.8 HAZİNE DENETİMİ VE YOLSUZLUK Gelir ve gider kayıtları tutulur.
+Hazine bakanı ve mali görevliler hesap verebilir. Soylular veya konsey
+denetim talep edebilir. Rüşvet, sahte kayıt ve gizli anlaşmalar denetimi
+aşabilir.
+
+Hükümdar veya hazine bakanı gizlice para çalabilir; ancak kanıtlanırsa
+görevden alınma, para cezası, müsadere, hapis veya siyasi sonuçlarla
+karşılaşabilir. Ceza, olayın ağırlığı ve kanıta göre belirlenmelidir.
+
+9.9 DEVLET BORCU VE KRİZ Krallık borcunu ödeyemezse: - Alacaklılar ödeme
+talep eder. - Yeni kredi bulmak zorlaşır. - Asker ve memur maaşları
+gecikebilir. - Halk memnuniyeti ve ordu morali düşebilir. - Gelir
+kaynakları, varlıklar veya topraklar devredilebilir. - Hükümdarın
+itibarı ve tahtı tehlikeye girebilir.
+
+Devletin müdahale seçenekleri: - Fiyat tavanı. - Karne. - İhracat
+yasağı. - Ek/ savaş vergisi. - Zorunlu kredi. - Stratejik stok. - Devlet
+stoklarının piyasaya sürülmesi.
+
+Her müdahalenin ekonomik ve siyasi yan etkisi bulunmalıdır.
+
+9.10 DEVLET VE ÖZEL MÜLK Devlet mülkü: - Madenler. - Limanlar. -
+Kaleler. - Bazı araziler. - Stratejik depolar. - Kamu işletmeleri.
+
+Özel mülk: - Evler. - Dükkânlar. - Atölyeler. - Tarlalar. - Maden
+işletmeleri. - Depolar ve diğer işletmeler.
+
+Hükümdar devlet varlığını yönetebilir, kiralayabilir veya satabilir.
+Özel mülke müdahale hukuk ve siyasi sonuçlara bağlı olmalıdır.
+
+9.11 MÜLK EDİNME VE KORUMA Oyuncu ve NPC’ler mülk alabilir, satabilir,
+kiralayabilir ve miras bırakabilir. Açık artırma, borç nedeniyle mahkeme
+haczi, sahte tapu ve mülkiyet anlaşmazlıkları olabilir.
+
+Mülk değeri konum, güvenlik, nüfus, ulaşım ve ekonomiye göre değişir.
+Evler, işletmeler ve depolar soyulabilir veya saldırıya uğrayabilir.
+Muhafız tutulabilir. Savaşta düşman kuvvetler mülkü ele geçirebilir.
+İleride banka veya tüccarlar üzerinden sigorta benzeri sözleşmeler
+eklenebilir.
+
+9.12 İŞLETME SİSTEMİ Oyuncu/NPC şu işletmelere sahip olabilir: -
+Dükkân. - Atölye. - Çiftlik. - Han. - Maden. - Ahır ve benzeri
+işletmeler.
+
+NPC çalışanlar işe alınır; işletme büyük ölçüde otomatik işler. Ekonomi
+koşulları kâr veya zarar doğurur. Büyük inşaatlarda NPC inşaat
+sağlayıcıları izin, malzeme, işçi ve ustaları yönetebilir. İşletme
+satılabilir ve miras kalabilir.
+
+Şirket hisseleri, birleşme-satın alma, şube ağı ve kurumsal
+bürokrasi 20. bölümdeki tam ekonomi kapsamına dahildir.
+
+======================================================================
+10. SEYAHAT VE ULAŞIM
+======================================================================
+
+10.1 HIZLI SEYAHAT Oyuncu yalnızca daha önce keşfettiği yerler arasında
+hızlı seyahat edebilir. İlk ziyaret normal yolculuk gerektirir. Hızlı
+seyahatte de olay ve tehlike ihtimali bulunur.
+
+Hızlı seyahat şu durumlarda kullanılamaz: - Ordu veya askerî birlikle
+yolculuk. - Kervanla yolculuk. - Yük hayvanlarıyla ticari mal taşıma.
+
+10.2 YOLCULUK OLAYLARI - Haydut ve eşkıyalar. - Düşman askerleri. -
+Yaralı yolcular. - Tüccarlar ve gezginler. - Hava koşulları ve
+gecikmeler. - Terk edilmiş yerler. - Gizli keşifler.
+
+Muhafız tutmak veya güvenli kervana katılmak riski azaltabilir.
+
+10.3 YOLLAR VE ROTALAR - Ana yollar. - Orman patikaları. - Dağ
+geçitleri. - Ticaret yolları.
+
+Rota; süre, karşılaşma, maliyet ve tehlikeyi etkiler.
+
+10.4 YÜK VE TAŞIMA - Yaya taşıma kapasitesi sınırlıdır. - Atlar
+kapasiteyi artırır. - Katır ve eşekler yük taşıyabilir; daha yavaş
+olabilir. - Arabalar ve kervanlar daha büyük yük taşır. - Aşırı yük hızı
+ve hayvan dayanıklılığını etkiler. - Değerli/ağır yük haydut riskini
+artırır. - Belirli yük eşiğinin üzerinde kervan kurmak veya kervana
+katılmak gerekir; kesin eşikler testlerde belirlenir.
+
+10.5 BİNEKLER VE HAYVANLAR At türleri ve ırkları olabilir. Hayvanlar
+yorulabilir, hastalanabilir, yaralanabilir ve ölebilir. Bakım, beslenme
+ve eğitim önemlidir. Katır, eşek ve deve binek veya yük hayvanı
+olabilir. Fil bulunmaz.
+
+10.6 DENİZ YOLCULUĞU - Yolcu gemileri. - Ticaret gemileri. - Savaş
+gemileri. - Fırtına, korsan, hasar ve keşfedilmemiş ada olayları. -
+Gemideki mürettebat NPC’lerden oluşur. - Oyuncu kapasiteye göre kendi
+askerî birliğini gemiye alabilir. - Küçük gemi, ticaret gemisi ve savaş gemisi türleri bulunur.
+Deniz savaşları 20. ve 22. bölümlerdeki tam kapsam doğrultusunda
+uygulanır.
+
+10.7 KONAKLAMA Han, köy, kale ve kamp gibi yerlerde konaklama
+yapılabilir. Dinlenme, yemek ve temel ihtiyaçlar basit tutulur.
+
+======================================================================
+11. SAĞLIK, EKİPMAN VE ÜRETİM
+======================================================================
+
+11.1 SAĞLIK - Yaralanma. - Hastalık. - Açlık. - Yorgunluk.
+
+Tedavi edilmezse durum kötüleşebilir. Doktor, şifacı, şaman, ilaç ve
+bitkiler kullanılabilir. Şaman iyileştirmesi beceri seviyesine bağlıdır.
+Ayrıntılı tıp sistemi 20. bölümde tanımlanan kapsamda uygulanır.
+
+11.2 YARALANMA VE ÖLÜM RİSKİ Hafif yaralanmalar performansı geçici
+düşürür. Ağır yaralanmalar tedavi ve iyileşme süresi gerektirir.
+Hastalıklar aşamalı ilerleyebilir. Savaşta ölüm kalıcıdır ve miras/varis
+sistemi devreye girer.
+
+11.3 EŞYA VE EKİPMAN - Silahlar ve kalkanlar. - Zırh ve kıyafetler. -
+Aksesuarlar. - Araç ve meslek ekipmanları. - Yiyecek, ilaç ve
+tüketilebilir ürünler.
+
+Eşyaların kalite ve dayanıklılık değerleri olabilir. Kullanımda
+yıpranır; tamir edilebilir ve oyuncular arasında takas edilebilir.
+
+11.4 ENVANTER VE DEPOLAMA - Kişisel envanter. - Ev, han, kale ve işletme
+depoları. - Sınırlı taşıma kapasitesi. - Türlere göre düzenleme. - Binek
+ve kervanların ek taşıma kapasitesi.
+
+İlk sürümde aşırı karmaşık depo yönetimi yapılmamalıdır.
+
+11.5 ÜRETİM VE ZANAAT - Demirci: Silah, zırh ve araç. - Marangoz:
+Mobilya, yay ve ahşap araçlar. - Terzi: Kıyafet ve zırh parçaları. -
+Aşçı: Yiyecek ve yemekler.
+
+Oyuncu ham madde toplayabilir veya ustalara sipariş verebilir. Ürün
+kalitesi ustalık ve malzemeye bağlıdır.
+
+======================================================================
+12. KEŞİF, GÖREVLER VE DÜNYA OLAYLARI
+======================================================================
+
+12.1 KEŞİF Haritada keşfedilebilir: - Ormanlar. - Dağlar. - Ovalar. -
+Nehirler ve göller. - Kıyılar. - Mağaralar. - Harabeler. - Terk edilmiş
+kaleler. - Gizli bölgeler. - Nadir kaynak alanları.
+
+Keşfedilen yerler haritada işaretlenir. Bazı alanlar tehlikeli olabilir
+veya hazırlık gerektirebilir.
+
+12.2 HAYVANLAR VE YARATIKLAR Doğal yaşam: - Kurt. - Ayı. - Geyik. -
+Yaban domuzu. - Diğer avlanabilir veya evcilleştirilebilir hayvanlar.
+
+Mağara ve harabelerde tehlikeli yaratıklar bulunabilir. Özel bölgelerde
+nadir ve güçlü yaratıklar olabilir. Fantastik yaratık çeşitliliği
+kontrollü tutulmalıdır.
+
+12.3 AV VE EVCİLLEŞTİRME Avcılık et, deri ve malzeme sağlayabilir.
+Hayvanlar satın alınabilir veya yakalanabilir. Hayvancılık ekonomi ve
+mesleklerle bağlantılıdır.
+
+12.4 GÖREVLER Ana hikâye: Valedorn’u, Kül Savaşı’nı ve güncel siyasi
+düzeni tanıtır. Tamamlanması zorunlu değildir.
+
+Yan görevler: - NPC kişisel hikâyeleri. - Aile meseleleri. - Siyaset ve
+diplomasi. - Keşif ve kayıp yerler. - Yerel krizler.
+
+Serbest işler: - Avcılık. - Muhafızlık. - Taşıma. - Ticaret. -
+Madencilik. - Zanaatkârlık.
+
+Görevlerin birden fazla çözümü ve uzun vadeli sonuçları olmalıdır.
+
+12.5 DİNAMİK DÜNYA OLAYLARI - Savaş ve barış. - Salgın ve hastalık. -
+Kıtlık. - Ticaret yolu krizi. - Haydut saldırıları. - Yerel ayaklanma. -
+Suikast. - Hanedan krizi. - Turnuva ve panayır. - Doğal afet.
+
+NPC’ler ve krallıklar olaylara kendi çıkarları doğrultusunda tepki
+verir.
+
+12.6 MEVSİMLER VE HAVA Dört mevsim: - İlkbahar. - Yaz. - Sonbahar. -
+Kış.
+
+Yağmur, kar, fırtına, sis ve sıcaklık; tarım, ticaret, seyahat, avcılık
+ve savaş üzerinde etkili olabilir. Kış bazı yolları kapatabilir.
+Karmaşık meteoroloji simülasyonu gerekmez.
+
+12.7 TARIM VE GIDA - Buğday, arpa, sebze ve meyve. - Hayvancılık. - Süt,
+et, yumurta ve yün. - Mevsim ve hava etkisi. - Ürün tüketimi ve satışı.
+
+Ayrıntılı çiftlik mikro yönetimi yerine anlaşılır üretim döngüsü
+kullanılmalıdır.
+
+12.8 AÇLIK VE BESLENME Karakter düzenli yemek yemelidir. Açlık
+dayanıklılık ve performansı düşürür; uzun süreli açlık sağlığı tehdit
+eder. Beslenme iyileşmeyi ve performansı etkiler. Kalori veya mikro
+besin takibi gibi aşırı ayrıntılı sistemler kullanılmaz.
+
+======================================================================
+13. BÜYÜ, DİN, LONCALAR VE SUÇ
+======================================================================
+
+13.1 BÜYÜ Büyü yolları: - Element Büyücülüğü: Ateş, su, toprak, hava. -
+Ruh Çağırma: Ruhlar, ölüler ve karanlık sanatlar. - Şamanlık: Doğa, şifa
+ve destek.
+
+Büyü eğitim, usta, nadir kitap veya özel kurumlar yoluyla öğrenilir. İlk
+sürümde yetenekler sınırlı ama işlevsel olmalıdır. Krallıkların büyüye
+yaklaşımı farklı olabilir; karanlık sanatlar suç sayılabilir.
+
+13.2 DİN VE TAPINAKLAR Oyunda ayrı bir din/inanç sistemi bulunmaz.
+Tapınaklar: - Şifa. - Bilgi, eğitim ve araştırma. - Barınma ve yardım. -
+Tarihî/değerli nesnelerin korunması. işlevlerini üstlenebilir.
+
+13.3 LONCALAR Oyuncular meslek loncalarına katılabilir. Loncalar eğitim,
+iş ve itibar sağlayabilir. İlk sürümde üyelik ve temel görevlerle
+sınırlı tutulmalıdır.
+
+13.4 SUÇ VE YERALTI - Hırsızlık. - Kaçakçılık. - Dolandırıcılık. -
+Suikast. - Haydutlarla bağlantı. - Karaborsa. - Yakalanma, yargılanma ve
+ceza.
+
+NPC suç örgütleri bulunabilir. Oyuncu yasal veya suç dünyasına yakın bir
+yol izleyebilir.
+
+13.5 HAPİS Yakalanma; para cezası, hapis veya başka yaptırımlar
+doğurabilir. Kaçış, rüşvet ve bağlantılar mümkün olabilir. Hapishane yaşamı,
+mahkûm ilişkileri, gardiyanlar, çalışma, ziyaret ve tahliye süreçleri
+20. bölümdeki tam kapsamda uygulanır.
+
+======================================================================
+14. SAVAŞ, DÖVÜŞ VE KARAKTER GELİŞİMİ
+======================================================================
+
+14.1 DÖVÜŞ Dövüş; yakın dövüş, menzilli saldırı, büyü, savunma, kaçınma
+ve taktik kararlarından oluşur. Gerçek zamanlı aksiyon oyunu değildir.
+Sonuçlar karakter becerileri, ekipman, hazırlık, rakip, arazi ve
+kontrollü rastlantıya göre hesaplanır.
+
+14.2 GELİŞİM - Savaş tecrübesi. - Eğitim. - Meslek faaliyeti. - Keşif. -
+Sosyal ve siyasi faaliyet. - Ustalık ve uzmanlaşma.
+
+14.3 SİLAH USTALIĞI Silah türlerine göre ayrı ustalıklar bulunabilir.
+Kılıç, mızrak, balta, yay, arbalet ve diğer türlerde deneyim gelişir.
+
+14.4 EĞİTİM Ustalar, akademiler, askerî kurumlar ve özel eğitmenler
+gelişim sağlar. Eğitim maliyeti ve kalitesi eğitmenin niteliğine
+bağlıdır.
+
+14.5 STRATEJİK SAVAŞ Askerî birliklerin yönetimi, komutanlık, ikmal,
+moral ve arazi önemlidir. Oyuncu bir orduya katılabilir, birlik
+kurabilir veya zamanla komutan olabilir. Büyük kuşatma ve geniş ölçekli
+savaş simülasyonu ileri sürümlere bırakılmalıdır.
+
+======================================================================
+15. ŞEHİR YAŞAMI VE SOSYAL ETKİNLİKLER
+======================================================================
+
+Yerleşimler yalnızca menüden ibaret olmamalıdır. Oyuncu şehir hayatına
+katılabilir: - Han ve tavernada konaklama, yemek ve sosyalleşme. - Pazar
+ve dükkânlarda alışveriş. - Ticaret ve pazarlık. - Turnuva, festival ve
+panayır. - Zar, kart ve benzeri dönemsel eğlenceler. - Bahis ve kumar
+sistemleri, ilgili yerel kurallara bağlı. - Şehir sakinlerinin günlük
+işleri ve sosyal ilişkileri. - Oyuncunun çalışması, dinlenmesi veya
+etkinliklere katılması.
+
+Bu aktiviteler metin olayları, seçenekler ve görsellerle sunulur; gerçek
+zamanlı 3D şehir sahnesi oluşturulmaz.
+
+======================================================================
+16. ÇOK OYUNCULU DÜNYA
+======================================================================
+
+16.1 KALICI ORTAK DÜNYA Oyuncular aynı dünya verisini paylaşır.
+Karakter, mülk, ekonomi, krallık ve ilişkiler sunucu tarafında tutulur.
+
+16.2 İLETİŞİM - Genel sohbet. - Özel mesaj. - Yerel/yerleşim sohbeti. -
+Bildirimler.
+
+İlk sürümde sesli sohbet bulunmaz.
+
+16.3 SOSYAL ETKİLEŞİM - Arkadaşlık. - Düşmanlık. - Takas ve ticaret. -
+Düello. - Evlilik. - İttifak. - Grup ve birlik kurma. - Ortak seyahat,
+görev, av ve savaş.
+
+16.4 OYUNCU GRUPLARI Oyuncular kendi gruplarını, birliklerini veya
+loncalarını kurabilir. Bu yapılar meslek loncalarından ve NPC
+hanedanlarından ayrı olabilir.
+
+16.5 PvP - Düello daveti. - Belirlenmiş PvP bölgeleri. - Güvenli
+şehirlerde saldırı yok. - Savaşta yaralanma, eşya kaybı veya kalıcı ölüm
+gibi riskler; açık ve dengeli kurallara bağlı. - Krallık savaşlarında
+oyuncular taraf seçebilir.
+
+16.6 SUNUCU DOĞRULAMASI Para, eşya, envanter, savaş, mülk ve ticaret
+işlemleri sunucu tarafından doğrulanmalıdır. İstemci tarafında
+değiştirilen değerler gerçek kabul edilmemelidir.
+
+======================================================================
+17. GÖRSEL KİMLİK VE GÖRSEL VARLIK SİSTEMİ
+======================================================================
+
+17.1 GÖRSEL YAKLAŞIM Oyun 2D/3D modellenmiş bir dünya veya animasyonlu
+sahne oyunu değildir. Metin tabanlıdır; ancak her önemli varlığın
+karşılık gelen görseli bulunur: - NPC. - Hayvan. - Eşya. - Mekân. -
+Bölge. - Krallık. - Harita. - Önemli olay ve kurumlar.
+
+Görseller statik illüstrasyon ve portrelerdir. Görsel stil, gerçekçi
+sinematik ortaçağ-fantezi ile yarı gerçekçi, ayrıntılı dijital
+illüstrasyonun birleşimidir.
+
+17.2 NPC PORTRELERİ Sıradan NPC’ler için 20 kadın ve 20 erkek olmak
+üzere toplam 40 portreden oluşan ortak bir portre havuzu kullanılabilir.
+Portreler uygun NPC’lere dağıtılır. Bu yöntem, her sıradan NPC için
+sıfırdan benzersiz görsel üretme yükünü azaltır.
+
+Makam sahipleri, hükümdarlar, veliahtlar, önemli soylular, ana hikâye
+karakterleri ve özel görev NPC’leri için ayrı, özel portreler
+hazırlanır. Bu özel karakterlerin görselleri sıradan portre havuzuna
+dahil değildir.
+
+17.3 KRALLIK GÖRSELLERİ Her krallık için: - Kraliyet ailesi
+portreleri. - Taht salonu. - Başkent panoraması. - Saray. - Bayrak ve
+arma. - Ordu görseli. - Sınırları gösteren harita.
+
+17.4 VARLIK KÜTÜPHANESİ Her görsel varlığa benzersiz bir kimlik verilir.
+Oyun verisi, görselin kendisini her kayıt içinde çoğaltmak yerine görsel
+kimliğine veya dosya adresine referans verir. Aynı sıradan NPC portresi
+gerektiğinde birçok NPC’de kullanılabilir.
+
+17.5 PERFORMANS VE VERİ TASARRUFU - Görseller sıkıştırılmış WebP/AVIF
+gibi uygun formatlarda sunulabilir. - Küçük portreler için küçük boyutlu
+türevler hazırlanır. - Görseller ihtiyaç duyuldukça yüklenir. - İlk
+ekranda yalnızca gerekli görseller indirilir. - Görsel yüklemeyi azaltan
+veri tasarrufu modu bulunabilir. - Harita ve büyük illüstrasyonlar mobil
+bağlantı için optimize edilir. - Görsel dosyaları oyun veritabanında
+BLOB olarak çoğaltılmamalı; uygun nesne depolama/CDN üzerinden
+sunulmalıdır.
+
+Görsel üretim ve depolama ücretsiz sınırsız değildir. Görsel sayısı,
+boyutları ve trafik maliyeti planlanmalıdır.
+
+======================================================================
+18. KULLANICI ARAYÜZÜ VE OYUN AKIŞI
+======================================================================
+
+18.1 GÖRSEL TASARIM Renkler: - Koyu taş grisi ve siyah. - Eskitilmiş
+kahverengi. - Eskitilmiş altın vurgu. - Koyu bordo.
+
+Paneller: - Parşömen, deri veya taş dokusu hissi. - Tarihî serif başlık
+yazıları. - Kolay okunan gövde metinleri. - Mobil ekranda yeterli
+kontrast ve okunabilirlik.
+
+18.2 ANA EKRAN Üst alan: - Karakter portresi. - Sağlık. - Para. -
+Tarih/zaman. - Bulunulan krallık ve yer.
+
+Orta alan: - Bulunulan yerin görseli. - Olay anlatısı. - İlgili NPC
+portreleri. - Duruma göre haber ve bildirimler.
+
+Alt alan: - O anki eylem seçenekleri. - Büyük ve kolay dokunulabilir
+kontroller.
+
+18.3 AYRI EKRANLAR - Dünya haritası. - Karakter ve özellikler. -
+Envanter. - Görevler ve günlük. - Sohbet. - Krallık yönetimi. - Şehir ve
+meslekler. - Aile ve hanedan. - Ticaret ve pazar. - Ayarlar.
+
+18.4 ALT GEZİNME Mobilde sabit alt gezinme çubuğu bulunur. Ekranlar
+arası geçiş hızlı olmalıdır. Dokunma alanları büyük, metinler okunaklı
+olmalıdır.
+
+18.5 AÇILIŞ EKRANI Başlık: Kül ve Taht. Slogan: “Tahtlar yıkılır.
+Krallıklar küllerinden doğar.” Arka plan: Sinematik Valedorn manzarası.
+Düğmeler: - Yeni Yolculuk. - Devam Et. - Ayarlar.
+
+İlk girişte dil seçimi, hesap oluşturma/giriş, kısa dünya tanıtımı ve
+karakter oluşturma akışı başlar.
+
+18.6 AÇILIŞ HİKÂYESİ Dört bölüm: 1. Eski Düzenin Sonu. 2. Ateş ve
+Küller. 3. Kırılgan Barış. 4. Senin Hikâyen.
+
+Her bölüm özel bir görsel ve kısa anlatı içerir. Oyuncu isterse tanıtımı
+atlayabilir. Karakter oluşturulduktan sonra seçilen geçmişe uygun
+başlangıç sahnesi gösterilir.
+
+Son anlatı cümlesi: “Tahtlar yıkılır. Krallıklar küllerinden doğar. Peki
+sen geride ne bırakacaksın?”
+
+18.7 DİL İlk sürümde Türkçe ve İngilizce. İleride başka diller
+eklenebilir. Metinler kod içine sabit yazılmak yerine çeviri
+anahtarlarıyla yönetilmelidir.
+
+18.8 ERİŞİLEBİLİRLİK VE KULLANIM - Mobil, tablet ve masaüstüne uyum. -
+Okunabilir yazı boyutu. - Yeterli kontrast. - Büyük dokunma alanları. -
+İsteğe bağlı öğretici. - Görsel veri tasarrufu modu. - Basit ve tutarlı
+menü düzeni.
+
+======================================================================
+19. OYUNCU BİLDİRİMLERİ
+======================================================================
+
+Bildirim örnekleri: - Özel mesaj. - Ticaret teklifi. - Satış veya alış
+işlemi. - Aile ve çocuk gelişimi. - Evlilik veya ilişki olayı. - Savaş
+ve barış. - Krallık kararı. - Mülk veya işletme gelişmesi. - Görev ve
+dünya olayı.
+
+Bildirimler oyuncuyu sürekli çevrim içi kalmaya zorlamamalıdır. Önemli
+olaylar özetlenebilir; önemsiz arka plan olayları bildirim yağmuruna
+dönüşmemelidir.
+
+======================================================================
+20. TAM OYUN KAPSAMI VE 0 TL GERÇEKÇİLİĞİ
+======================================================================
+
+ÜRÜN HEDEFİ
+Kül ve Taht'ın teslim hedefi yalnızca prototip, demo veya daraltılmış
+MVP değildir. Bu belgede tanımlanan oynanış sistemleri, daha önce ilk
+sürümden sonraya bırakılmış özellikler dâhil olmak üzere, tamamlanmış
+oyunun hedef kapsamına dahildir. Hiçbir özellik yalnızca geliştirme
+kolaylığı için tasarım kapsamından sessizce çıkarılamaz.
+
+Geliştirme ekibi/ajanı sistemi güvenli ve test edilebilir alt parçalara
+ayırabilir; ancak bu teknik aşamalandırma, ertelenen özelliklerin
+unutulması veya nihai teslimden çıkarılması anlamına gelmez. Nihai
+teslim, aşağıdaki sistemlerin entegre edildiği, çalıştığı, test edildiği
+ve belgelenmiş olduğu sürümdür. Kullanıcıya eksik prototip tamamlanmış
+oyun diye sunulmamalıdır.
+
+TAM DÜNYA VE YERLEŞİMLER
+- Beş krallığın her birinde 1 başkent, 3 büyük şehir, 5 kasaba, 12 köy
+  ve 5 kale olacak şekilde toplam 130 yerleşim/yapı tanımlanacaktır.
+- 130 yerleşimin tamamı haritada, dünya verisinde ve oyun sistemlerinde
+  gerçek kayıtlara sahip olacaktır.
+- Her yerleşimin nüfus, ekonomi, üretim/tüketim, yönetim, güvenlik,
+  aileler, NPC'ler, pazar, ulaşım, mevsim ve siyasi bağlılık verileri
+  bulunacaktır.
+- Yerleşimler yalnızca dekoratif veya tıklanamayan harita etiketleri
+  olarak bırakılmayacaktır. Her biri oyuncu eylemlerine ve dünya
+  olaylarına anlamlı biçimde cevap verecektir.
+- Bağımsız şehirler ve tarafsız bölgeler de kendi yönetim, ekonomi,
+  güvenlik ve olay sistemlerine sahip olacaktır.
+
+NPC, AİLE VE HANEDAN SİMÜLASYONU
+- Binlerce NPC'ye ölçeklenebilecek nüfus ve yaşam simülasyonu kurulacaktır.
+- Önemli NPC'ler kişilik, hedef, hafıza, ilişkiler, meslek, mülk, aile,
+  sağlık, yaşlanma ve siyasi/ekonomik karar sistemlerine sahip olacaktır.
+- Yerel ve arka plan NPC'leri de dünyanın nüfus, üretim, tüketim,
+  güvenlik ve sosyal yapısına gerçek etkide bulunacaktır.
+- NPC'ler evlenebilir, çocuk sahibi olabilir, yaşlanabilir, ölebilir,
+  miras bırakabilir; soylar ve hanedanlar kuşaklar boyunca devam eder.
+- Oyuncu ve NPC'ler aynı temel kurallara tabi olur. NPC'lere haksız
+  sınırsız kaynak veya oyuncunun erişemediği ayrıcalıklı gelişim
+  verilmez.
+- Her NPC'yi her saniye ayrı bir yapay zekâ çağrısıyla çalıştırmak
+  zorunlu değildir. Olay tabanlı, zaman dilimli, önceliklendirilmiş ve
+  toplu simülasyon kullanılabilir; ancak bu optimizasyon simülasyonun
+  oyun etkilerini ortadan kaldıramaz.
+
+ASKERÎ SİSTEMLER VE DENİZ SAVAŞLARI
+- Küçük çatışmaların yanında büyük ölçekli ordu savaşları da bulunur.
+- Birlik kompozisyonu, komutanlık, emirler, moral, disiplin, eğitim,
+  ikmal, erzak, maaş, arazi, hava, keşif ve taktikler savaş sonucunu
+  etkiler.
+- Kuşatma sistemi; surlar, kapılar, kuşatma makineleri, savunma
+  hazırlığı, ikmal kesintisi, teslimiyet, baskın ve kuşatma sonrası
+  sonuçları kapsar.
+- Deniz savaşları; gemi sınıfları, mürettebat, kaptanlık, rüzgâr/hava,
+  manevra, menzilli saldırı, bordalama, hasar, batma, ganimet ve
+  liman/filo yönetimiyle çalışır.
+- Kara ve deniz savaşları metin, taktik seçenekleri, durum panelleri,
+  harita ve statik görseller üzerinden sunulur; gerçek zamanlı 3D
+  aksiyon sahnesine dönüşmez.
+
+EKONOMİ, BANKACILIK VE DEVLET FİNANSI
+- Bölgesel arz-talep ekonomisi, NPC üretici/tüketiciler, ticaret
+  rotaları, kervanlar, stok, bozulma, kıtlık, tekel ve ekonomik krizler
+  entegre edilir.
+- Bankalar, mevduat, kasa, emanet, kredi, faiz, borç, temerrüt,
+  tahsilat, iflas, tasfiye ve oyuncular/NPC'ler arası finansman
+  sistemleri tamamlanır.
+- Krallıkların gelir-gider bütçesi, vergi politikaları, hazine,
+  devlet borcu, alacaklılar, maaş ödemeleri, savaş finansmanı,
+  borç krizi ve ekonomik müdahaleleri çalışır.
+- Mülkiyet, açık artırma, kira, miras, haciz, tapu uyuşmazlığı,
+  işletmeler, çalışanlar, şube ağı ve işletmeler arası ortaklıklar
+  desteklenir.
+- Karmaşık şirket hisseleri, birleşme/devralma ve kurumsal bürokrasi
+  önceki kapsam daraltmasından çıkarılmıştır; bunlar da nihai oyun
+  hedefinin parçasıdır. Ekonomik denge ve performans için anlaşılır
+  kullanıcı arayüzü ve arka planda verimli hesaplama kullanılmalıdır.
+
+YAŞAM, SAĞLIK, HAPİSHANE VE KARAKTER SİSTEMLERİ
+- Sağlık sistemi yaralanma, hastalık, açlık, yorgunluk, tedavi,
+  iyileşme süresi, doktor/şifacı, ilaç ve bitkisel tedaviyi kapsar.
+- Ayrıntılı tıp sistemi; yaralanma türleri, hastalık aşamaları, tedavi
+  seçenekleri, tedavi maliyetleri, iyileşme ve kalıcı etkileri içerir.
+- Hapishane sistemi; tutuklanma, yargılama, ceza, hücre/koğuş koşulları,
+  mahkûm ilişkileri, çalışma, ziyaret, rüşvet, kaçış girişimleri,
+  gardiyanlar ve tahliye süreçlerini kapsar.
+- Karakter görünüşü yalnızca hazır portre seçimiyle sınırlı kalmaz;
+  yüz, saç, sakal, ten, göz, vücut, yara izi, dövme, kıyafet ve
+  ekipman görünüşü için kapsamlı kişiselleştirme sunulur.
+- Aile, evlilik, çocuk, eğitim, yetişkinliğe geçiş, yaşlanma, ölüm,
+  miras ve çok kuşaklı hanedan sistemleri tam entegre edilir.
+
+DİĞER TAMAMLANACAK ÖZELLİKLER
+- Büyü yolları, büyü eğitimi, nadir kitaplar ve farklı krallıkların
+  büyüye yaklaşımı.
+- Meslek loncaları, oyuncu grupları, birlikler, diplomasi, suç,
+  kaçakçılık, hırsızlık, yargı ve yeraltı örgütleri.
+- Şehir yaşamı, turnuvalar, festivaller, panayırlar ve dönemsel
+  etkinlikler.
+- Deniz yolculuğu, gemi mürettebatı, deniz ticareti ve deniz savaşları.
+- Çok oyunculu sohbet, özel mesaj, arkadaşlık, düşmanlık, takas,
+  evlilik, ittifak, düello, PvP ve krallık savaşları.
+- Tüm sistemler için oyuncu ve yönetici arayüzleri, bildirimler,
+  kayıt geçmişi, erişilebilirlik ve mobil kullanım tamamlanacaktır.
+
+0 TL BÜTÇE KURALI
+- Geliştirme, görsel üretimi, yapay zekâ kullanımı, veritabanı,
+  barındırma, otomasyon ve test için ücretli abonelik, ücretli kredi,
+  ücretli API veya ücretli servis zorunlu tutulmayacaktır.
+- Herhangi bir ücretsiz hizmetin kotası dolarsa ücretli plana geçilmez;
+  önce ücretsiz alternatif, yerel/açık kaynak çözüm, önbellekleme,
+  sıkıştırma, görev sıralama ve kullanım azaltma değerlendirilir.
+- Ücretsiz servislerin kota, uykuya alma, depolama, işlem süresi,
+  görsel üretim ve trafik sınırları vardır. Bu nedenle 0 TL ile
+  sınırsız oyuncu, kesintisiz çalışma veya sınırsız görsel üretimi
+  garanti edilemez.
+- Sistem, bu sınırlar içinde mümkün olan en geniş kapsamı sağlayacak
+  şekilde tasarlanır. Kapasite gerçek yük testleriyle raporlanır;
+  gerçekleşmemiş kapasite veya yayın başarısı iddia edilmez.
+- Görsel varlıklar sınırsız sayıda üretilmek zorunda değildir. Oyunun
+  bütün özelliklerini temsil eden eksiksiz, tutarlı ve tekrar
+  kullanılabilir bir görsel kütüphane hazırlanır. Tekrar kullanılabilir
+  portreler, ikonlar, arma ve çevre varlıkları kaliteyi düşürmeden
+  optimize edilir.
+
+TESLİM KRİTERİ
+Tamamlandı denebilmesi için bütün sistemlerin arayüzü, veritabanı,
+sunucu doğrulaması ve oyun kuralları birbirine bağlı olmalıdır.
+Görsel olarak var olup çalışmayan düğme, örnek veriyle çalışan sahte
+ekran, yalnızca istemci tarafında yapılan kritik işlem veya
+birbirinden kopuk modül tamamlanmış özellik sayılmaz. Her özellik için
+işlevsel test, hata kontrolü, güvenlik kontrolü ve kayıt kalıcılığı
+doğrulanmalıdır. Eksik kalan işler açıkça listelenmeli; tamamlanmış
+gibi gösterilmemelidir.
+
+======================================================================
+======================================================================
+21. TEKNİK MİMARİ VE GELİŞTİRME ARAÇLARI
+======================================================================
+
+ÖNERİLEN TEKNOLOJİ YIĞINI - Ön yüz: React + TypeScript. - Stil: CSS veya
+uygun bir mobil öncelikli bileşen sistemi. - Kimlik doğrulama: Supabase
+Auth. - Veritabanı: PostgreSQL (Supabase). - Sunucu tarafı oyun
+işlemleri: Supabase Edge Functions veya eşdeğer güvenli sunucu
+işlevleri. - Gerçek zamanlı bildirim/sohbet: Supabase Realtime, yalnızca
+gerektiği kadar. - Statik web barındırma: Cloudflare Pages veya benzer
+ücretsiz statik barındırma. - Sürüm kontrolü: GitHub. - Görsel
+varlıklar: Ücretsiz kota sınırları gözetilerek optimize edilmiş statik
+depolama/CDN.
+
+Bu teknoloji seçimi başlangıç önerisidir; geliştirme sırasında güncel
+ücretsiz planlar, kota ve hizmet koşulları kontrol edilmelidir.
+
+21.1 GÜVENLİK - Para, eşya, envanter, savaş, mülk ve ticaret işlemlerini
+sunucu doğrular. - İstemci tarafından gönderilen para veya eşya miktarı
+doğrudan kabul edilmez. - Veritabanı erişim politikaları (RLS) doğru
+yapılandırılır. - Gizli servis anahtarları tarayıcı koduna konulmaz. -
+Her kritik işlem atomik ve mümkün olduğunca yinelenen isteklere
+dayanıklı olmalıdır. - Hile ve tekrar saldırılarına karşı kontroller
+bulunur. - Yönetici işlemleri kayıt altına alınır. - Düzenli yedek
+alınır ve geri yükleme test edilir.
+
+21.2 VERİ MODELİ İÇİN ANA VARLIK GRUPLARI - Kullanıcı hesapları. -
+Oyuncu karakterleri. - Karakter geçmişi ve nitelikleri. - Aileler ve
+hanedanlar. - NPC’ler. - İlişkiler ve hafıza kayıtları. - Krallıklar ve
+yönetimler. - Yerleşimler ve bölgeler. - Harita noktaları ve rotalar. -
+Eşyalar ve envanter. - Meslekler ve uzmanlıklar. - İşletmeler ve
+mülkler. - Pazar ve ticaret işlemleri. - Bankalar, borç ve vergiler. -
+Ordu ve birlikler. - Görevler ve olaylar. - Sohbet ve mesajlar. - Görsel
+varlık kayıtları. - Bildirimler ve dünya zamanı.
+
+21.3 OYUN İŞLEM AKIŞI Örnek ticaret: 1. Oyuncu teklif oluşturur. 2.
+Sunucu oyuncunun konumunu, parasını, eşyasını ve kuralları kontrol eder.
+3. İşlem geçerliyse veritabanında atomik değişiklik yapılır. 4. İlgili
+taraflara bildirim gönderilir. 5. İşlem günlüğe kaydedilir.
+
+Örnek savaş: 1. Oyuncu eylem seçer. 2. Sunucu karakter, rakip, ekipman,
+sağlık ve durumları doğrular. 3. Savaş sonucu sunucu tarafından
+hesaplanır. 4. Sağlık, eşya, tecrübe ve sonuçlar kaydedilir. 5. İlgili
+oyunculara sonuç gösterilir.
+
+21.5 YAPAY ZEKÂ ARAÇLARI VE OTOMATİK GÖREV DAĞILIMI
+
+Bu proje birden fazla yapay zekâ aracı/ajanı tarafından geliştirilecekse,
+her ajan yalnızca kendi uzmanlık alanına uygun araçları seçip kullanmalıdır.
+Bu bölüm, mevcut teknik mimari ve geliştirme araçları kararlarını
+değiştirmez; onları koordine eder ve tamamlar.
+
+ANA ORKESTRATÖR / PROJE YÖNETİCİSİ
+- Tasarım belgesinin tamamını okur; gereksinimleri, bağımlılıkları,
+  kabul ölçütlerini ve riskleri çıkarır.
+- İşleri kodlama, mimari, veritabanı, arayüz, görsel, içerik, güvenlik,
+  test, performans ve yayın kategorilerine ayırır.
+- Her görevi o iş için en uygun, gerçekten erişilebilir ve ücretsiz
+  araca/ajana atar.
+- Araçların çıktılarını ortak proje dosyalarında birleştirir; sürüm ve
+  görev durumlarını takip eder.
+- Çakışan değişiklikleri önler; aynı dosyayı eşzamanlı değiştiren
+  ajanları koordine eder.
+- Bir aracın ücretsiz kotası yoksa veya erişilemiyorsa ücretli plana
+  geçmez; ücretsiz alternatif arar ya da işi beklemeye alıp raporlar.
+
+UZMANLIK ROLLERİ
+- Ürün/mimari ajanı: gereksinim, sistem tasarımı, veri modeli,
+  bağımlılıklar ve teknik kararlar.
+- Kod ajanı: ön yüz, sunucu mantığı, API, veritabanı şeması ve
+  entegrasyon.
+- UI/UX ajanı: mobil öncelikli ekranlar, gezinme, erişilebilirlik ve
+  etkileşim tasarımı.
+- Görsel ajanı: karakter, NPC, eşya, mekân, harita, arma, ikon ve
+  diğer statik görsel varlıklar.
+- İçerik ajanı: dünya tarihi, görevler, diyaloglar, NPC profilleri,
+  olaylar, eşyalar ve yerleşim içerikleri.
+- Test ajanı: birim, entegrasyon, uçtan uca, mobil görünüm, veri
+  tutarlılığı ve regresyon testleri.
+- Güvenlik ajanı: kimlik doğrulama, yetkilendirme, RLS, sunucu tarafı
+  doğrulama, sırların korunması, hile ve istismar kontrolleri.
+- Performans ajanı: sorgular, önbellek, görsel optimizasyonu, trafik,
+  yük ve ücretsiz kota kullanımı.
+- Yayın ajanı: yalnızca ücretsiz ve erişilebilir altyapıyla kurulum,
+  dağıtım, alan adı/erişim ve sürüm kontrolü.
+
+ARAÇ SEÇİM KURALLARI
+- Ajanlar araç isimlerini önceden sabit bir listeye göre körlemesine
+  kullanmaz. Görevin gereksinimini belirler, güncel erişilebilir
+  araçları ve ücretsiz plan sınırlarını kontrol eder, sonra uygun
+  aracı seçer.
+- Bir araç yalnızca adı listede bulunduğu için kullanılmaz; göreve
+  uygunluk, mobil erişim, çıktı kalitesi, lisans, gizlilik, kota ve
+  dışa aktarma imkânı değerlendirilir.
+- Görsel üretim aracı kod yazmak için, kod ajanı da görsel üretimi
+  için zorlanmaz. Her iş doğru uzmanlık ve araçla yürütülür.
+- Üretilen her dosya ortak proje deposuna veya belirlenmiş varlık
+  kütüphanesine aktarılır; dosya adları, lisans/kaynak bilgisi ve
+  kullanım yeri kaydedilir.
+- Aynı işi birden fazla araca yaptırmak yalnızca karşılaştırma veya
+  doğrulama için anlamlıysa yapılır.
+- Kullanıcıdan rutin komut çalıştırması, kod kopyalaması, terminal
+  çıktısı göndermesi veya ajanlar arasında elle dosya taşıması
+  istenmez. Zorunlu hesap izni, güvenlik onayı veya kullanıcıya ait
+  karar gerekiyorsa yalnızca o noktada kısa ve açık onay istenir.
+- Ücretli kredi, ücretli API, abonelik veya deneme süresi bitince
+  ödeme gerektiren bir araç iş akışının zorunlu parçası olamaz.
+- Araçların birbirine erişimi yoksa bu durum saklanmaz; entegrasyon
+  kısıtı açıkça raporlanır ve dosya aktarımı mümkün olan en az
+  kullanıcı müdahalesiyle yapılır.
+- Hiçbir ajan test etmediği özelliği tamamlandı olarak işaretleyemez.
+
+İŞ AKIŞI
+1. Belgenin tamamı ve önceki kararlar okunur.
+2. Gereksinim listesi ve izlenebilir görev panosu oluşturulur.
+3. Görevler bağımlılıklarına göre sıralanır ve uzman ajanlara atanır.
+4. Tasarım, kod, veri ve görsel çıktıları ortak projede birleştirilir.
+5. Otomatik testler çalıştırılır; hatalar ilgili ajana geri atanır.
+6. Güvenlik, mobil uyumluluk, performans ve veri kalıcılığı doğrulanır.
+7. Başarısız testler düzeltilmeden nihai teslim yapılmaz.
+8. Son raporda tamamlananlar, test sonuçları, bilinen sınırlamalar,
+   ücretsiz servis kotaları ve henüz yapılamayan işler açıkça yazılır.
+
+21.4 YEDEKLEME VE SÜRÜM YÖNETİMİ Her büyük değişiklik öncesinde çalışan
+sürüm korunmalıdır. Geliştirme yaklaşımı: Yedek al → değişikliği yap →
+test et → sonucu doğrula. Veritabanı yedekleri ve uygulama kaynak kodu
+ayrı korunmalıdır. Geri yükleme işlemi düzenli test edilmelidir.
+
+======================================================================
+22. GELİŞTİRME SIRASI VE TAM TESLİM PLANI
+======================================================================
+
+Aşağıdaki aşamalar yalnızca geliştirme sırasını ve bağımlılıkları
+belirler. Hiçbir aşama, o aşamada henüz geliştirilmemiş özelliklerin
+nihai oyundan çıkarıldığı veya sonraki belirsiz bir tarihe bırakıldığı
+anlamına gelmez. Bütün bölümlerdeki özellikler tam oyun kapsamındadır.
+
+AŞAMA 1 – TEMEL MİMARİ VE GÜVENLİK
+- Proje deposu, uygulama yapısı, hesap/kayıt/giriş.
+- Veritabanı şeması, yetki modeli, RLS ve sunucu tarafı işlemler.
+- Dünya zamanı, kayıt kalıcılığı, yedekleme ve geri yükleme.
+- Ana arayüz, dil sistemi ve mobil uyumluluk.
+
+AŞAMA 2 – DÜNYA VE KARAKTER
+- Valedorn'un tüm krallıkları, bağımsız şehirleri ve tarafsız bölgeleri.
+- 130 yerleşim/yapı ve harita verilerinin tamamı.
+- Karakter oluşturma, ayrıntılı görünüş, geçmiş, aile ve doğum yeri.
+- Temel nitelikler, kişilik, uzmanlık ve meslek gelişimi.
+
+AŞAMA 3 – OYNANIŞ VE YAŞAM
+- Keşif, görevler, olaylar, hayvanlar ve yaratıklar.
+- Envanter, eşya dayanıklılığı, üretim ve zanaat.
+- Sağlık, hastalık, ayrıntılı tedavi, açlık ve yorgunluk.
+- Suç, yargı, hapishane ve kaçış sistemleri.
+- Şehir hayatı, etkinlikler ve seyahat.
+
+AŞAMA 4 – TAM EKONOMİ VE MÜLKİYET
+- Bölgesel arz-talep, üretim, tüketim, pazar ve ticaret.
+- Kervanlar, deniz taşımacılığı ve ticaret filoları.
+- Bankacılık, mevduat, kredi, faiz, borç ve iflas.
+- Vergiler, hazine, devlet borcu ve ekonomik krizler.
+- Mülk, işletme, çalışan, ortaklık, açık artırma ve miras.
+
+AŞAMA 5 – ASKERÎ VE SİYASİ SİSTEMLER
+- Askerî birlikler, komuta, ikmal ve büyük kara savaşları.
+- Kuşatmalar, savunma, kuşatma makineleri ve teslimiyet.
+- Donanma, gemi mürettebatı ve deniz savaşları.
+- Krallık yönetimi, diplomasi, ittifak, savaş ve barış.
+- Oyuncu rütbeleri, makamlar, konseyler ve siyasi mücadele.
+
+AŞAMA 6 – TAM NPC, AİLE VE ÇOK OYUNCULU YAŞAM
+- NPC hedefleri, ilişkileri, hafıza ve ekonomik davranışları.
+- Binlerce NPC'ye ölçeklenebilen katmanlı yaşam simülasyonu.
+- Evlilik, çocuk, eğitim, yaşlanma, ölüm, miras ve çok kuşaklı
+  hanedanlar.
+- Sohbet, özel mesaj, arkadaşlık, gruplar, loncalar, PvP ve ittifaklar.
+- Oyuncu/NPC işletmeleri ve nesiller arası mülk aktarımı.
+
+AŞAMA 7 – GÖRSEL, TEST VE YAYIN
+- Tüm önemli sistem ve içerikler için tutarlı görsel varlık kütüphanesi.
+- Otomatik birim, entegrasyon ve uçtan uca testler.
+- Güvenlik, hile, yük, performans ve mobil uyumluluk testleri.
+- Ücretsiz altyapı kotalarının doğrulanması ve optimizasyon.
+- Kapalı test, hata düzeltme, yedekleme ve geri yükleme provası.
+- Bütün kabul ölçütleri geçilmeden tamamlandı/yayınlandı denmemesi.
+
+Aşamalar gerektiğinde paralel yürütülebilir; ancak veri ve güvenlik
+bağımlılıkları ihlal edilmez. Her aşamada çalışan sürüm korunur, test
+sonuçları kaydedilir ve geri dönüş imkânı tutulur.
+
+======================================================================
+23. GELİR MODELİ VE ADİL PARA KAZANMA
+======================================================================
+
+Oyun temel oynanış açısından ücretsiz olmalıdır. İlk hedef çalışan oyun
+ve oyuncu topluluğu oluşturmaktır. Gelir modeli daha sonra devreye
+alınabilir.
+
+ÜCRETSİZ TEMEL OYUN - Hesap ve karakter. - Karakter gelişimi. - Keşif. -
+Savaş. - Ticaret. - Sosyal etkileşim. - Temel mülk ve meslekler.
+
+OLASI ÜCRETLİ İÇERİKLER - Kozmetik kıyafetler. - Zırh ve silah
+görünüşleri. - Binek görünüşleri. - Ev dekorasyonu. - Görsel
+kişiselleştirme. - İsteğe bağlı ek karakter yuvası. - Oyun dengesini
+bozmayan kolaylık özellikleri.
+
+PARA İLE SATILMAMASI GEREKEN AVANTAJLAR - Doğrudan savaş gücü. - Zorunlu
+üstünlük. - Sınırsız kaynak. - Diğer oyuncuları satın alma yoluyla
+ezme. - Rekabetçi sistemlerde parayla kazanma.
+
+Oyun içi para normal oynanışla kazanılabilmelidir. Ücretli ürünler
+ekonomik dengeyi bozmamalıdır. Yeni kıtalar, hikâyeler ve içerikler
+ileride genişleme modeliyle sunulabilir; temel oyunun adil
+oynanabilirliği korunmalıdır.
+
+======================================================================
+24. TASARIM RİSKLERİ VE ÇÖZÜM YAKLAŞIMI
+======================================================================
+
+RİSK 1: Proje kapsamının büyümesi ve geliştirme süresinin uzaması.
+Çözüm: Sistemler birbirine bağımlılıklarına göre modüllere ayrılmalı,
+geliştirme ve test süreçleri aşamalı yürütülmelidir. Ancak aşamalı geliştirme,
+nihai oyunda özelliklerin veya yerleşimlerin eksik bırakılması anlamına gelmez.
+Tamamlanmış oyunda 130 yerleşimin tamamı ve tasarım belgesinde belirtilen
+bütün sistemler çalışır durumda olmalıdır. 0 TL bütçe nedeniyle performans ve
+kaynak optimizasyonu yapılmalı; kapsam daraltılmamalıdır.
+
+RİSK 2: Ücretsiz altyapı kotalarının aşılması. Çözüm: Olay tabanlı
+simülasyon, önbellek, sıkıştırma, toplu güncelleme, kapalı test ve
+trafik ölçümü.
+
+RİSK 3: NPC simülasyonunun pahalı olması. Çözüm: Önemli NPC’lere
+ayrıntılı, arka plan nüfusuna istatistiksel simülasyon.
+
+RİSK 4: Görsel üretim ve depolama yükü. Çözüm: 40 sıradan NPC portresi,
+önemli karakterlere özel görsel, tekrar kullanılabilir varlık
+kütüphanesi ve sıkıştırma.
+
+RİSK 5: Ekonominin oyuncu sayısına bağlı kalması. Çözüm: NPC
+üretici/tüketici ekonomisi ve kontrollü pazar stokları.
+
+RİSK 6: Hile ve istemci manipülasyonu. Çözüm: Kritik işlemlerin sunucu
+tarafında doğrulanması, RLS ve işlem günlükleri.
+
+RİSK 7: Oyuncuların uzun süre çevrim dışı kalınca cezalandırılması.
+Çözüm: Önemli olayların özetlenmesi, makul bakım kuralları ve çevrim
+dışı simülasyonda adil sınırlar.
+
+RİSK 8: Kalıcı ölümün oyuncuyu oyundan soğutması. Çözüm: Açık risk
+bilgisi, hazırlık ve tedavi imkânları, varis ve yeni karakterle devam
+etme.
+
+======================================================================
+25. OYUNUN BAŞARILI SAYILMASI İÇİN ÖLÇÜTLER
+======================================================================
+
+İlk testlerde şu ölçütler takip edilmelidir: - Oyuncu kayıt ve giriş
+akışı sorunsuz mu? - Karakter oluşturma ve doğum yeri etkileri anlaşılır
+mı? - Oyuncu ilk 10–20 dakikada ne yapacağını anlayabiliyor mu? - Metin
+ve görseller mobilde hızlı yükleniyor mu? - Kayıtlar güvenli biçimde
+korunuyor mu? - Ticaret ve savaş işlemleri sunucu tarafından
+doğrulanıyor mu? - Az sayıda oyuncuyla dünya canlı hissediliyor mu? -
+NPC olayları tutarlı mı? - Ücretsiz altyapı limitleri test yükünde
+aşılmıyor mu? - Oyuncular kendi hedeflerini belirleyebiliyor mu?
+
+Kapasite, gerçek trafik ve yük testleriyle ölçülmelidir. Önceden belirli
+bir eşzamanlı oyuncu sayısı vaat edilmemelidir.
+
+======================================================================
+26. OYUN ÜRETİM ARACINA VEYA ÇOKLU YAPAY ZEKÂ SİSTEMİNE VERİLECEK ANA TALİMAT
+======================================================================
+
+“Kül ve Taht” adlı, mobil öncelikli, tarayıcıda çalışan, kalıcı ortak
+dünyaya sahip, metin tabanlı ortaçağ-fantezi RPG/strateji oyununu
+bu belgenin tamamına bağlı kalarak geliştir.
+
+DİL
+Oyunun ana ve varsayılan dili Türkçe olacaktır. İngilizce ikinci dil
+olarak sunulacaktır. Arayüz, menüler, karakter oluşturma, görevler,
+hikâye, NPC diyalogları, bildirimler ve sistem mesajları seçilen dile
+uygun ve tutarlı görüntülenmelidir. Türkçe karakterler eksiksiz
+desteklenmelidir.
+
+DÜNYA VE OYNANIŞ
+Valedorn kıtasında Varkhenn, Aurelith, Solmerya, Eryndor ve Caelvar
+krallıkları; Ravenport, Thornwick ve Eldermere bağımsız şehirleri;
+Ashenvale ve Greywatch Pass tarafsız bölgeleri bulunur. Kül Savaşı'nın
+bitişinden 73 yıl sonra başlar. Beş krallık için planlanan 130
+yerleşim/yapının tamamı dünya haritasında ve oyun verisinde gerçek,
+işlevsel ve etkileşimli olmalıdır.
+
+Oyuncu sabit sınıfa bağlı değildir. Doğum yeri, aile geçmişi, eğitim,
+yedi temel nitelik, kişilik, görünüş, uzmanlıklar ve meslekler
+karakterin gelişimini etkiler. Barışçıl yaşam, ticaret, zanaat,
+çiftçilik, keşif, büyü, askerlik, siyaset, suç, aile ve hükümdarlık
+yolları birbirini dışlamadan oynanabilir.
+
+TAM OYUN KAPSAMI
+Belgenin 20. bölümünde daha önce sonraki aşamaya bırakılmış özellikler
+de dahil olmak üzere tam oyun kapsamı tanımlanmıştır. 130 yerleşim,
+ölçeklenebilir binlerce NPC simülasyonu, kuşaklar arası aile/hanedan,
+büyük kara savaşları, ayrıntılı kuşatmalar, deniz savaşları, kapsamlı
+bankacılık ve devlet borcu, şirket/işletme sistemleri, ayrıntılı
+sağlık ve hapishane, gelişmiş karakter görünüşü, çok oyunculu sosyal
+sistemler ve diğer tüm belgelenmiş özellikler nihai oyunda bulunmalıdır.
+Bunlar MVP gerekçesiyle nihai teslimden çıkarılamaz.
+
+GÖRSEL VE ARAYÜZ
+2D/3D modellenmiş aksiyon sahneleri kullanılmaz. Oynanış metin,
+anlatı, seçim, menü, istatistik, harita ve statik illüstrasyonlarla
+ilerler. Görsel stil sinematik ve yarı gerçekçi ortaçağ-fantezidir.
+Koyu taş grisi/siyah, eskitilmiş kahverengi, altın ve bordo renkleri;
+parşömen/deri/taş dokuları; tarihî serif başlıklar ve okunaklı metinler
+kullanılır. Mobilde sabit alt gezinme, büyük dokunma alanları ve veri
+tasarrufu modu bulunur.
+
+TEKNİK VE GÜVENLİK
+Mevcut 21. bölümdeki teknoloji yığını ve güvenlik ilkeleri korunur.
+Para, eşya, envanter, savaş, ticaret, mülk ve yönetici işlemleri
+sunucu tarafında doğrulanır. RLS ve rol/yetki kontrolleri uygulanır.
+Gizli anahtarlar istemciye konulmaz. Yedekleme, geri yükleme, işlem
+kayıtları ve güvenlik testleri yapılır.
+
+YAPAY ZEKÂ ARAÇ KOORDİNASYONU
+21.5 bölümündeki çoklu ajan/araç koordinasyon kuralları uygulanır.
+Ana orkestratör belgeyi analiz eder, görevleri uzmanlıklarına göre
+böler ve her görev için en uygun, gerçekten erişilebilir ücretsiz
+aracı kendisi seçer. Kod, görsel, tasarım, içerik, veritabanı,
+güvenlik, test, performans ve yayın işleri ilgili uzman araç/ajanlarla
+yürütülür. Araçların çıktıları ortak projede birleştirilir ve test
+edilir. Kullanıcıdan rutin terminal komutu, çıktı kopyalama veya elle
+dosya taşıma istenmez.
+
+KESİN 0 TL KURALI
+Ücretli kredi, abonelik, API, barındırma veya araç satın alımı
+gerektiren çözüm zorunlu tutulamaz. Ücretsiz kota dolarsa ücretli
+plana geçilmez; ücretsiz alternatif, optimizasyon veya beklemeye alma
+uygulanır. Ücretsiz servislerin sınırsız kapasite ve kesintisiz çalışma
+garantisi vermediği açıkça raporlanır. Gerçek kapasite test edilmeden
+oyuncu sayısı vaat edilmez.
+
+TAMAMLAMA VE KABUL
+Bu proje yalnızca görsel prototip olarak teslim edilemez. Her düğme,
+form, oyun sistemi ve yönetici aracı gerçek veri ve sunucu mantığına
+bağlı olmalıdır. Sahte düğme, örnek veriyle çalışan ekran, yalnızca
+arayüzde var olan özellik veya test edilmemiş modül tamamlanmış
+sayılmaz. Otomatik testler, mobil testler, güvenlik testleri, veri
+kalıcılığı ve geri yükleme testleri başarıyla tamamlanmalıdır.
+Bütün gereksinimler izlenebilir bir kontrol listesinde tutulmalı;
+eksikler gizlenmemelidir. Kullanıcıya yalnızca gerçekten çalışan,
+test edilmiş ve sınırları açıkça belirtilmiş sonuç sunulmalıdır.
+
+======================================================================
+27. SONUÇ
+======================================================================
+
+Kül ve Taht’ın temel vaadi, oyuncuya yalnızca görev tamamlatan bir oyun
+değil, içinde bir hayat ve soy kurabileceği yaşayan bir dünya sunmaktır.
+Oyuncu küçük bir köyde doğup zanaatkâr olabilir, ticaretle servet
+kurabilir, orduya katılıp komutanlığa yükselebilir, bir hanedanla
+evlilik bağı kurabilir, siyasi güç kazanabilir veya bir krallığın
+tahtına kadar ilerleyebilir. Başka bir oyuncu ise hiçbir savaşa
+katılmadan üretim, ticaret ve aile hayatıyla kendi hikâyesini
+yaşayabilir.
+
+Dünya oyuncunun seçimlerine tepki verir; ancak tek bir oyuncunun her
+şeyi kontrol ettiği bir yapı değildir. NPC’ler ve krallıklar kendi
+çıkarlarıyla hareket eder. Oyuncunun ölümü, mirası ve sonraki kuşakları
+dünyada iz bırakabilir.
+
+Bu vizyonun hayata geçmesi için geliştirme işleri bağımlılıklarına göre
+aşamalara bölünür; ancak hedef daraltılmış bir MVP değil, bu belgede
+tanımlanan bütün sistemleri içeren tamamlanmış oyundur. Mobil performans,
+veri güvenliği, gerçekçi ücretsiz altyapı sınırları ve her özelliğin
+test edilmesi nihai teslimin zorunlu koşullarıdır.
+
+Belge sonu.
