@@ -12,6 +12,8 @@ import {
   type BankAccountDto,
   type CompanyDto,
   type EscrowDto,
+  type RentalDto,
+  type TitleDisputeDto,
   type FamilyDto,
   type GroupDto,
   type StorageDto,
@@ -55,6 +57,8 @@ interface State {
   bank: BankAccountDto[];
   escrows: EscrowDto[];
   companies: CompanyDto[];
+  rentals: RentalDto[];
+  titleDisputes: TitleDisputeDto[];
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -89,6 +93,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     bank: [],
     escrows: [],
     companies: [],
+    rentals: [],
+    titleDisputes: [],
     storage: null,
     diplomacy: [],
     quests: [],
@@ -130,6 +136,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           bank: res.bank,
           escrows: res.escrows,
           companies: res.companies,
+          rentals: res.rentals,
+          titleDisputes: res.titleDisputes,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -712,6 +720,26 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             </li>
           ))}
         </ul>
+      )}
+
+      {state.rentals.length > 0 && (
+        <>
+          <h3>{t.play.rentals}</h3>
+          <ul className="kvt-rentals">
+            {state.rentals.map((r) => (
+              <li key={r.id}>
+                <span>
+                  {r.status} — {t.play.monthlyRent}: {r.netIncome} {t.play.gold}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="kvt-playactions">
+            <button type="button" onClick={() => act({ action: "collectRent" }, t.play.committed)}>
+              {t.play.collectRent}
+            </button>
+          </div>
+        </>
       )}
 
       <h3>{t.play.appearance}</h3>

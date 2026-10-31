@@ -255,6 +255,24 @@ export interface CompanyDto {
   dailyPayroll: number;
 }
 
+export interface RentalDto {
+  id: string;
+  propertyId: string;
+  monthlyRate: number;
+  occupancy: number;
+  status: "active" | "vacant" | "ended";
+  monthlyIncome: number;
+  netIncome: number;
+}
+
+export interface TitleDisputeDto {
+  id: string;
+  propertyId: string;
+  claimantA: string;
+  claimantB: string;
+  status: "open" | "resolved_a" | "resolved_b" | "dismissed";
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -299,6 +317,8 @@ export interface PlayStateResponse {
   escrows: EscrowDto[];
   peerLoans: PeerLoanDto[];
   companies: CompanyDto[];
+  rentals: RentalDto[];
+  titleDisputes: TitleDisputeDto[];
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -418,6 +438,12 @@ export type PlayAction =
   | { action: "acquireCompany"; companyId: string; allPartnersAgree?: boolean }
   | { action: "hireEmployee"; companyId: string; name: string; wage: number }
   | { action: "openBranch"; companyId: string; settlementId: string }
+  | { action: "listForRent"; propertyId: string; monthlyRate: number }
+  | { action: "collectRent" }
+  | { action: "foreclose"; propertyId: string; debt: number }
+  | { action: "autoForecloseTaxes" }
+  | { action: "openTitleDispute"; propertyId: string; claimantB: string }
+  | { action: "resolveTitleDispute"; disputeId: string }
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }

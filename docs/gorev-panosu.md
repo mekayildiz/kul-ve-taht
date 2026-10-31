@@ -153,7 +153,7 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 
 ### P2 – Mülk, çok oyunculu ve kalan saf fonksiyonlar (belge 9, 10, 16)
 
-- [ ] E9.9 Mülk tamamlayıcıları: kira, haciz, tapu uyuşmazlığı (belge 9.3, 20): `monthlyRent`, `rentAfterTax`, haciz (foreclosure), tapu uyuşmazlığı — `economy/extras.ts`, `play/systems.ts`, migration
+- [x] E9.9 Mülk tamamlayıcıları: kira, haciz, tapu uyuşmazlığı (belge 9.3, 20): `monthlyRent`, `rentAfterTax`, haciz (foreclosure), tapu uyuşmazlığı — `economy/extras.ts`, `play/systems.ts`, migration
 - [ ] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
 - [ ] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
 - [ ] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`

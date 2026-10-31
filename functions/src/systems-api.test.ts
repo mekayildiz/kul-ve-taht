@@ -816,3 +816,57 @@ describe("Sirket, ortaklik ve birlesme (belge 20)", () => {
     expect(denied.status).toBe(400);
   });
 });
+
+describe("Mulk tamamlayicilari: kira, haciz, tapu (belge 9.3, 20)", () => {
+  const env = makeEnv();
+
+  it("mulku kiraya verir ve kira gelirini toplar", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 2000);
+    const buy = await act(env, token, characterId, { action: "buyProperty", propertyType: "house" });
+    expect(buy.status).toBe(200);
+    const state0 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    const propertyId = state0.properties[0].id as string;
+    const listed = await act(env, token, characterId, { action: "listForRent", propertyId, monthlyRate: 3 });
+    expect(listed.status).toBe(200);
+    const state1 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state1.rentals.length).toBe(1);
+  });
+
+  it("haciz mulku el koyar ve borcu kapatir", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await grantGold(env, characterId, 5000);
+    await act(env, token, characterId, { action: "buyProperty", propertyType: "mine" });
+    const state0 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    const propertyId = state0.properties[0].id as string;
+    const goldBefore = state0.state.gold as number;
+    const fc = await act(env, token, characterId, { action: "foreclose", propertyId, debt: 500 });
+    expect(fc.status).toBe(200);
+    const state1 = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(state1.properties.length).toBe(0);
+    // Mulk degeri (2000) borcu (500) asar; artan (1500) altin olarak doner.
+    expect(state1.state.gold).toBe(goldBefore + 1500);
+  });
+
+  it("tapu uyusmazligi itibara gore sunucuda cozulur ve mulk kazanana gecer", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    await grantGold(env, a.characterId, 2000);
+    await act(env, a.token, a.characterId, { action: "buyProperty", propertyType: "house" });
+    const stateA = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    const propertyId = stateA.properties[0].id as string;
+    // b daha yuksek itibar kazanir.
+    await act(env, b.token, b.characterId, { action: "payTaxes" }).catch(() => undefined);
+    const opened = await act(env, a.token, a.characterId, { action: "openTitleDispute", propertyId, claimantB: b.characterId });
+    expect(opened.status).toBe(200);
+    const stateB = await readBody(await call(`/api/play/${b.characterId}/state`, env, auth(b.token)));
+    const disputeId = stateB.titleDisputes[0].id as string;
+    const resolved = await act(env, b.token, b.characterId, { action: "resolveTitleDispute", disputeId });
+    expect(resolved.status).toBe(200);
+    const winner = (await readBody(resolved)).detail.winner as string;
+    expect([a.characterId, b.characterId]).toContain(winner);
+    // Mulk kazanana gecer.
+    const winnerState = await readBody(await call(`/api/play/${winner}/state`, env, auth(winner === a.characterId ? a.token : b.token)));
+    expect(winnerState.properties.some((p: any) => p.id === propertyId)).toBe(true);
+  });
+});

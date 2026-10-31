@@ -113,6 +113,16 @@ import {
   performHireEmployee,
   performOpenBranch,
 } from "./play/company";
+import {
+  rentalList,
+  performListForRent,
+  performCollectRent,
+  performForeclose,
+  autoForecloseForTaxes,
+  titleDisputeList,
+  performOpenTitleDispute,
+  performResolveTitleDispute,
+} from "./play/property-extras";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -425,6 +435,10 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   const group = await groupStatus(env.DB, params.characterId!);
   const appearance = await appearanceStatus(env.DB, params.characterId!);
   const companies = await companyList(env.DB, params.characterId!);
+  const [rentals, titleDisputes] = await Promise.all([
+    rentalList(env.DB, params.characterId!),
+    titleDisputeList(env.DB, params.characterId!),
+  ]);
   const [bank, escrows, peerLoans] = await Promise.all([
     bankSummary(env.DB, params.characterId!),
     escrowList(env.DB, params.characterId!),
@@ -459,6 +473,8 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     escrows,
     peerLoans,
     companies,
+    rentals,
+    titleDisputes,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -738,6 +754,24 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "openBranch":
       result = await performOpenBranch(env.DB, characterId, String(body?.companyId ?? ""), String(body?.settlementId ?? ""));
+      break;
+    case "listForRent":
+      result = await performListForRent(env.DB, characterId, String(body?.propertyId ?? ""), Number(body?.monthlyRate ?? 2));
+      break;
+    case "collectRent":
+      result = await performCollectRent(env.DB, characterId);
+      break;
+    case "foreclose":
+      result = await performForeclose(env.DB, characterId, String(body?.propertyId ?? ""), Number(body?.debt ?? 0));
+      break;
+    case "autoForecloseTaxes":
+      result = await autoForecloseForTaxes(env.DB, characterId);
+      break;
+    case "openTitleDispute":
+      result = await performOpenTitleDispute(env.DB, characterId, String(body?.propertyId ?? ""), String(body?.claimantB ?? ""));
+      break;
+    case "resolveTitleDispute":
+      result = await performResolveTitleDispute(env.DB, characterId, String(body?.disputeId ?? ""));
       break;
     case "sendMessage":
       result = await performSendMessage(
