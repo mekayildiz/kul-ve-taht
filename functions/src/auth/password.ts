@@ -11,8 +11,13 @@
  * istegi 10 ms CPU ile sinirli oldugu icin hash islemi Durable Object icinde
  * (30 s CPU butcesi) calistirilir; bkz. src/durable/password-hash-gate.ts.
  *
- * ITERATIONS asgari degeri OWASP onerisine yakindir ve performans testi
- * (E1.3) ile DO icinde dogrulanmadan dusurulemez.
+ * PLATFORM SINIRI (kritik): Cloudflare workerd WebCrypto PBKDF2 icin
+ * 100.000 iterasyonun UZERINI REDDEDER:
+ *   "Pbkdf2 failed: iteration counts above 100000 are not supported."
+ * Bu nedenle 100.000 platformun izin verdigi EN YUKSEK degerdir ve
+ * OWASP'in 600.000 onerisi bu ortamda uygulanamaz. Dusuk iterasyonu telafi
+ * etmek icin parola asgari uzunlugu (12) ve hiz sinirlama (auth/rate-limit.ts)
+ * birlikte uygulanir.
  */
 
 import { constantTimeEqual } from "./constant-time";
@@ -20,10 +25,14 @@ import { constantTimeEqual } from "./constant-time";
 export const PBKDF2 = {
   name: "PBKDF2" as const,
   hash: "SHA-256" as const,
-  iterations: 600_000,
+  // workerd ust siniri: 100.000. Daha yuksek deger NotSupportedError verir.
+  iterations: 100_000,
   keyLengthBytes: 32,
   saltBytes: 16,
 };
+
+/** workerd WebCrypto'nun kabul ettigi en yuksek PBKDF2 iterasyon sayisi. */
+export const PBKDF2_MAX_ITERATIONS = 100_000;
 
 export interface PasswordHash {
   algorithm: "pbkdf2-sha256";
@@ -46,6 +55,12 @@ function fromBase64(value: string): Uint8Array {
 }
 
 async function deriveBits(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
+  if (iterations > PBKDF2_MAX_ITERATIONS) {
+    // workerd bu degerin uzerini reddeder (NotSupportedError -> HTTP 1101).
+    throw new RangeError(
+      `PBKDF2 iterasyonu platform ust sinirini asiyor: ${iterations} > ${PBKDF2_MAX_ITERATIONS}`,
+    );
+  }
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),

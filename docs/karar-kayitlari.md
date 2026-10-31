@@ -13,10 +13,13 @@ işlemlerde **sunucu taraflı kimlik, rol, sahiplik ve yetki** kontrolleri uygul
 ## ADR-003 — Parola hash: PBKDF2 (teste bağlı)
 Argon2 Workers'ta desteklenmez; bcrypt yerleşik değil. Web Crypto **PBKDF2-HMAC-SHA256**
 kullanılır. Hash işlemi, Worker'ın 10 ms CPU sınırı nedeniyle **Durable Object**
-içinde (30 s CPU) çalıştırılır. İterasyon OWASP asgarisine yakın (600.000) tutulur;
-gerçek Workers/DO ortamındaki performans testi **zorunludur** ve başarısızsa
-alternatif ücretsiz mimari (DO cpu_ms artırımı / scrypt) uygulanır — güvenlikten
-taviz verilmez.
+içinde (30 s CPU) çalıştırılır. **Platform sınırı (ölçülerek doğrulandı):** workerd
+WebCrypto PBKDF2'de 100.000 iterasyonun üzerini reddeder (canlı üretimde
+"Pbkdf2 failed: iteration counts above 100000 are not supported" hatası). Bu
+nedenle iterasyon sayısı platformun izin verdiği en yüksek değer olan **100.000**
+olarak sabitlenir; OWASP'ın 600.000 önerisi bu ortamda uygulanamaz. Düşük
+iterasyonu telafi için parola asgari uzunluğu (12) ve hesap başına hız sınırı
+birlikte uygulanır. Üretimde hash DO üzerinden çalışır (bkz. ADR-004).
 
 ## ADR-004 — Hash darboğazı dağıtımı
 Parola hash işleri tek bir DO'ya yıkılmaz. Hesap kimliğine göre **16 shard**'a

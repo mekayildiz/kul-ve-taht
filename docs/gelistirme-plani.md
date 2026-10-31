@@ -30,10 +30,13 @@ koordinasyon talimatları aynen korunur; değiştirilmemiştir.**
 Tüm sınırlar resmî belgeden doğrulanmıştır (bkz. `docs/arac-kaydi.md`,
 `docs/kota-butcesi.md`). Kritik bulgular:
 
-- **Workers HTTP isteği 10 ms CPU** ile sınırlıdır. PBKDF2 (600.000 iterasyon,
-  OWASP düzeyi) bu bütçeye sığmaz → parola hash işlemi **Durable Object**
-  içinde (30 s CPU) çalıştırılır. **Ölçüldü:** medyan 84 ms / maks 96 ms
-  (`scripts/bench-pbkdf2.mjs`) → güvenlikten taviz vermeden sığar.
+- **Workers HTTP isteği 10 ms CPU** ile sınırlıdır. PBKDF2 hash işlemi
+  **Durable Object** içinde (30 s CPU) çalıştırılır. **Kritik platform sınırı:**
+  workerd WebCrypto PBKDF2'de **100.000 iterasyonun üzerini reddeder**
+  ("iteration counts above 100000 are not supported"). Bu nedenle 100.000
+  kullanılır (platformun izin verdiği en yüksek değer); OWASP'ın 600.000
+  önerisi bu ortamda uygulanamaz. **Ölçüldü:** 100k iterasyon medyan ~15 ms;
+  DO 30 s bütçesine rahatça sığar (`scripts/bench-pbkdf2.mjs`).
 - **D1 Free** satır yazma 100.000/gün. Yüksek frekanslı yazma gerektiren
   canlı durum (savaş, sohbet) DO'da tutulur; D1'e toplu yazılır.
 - **Worker `[assets]`** statik sistemi → görsel depolama için ücretsiz; yedekleme D1 Time Travel.
@@ -63,7 +66,7 @@ Cloudflare Pages/Workers dağıtımı bu depoya bağlanır.
 | Arayüz | React+TS, mobil öncelikli; API istemcisi (`app/src/api/client.ts`); TR varsayılan + EN; erişilebilirlik (rol/etiket) |
 | Görseller | CC0/CC BY kaynaklar (Kenney, Game-icons); `assets/manifest.json` kimlik+lisans kaydı; 40 portrelik havuz |
 | Veritabanı | D1 + SQLite ortak alt kümesi; migration'lar `db/migrations`; referans veri migration olarak üretilir (`npm run gen:world`) |
-| Güvenlik | PBKDF2 600k (DO); HMAC oturum; sunucu tarafı yetkilendirme (RLS yok); hız sınırı; istemci asla otorite değil |
+| Güvenlik | PBKDF2 100k (DO, workerd üst sınırı); HMAC oturum; sunucu tarafı yetkilendirme (RLS yok); hız sınırı; istemci asla otorite değil |
 | Test | Vitest; gerçek SQLite donanımı; Miniflare uçtan uca; her aşama sonunda `npm run verify` |
 
 ## 5. Mevcut durum (aşama panosu)

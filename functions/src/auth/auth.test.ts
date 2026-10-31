@@ -85,7 +85,7 @@ describe("rate limit ve eszamanli hash kontrolu", () => {
 describe("parola hash serilestirme", () => {
   const hash: PasswordHash = {
     algorithm: "pbkdf2-sha256",
-    iterations: 600_000,
+    iterations: 100_000,
     saltB64: "AAAA",
     hashB64: "BBBB",
   };

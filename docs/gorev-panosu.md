@@ -20,7 +20,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri
 - [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
 - [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
-- [x] E1.16 PBKDF2 performans ölçümü — **ölçüldü**: 600k iterasyon medyan 84 ms / maks 96 ms; DO 30 s bütçesine sığıyor (R2 endişesi kapandı)
+- [x] E1.16 PBKDF2 performans ölçümü — **ölçüldü**: 100k iterasyon (workerd üst sınırı) medyan ~15 ms; DO 30 s bütçesine sığıyor. 600k üretimde reddedildiği için düşürüldü (E13)
 - [x] E1.17 D1 dump + geri yükleme bütünlüğü (birim + entegrasyon testleri); yedekleme D1 Time Travel'e taşındı (E12)
 - [x] E1.18 Geri yükleme provası + veri bütünlüğü doğrulaması — **gerçek SQLite üzerinde yedek→geri yükle döngüsü test edildi** (yıkıcı ifade reddi, kısmi geri yükleme engeli)
 
@@ -298,3 +298,30 @@ için **tamamen kaldırıldı**. Özellik kapsamı küçültülmedi.
 
 Doğrulama: `npm run verify` → 51 dosya / 496 test geçti (R2 Workflow testi
 kaldırıldı), 0 TL denetimi geçti; korunan belge md5 değişmedi.
+
+## E13 – Üretim kayıt hatasının giderilmesi (PBKDF2 platform sınırı)
+
+Canlı ortamda hesap kaydı, genel "İşlem tamamlanamadı" hatasıyla başarısız
+oluyordu. Kök neden `wrangler tail` ile bulundu.
+
+- [x] E13.1 Kök neden: `NotSupportedError: Pbkdf2 failed: iteration counts
+  above 100000 are not supported (requested 600000).` workerd WebCrypto,
+  100.000 üzeri PBKDF2 iterasyonunu reddeder; yakalanmayan istisna Worker'da
+  1101 koduna ve HTTP 500'e dönüşüyordu.
+- [x] E13.2 `auth/password.ts`: `PBKDF2.iterations` 600.000 → 100.000 (platform
+  üst sınırı). `deriveBits()` içine `PBKDF2_MAX_ITERATIONS` (100.000) koruması
+  eklendi; aşımda anlaşılır `RangeError` (sahte başarı yok).
+- [x] E13.3 İkinci kusur: `PASSWORD_HASH_GATE` DO bağlı ve dağıtılmıştı ama
+  hiç çağrılmıyordu. `auth/hash-gate.ts` (`createGateHasher`) yazıldı ve
+  `index.ts`'te kayıt/giriş yollarına bağlandı; hash artık DO'da çalışır.
+- [x] E13.4 DO hız sınırı hesap bazına alındı (shard paylaşan farklı hesaplar
+  birbirini etkilemez); pencere dolunca sayaç sıfırlanır.
+- [x] E13.5 Testler: `auth/hash-gate.test.ts` (platform sınırı, DO akışı,
+  hesap bazlı hız sınırı), `auth-e2e.test.ts` (kayıt→giriş→oturum uçtan uca);
+  `auth.test.ts` fikstürü 100k'ya güncellendi.
+- [x] E13.6 Belgeler güncellendi (600k → 100k; `gelistirme-plani`,
+  `karar-kayitlari`, `gorev-panosu`).
+
+Doğrulama: `npm run verify` → 53 dosya / 505 test geçti, 0 TL denetimi geçti.
+Canlı: kayıt 201, giriş 200, `/api/me` 200; `wrangler tail` kaydı Worker
+CPU ~7 ms, DO ~30 ms, istisna yok (`outcome: ok`).

@@ -2,8 +2,8 @@
  * Parola hash kapisi - Durable Object.
  *
  * Neden DO:
- *  - Worker HTTP istegi 10 ms CPU ile sinirli; PBKDF2 600.000 iterasyon bu
- *    butceye sigmaz.
+ *  - Worker HTTP istegi 10 ms CPU ile sinirli; PBKDF2 (100.000 iterasyon)
+ *    bu butceye guvenle sigmaz.
  *  - Durable Object invocation CPU butcesi 30 s'dir (5 dk'ya ayarlanabilir),
  *    bu nedenle parola hash islemi DO icinde calistirilir.
  *
@@ -35,14 +35,31 @@ export interface HashResponse {
 }
 
 export class PasswordHashGate extends DurableObject {
-  private state: LoginAttemptState = {
-    attemptsInWindow: 0,
-    concurrentHashes: 0,
-    windowStartedAtMs: 0,
-  };
+  // Shard basina hesap bazli durum: bir shard'i paylasan farkli hesaplar
+  // birbirini hiz sinirina takmamali (tasarim: "hesap basina" limit).
+  private readonly accounts = new Map<string, LoginAttemptState>();
+
+  private stateFor(accountId: string): LoginAttemptState {
+    let state = this.accounts.get(accountId);
+    if (!state) {
+      state = { attemptsInWindow: 0, concurrentHashes: 0, windowStartedAtMs: 0 };
+      this.accounts.set(accountId, state);
+    }
+    return state;
+  }
+
+  private prune(nowMs: number): void {
+    if (this.accounts.size <= 1024) return;
+    for (const [id, state] of this.accounts) {
+      if (state.concurrentHashes === 0 && nowMs - state.windowStartedAtMs >= DEFAULT_LOGIN_POLICY.windowMs) {
+        this.accounts.delete(id);
+      }
+    }
+  }
 
   async handle(req: HashRequest, nowMs: number): Promise<HashResponse> {
-    const decision = checkLoginAllowed(this.state, DEFAULT_LOGIN_POLICY, nowMs);
+    const state = this.stateFor(req.accountId);
+    const decision = checkLoginAllowed(state, DEFAULT_LOGIN_POLICY, nowMs);
     if (!decision.allowed) {
       return {
         ok: false,
@@ -50,7 +67,13 @@ export class PasswordHashGate extends DurableObject {
       };
     }
 
-    this.state.concurrentHashes += 1;
+    // Pencere suresi dolduysa sayaci sifirla; ardindan bu denemeyi say.
+    if (nowMs - state.windowStartedAtMs >= DEFAULT_LOGIN_POLICY.windowMs) {
+      state.windowStartedAtMs = nowMs;
+      state.attemptsInWindow = 0;
+    }
+    state.attemptsInWindow += 1;
+    state.concurrentHashes += 1;
     try {
       if (req.kind === "hash") {
         const hash = await hashPassword(req.password);
@@ -60,7 +83,8 @@ export class PasswordHashGate extends DurableObject {
       const verified = await verifyPassword(req.password, req.stored);
       return { ok: true, verified };
     } finally {
-      this.state.concurrentHashes = Math.max(0, this.state.concurrentHashes - 1);
+      state.concurrentHashes = Math.max(0, state.concurrentHashes - 1);
+      this.prune(nowMs);
     }
   }
 

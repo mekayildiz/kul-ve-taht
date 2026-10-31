@@ -16,6 +16,7 @@ import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES, allSet
 import { advanceWorldTime, seasonFor } from "./time/world-clock";
 import { queryOne, queryAll, execute, type SqlDatabase } from "./db/client";
 import { registerAccount, loginAccount } from "./auth/service";
+import { createGateHasher, type HashGateNamespace } from "./auth/hash-gate";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
 import { runWorldSimulation } from "./play/world-sim";
@@ -176,6 +177,8 @@ export interface Env {
   REQUESTS_REMAINING?: string;
   /** CORS icin izinli kaynak; bos ise tum kaynaklar (bkz. http/cors.ts). */
   ALLOWED_ORIGIN?: string;
+  /** Parola hash'ini 10 ms CPU sinirindan kurtaran Durable Object shard'lari. */
+  PASSWORD_HASH_GATE?: HashGateNamespace;
 }
 
 type Ctx = RouteContext<Env>;
@@ -319,11 +322,16 @@ router.post("/api/auth/register", async ({ request, env }: Ctx) => {
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
   }
-  const result = await registerAccount(env.DB, {
-    email: body.email,
-    password: body.password,
-    ...(body.locale ? { locale: body.locale } : {}),
-  });
+  const hasher = createGateHasher(env.PASSWORD_HASH_GATE, body.email.trim().toLowerCase());
+  const result = await registerAccount(
+    env.DB,
+    {
+      email: body.email,
+      password: body.password,
+      ...(body.locale ? { locale: body.locale } : {}),
+    },
+    hasher,
+  );
   if (!result.ok) {
     const status = result.error === "email_taken" ? 409 : 400;
     return error(result.error, "Kayit tamamlanamadi.", status);
@@ -339,7 +347,13 @@ router.post("/api/auth/login", async ({ request, env }: Ctx) => {
   if (!env.SESSION_SECRET) {
     return error("server_misconfigured", "Oturum sirri yapilandirilmamis.", 500);
   }
-  const result = await loginAccount(env.DB, { email: body.email, password: body.password }, env.SESSION_SECRET);
+  const hasher = createGateHasher(env.PASSWORD_HASH_GATE, body.email.trim().toLowerCase());
+  const result = await loginAccount(
+    env.DB,
+    { email: body.email, password: body.password },
+    env.SESSION_SECRET,
+    hasher,
+  );
   if (!result.ok) {
     const status = result.error === "suspended" ? 403 : 401;
     return error(result.error, "Giris basarisiz.", status);
