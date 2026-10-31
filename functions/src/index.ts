@@ -73,6 +73,13 @@ import {
   diplomacyStances,
   performDiplomacy,
 } from "./play/systems";
+import {
+  listMessages,
+  performSendMessage,
+  familyStatus,
+  performMarry,
+  performHaveChild,
+} from "./play/multiplayer";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -169,6 +176,17 @@ router.get("/api/world/profile", ({ url }: Ctx) => {
 
 /** Dunya haritasi: tum yerlesim profilleri dahil (harita katmani). */
 router.get("/api/world/map", () => json(mapData()));
+
+/** Sohbet gecmisi (belge 16.2): kanal + kapsam ile son mesajlar. */
+router.get("/api/chat", async ({ request, env, url }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const kind = url.searchParams.get("channel") ?? "global";
+  const scopeId = url.searchParams.get("scopeId");
+  const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
+  const messages = await listMessages(env.DB, kind, scopeId, Number.isFinite(limit) ? limit : 50);
+  return json({ channel: kind, scopeId, count: messages.length, messages });
+});
 
 router.get("/api/world/birthplaces", ({ url }: Ctx) => {
   const id = url.searchParams.get("id");
@@ -335,7 +353,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   }
   const state = await getPlayState(env.DB, params.characterId!);
   if (!state) return error("not_found", "Karakter bulunamadi.", 404);
-  const [units, ships, properties, loan, prison, social, office] = await Promise.all([
+  const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
     listProperties(env.DB, params.characterId!),
@@ -343,6 +361,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     prisonStatus(env.DB, params.characterId!),
     listSocial(env.DB, params.characterId!),
     officeStatus(env.DB, params.characterId!),
+    familyStatus(env.DB, params.characterId!),
   ]);
   return json({
     state,
@@ -356,6 +375,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     prison,
     social,
     office,
+    family,
     diplomacy: await diplomacyStances(),
   });
 });
@@ -576,6 +596,28 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "seekOffice":
       result = await performSeekOffice(env.DB, characterId, String(body?.title ?? "Memur"));
+      break;
+    case "sendMessage":
+      result = await performSendMessage(
+        env.DB,
+        characterId,
+        String(body?.channel ?? "global") as "global" | "local" | "guild" | "group" | "direct",
+        body?.scopeId === undefined || body?.scopeId === null ? null : String(body.scopeId),
+        String(body?.body ?? ""),
+        body?.recipientId === undefined || body?.recipientId === null ? null : String(body.recipientId),
+      );
+      break;
+    case "marry":
+      result = await performMarry(
+        env.DB,
+        characterId,
+        String(body?.spouseName ?? ""),
+        body?.spouseId === undefined || body?.spouseId === null ? null : String(body.spouseId),
+        Boolean(body?.consented),
+      );
+      break;
+    case "haveChild":
+      result = await performHaveChild(env.DB, characterId);
       break;
     case "diplomacy":
       result = await performDiplomacy(

@@ -295,4 +295,79 @@ describe("Belge 20 sistem baglantisi (askeri/ekonomi/adalet/dovus/sosyal/siyaset
     const res = await act(env, otherToken, owner.characterId, { action: "recruit", unitType: "infantry", strength: 5 });
     expect(res.status).toBe(403);
   });
+
+  it("sohbet mesaji gonderir ve gecmiste gorunur (belge 16.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const send = await act(env, token, characterId, { action: "sendMessage", channel: "global", body: "Valedorn'a selam" });
+    expect(send.status).toBe(200);
+
+    const history = await call("/api/chat?channel=global", env, auth(token));
+    expect(history.status).toBe(200);
+    const body = await readBody(history);
+    expect(body.channel).toBe("global");
+    expect(body.messages.some((m: any) => m.body === "Valedorn'a selam")).toBe(true);
+  });
+
+  it("bos veya cok uzun sohbet mesajini reddeder (belge 16.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const empty = await act(env, token, characterId, { action: "sendMessage", channel: "global", body: "   " });
+    expect(empty.status).toBe(400);
+    expect((await readBody(empty)).error.reason).toBe("empty");
+
+    const long = await act(env, token, characterId, { action: "sendMessage", channel: "global", body: "a".repeat(501) });
+    expect(long.status).toBe(400);
+    expect((await readBody(long)).error.reason).toBe("too_long");
+  });
+
+  it("yerel kanala o yerlesimde olmayan karakter yazamaz (belge 16.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const res = await act(env, token, characterId, { action: "sendMessage", channel: "local", scopeId: "caelvar-theron", body: "izinsiz" });
+    expect(res.status).toBe(400);
+    expect((await readBody(res)).error.reason).toBe("no_access");
+  });
+
+  it("sohbet ucu oturumsuz 401 doner (belge 16.2)", async () => {
+    const res = await call("/api/chat?channel=global", env);
+    expect(res.status).toBe(401);
+  });
+
+  it("evlilik yas ve tek es kuralina uyar, durum ucunda gorunur (belge 7.1)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const marry = await act(env, token, characterId, { action: "marry", spouseName: "Elara Veyr", consented: true });
+    expect(marry.status).toBe(200);
+    expect((await readBody(marry)).detail.spouseName).toBe("Elara Veyr");
+
+    const again = await act(env, token, characterId, { action: "marry", spouseName: "Baska Kisi", consented: true });
+    expect(again.status).toBe(400);
+    expect((await readBody(again)).error.reason).toBe("already_married");
+
+    const state = await call(`/api/play/${characterId}/state`, env, auth(token));
+    const body = await readBody(state);
+    expect(body.family?.spouseName).toBe("Elara Veyr");
+  });
+
+  it("es olmadan cocuk sahibi olunamaz (belge 7.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const res = await act(env, token, characterId, { action: "haveChild" });
+    expect(res.status).toBe(400);
+    expect((await readBody(res)).error.reason).toBe("no_spouse");
+  });
+
+  it("evlilik sonrasi cocuk sayisi artar (belge 7.2)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await act(env, token, characterId, { action: "marry", spouseName: "Elara Veyr", consented: true });
+    const child = await act(env, token, characterId, { action: "haveChild" });
+    expect(child.status).toBe(200);
+    expect((await readBody(child)).detail.children).toBe(1);
+  });
+
+  it("evlilik hesaba bildirim yazar (belge 19)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    await act(env, token, characterId, { action: "marry", spouseName: "Elara Veyr", consented: true });
+    const digest = await call("/api/notifications", env, auth(token));
+    expect(digest.status).toBe(200);
+    const body = await readBody(digest);
+    const shown = JSON.stringify(body);
+    expect(shown).toContain("evlendiniz");
+  });
 });

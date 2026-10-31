@@ -5,7 +5,9 @@ import {
   ApiRequestError,
   type CatalogDto,
   type CharacterDto,
+  type ChatMessageDto,
   type DiplomacyDto,
+  type FamilyDto,
   type ItemDefDto,
   type OfficeDto,
   type PlayAction,
@@ -37,7 +39,10 @@ interface State {
   prison: PrisonDto | null;
   social: SocialDto[];
   office: OfficeDto | null;
+  family: FamilyDto | null;
   diplomacy: DiplomacyDto[];
+  chat: ChatMessageDto[];
+  chatDraft: string;
   message: string | null;
   error: string | null;
   loading: boolean;
@@ -58,7 +63,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     prison: null,
     social: [],
     office: null,
+    family: null,
     diplomacy: [],
+    chat: [],
+    chatDraft: "",
     message: null,
     error: null,
     loading: true,
@@ -66,8 +74,12 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const load = useCallback(() => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
-    Promise.all([client.playState(token, character.id), client.catalog().catch(() => null)])
-      .then(([res, catalog]) => {
+    Promise.all([
+      client.playState(token, character.id),
+      client.catalog().catch(() => null),
+      client.chat(token, "global").catch(() => null),
+    ])
+      .then(([res, catalog, chat]) => {
         setState({
           play: res.state,
           items: res.items,
@@ -80,7 +92,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           prison: res.prison,
           social: res.social,
           office: res.office,
+          family: res.family,
           diplomacy: res.diplomacy,
+          chat: chat?.messages ?? [],
+          chatDraft: "",
           message: null,
           error: null,
           loading: false,
@@ -542,6 +557,55 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       <div className="kvt-playactions">
         <button type="button" onClick={() => act({ action: "seekOffice", title: "Memur" }, t.play.committed)}>
           {t.play.seekOffice}
+        </button>
+      </div>
+
+      <h3>
+        {t.play.family} — {t.play.spouse}: {state.family?.spouseName ?? t.play.noSpouse}, {t.play.children}: {state.family?.children ?? 0}
+      </h3>
+      <div className="kvt-playactions">
+        <button
+          type="button"
+          onClick={() => act({ action: "marry", spouseName: "Elara Veyr", consented: true }, t.play.committed)}
+          disabled={!play.health.alive || Boolean(state.family?.spouseId || state.family?.spouseName)}
+        >
+          {t.play.marry}
+        </button>
+        <button
+          type="button"
+          onClick={() => act({ action: "haveChild" }, t.play.committed)}
+          disabled={!play.health.alive || !state.family?.spouseName}
+        >
+          {t.play.haveChild}
+        </button>
+      </div>
+
+      <h3>{t.play.chat} — {t.play.globalChannel}</h3>
+      {state.chat.length === 0 && <p>{t.play.chatEmpty}</p>}
+      <ul className="kvt-chat">
+        {state.chat.map((m) => (
+          <li key={m.id}>
+            <span>
+              {m.senderId}: {m.body}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="kvt-playactions">
+        <input
+          aria-label={t.play.chat}
+          value={state.chatDraft}
+          onChange={(e) => setState((prev) => ({ ...prev, chatDraft: e.target.value }))}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            act({ action: "sendMessage", channel: "global", body: state.chatDraft }, t.play.committed);
+            setState((prev) => ({ ...prev, chatDraft: "" }));
+          }}
+          disabled={state.chatDraft.trim().length === 0}
+        >
+          {t.play.sendMessage}
         </button>
       </div>
     </section>

@@ -58,6 +58,7 @@ const stateResponse = {
   prison: null,
   social: [],
   office: null,
+  family: null,
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 
@@ -220,5 +221,51 @@ describe("PlayPanel", () => {
     await waitFor(() => expect(sent).not.toBeNull());
     expect(sent!.action).toBe("battle");
     expect(sent!.terrain).toBe("open");
+  });
+
+  it("aile panelini ve evlilik/kurallarini gosterir (belge 7)", async () => {
+    const married = {
+      ...stateResponse,
+      family: { spouseId: "npc-1", spouseName: "Elara Veyr", marriedDay: 3, children: 1 },
+    };
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(married);
+      if (path.startsWith("/api/chat")) return json({ channel: "global", scopeId: null, count: 0, messages: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(/Elara Veyr/)).toBeTruthy());
+    // evli karakter yeniden evlenemez
+    expect(screen.getByRole("button", { name: t.play.marry }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: t.play.haveChild }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("sohbet mesajlarini listeler ve mesaj gonderir (belge 16)", async () => {
+    let sent: Record<string, unknown> | null = null;
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/chat"))
+        return json({
+          channel: "global",
+          scopeId: null,
+          count: 1,
+          messages: [
+            { id: "m1", channelKind: "global", channelScope: null, senderId: "ch-9", recipientId: null, body: "Selam", sentAt: 1 },
+          ],
+        });
+      if (path.endsWith("/action")) {
+        sent = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return json({ ok: true, state: playState(), detail: {} });
+      }
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(/Selam/)).toBeTruthy());
+    await userEvent.type(screen.getByLabelText(t.play.chat), "Merhaba");
+    await userEvent.click(screen.getByRole("button", { name: t.play.sendMessage }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent!.action).toBe("sendMessage");
+    expect(sent!.channel).toBe("global");
+    expect(sent!.body).toBe("Merhaba");
   });
 });

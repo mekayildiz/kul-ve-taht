@@ -175,6 +175,30 @@ export interface DiplomacyDto {
   stance: string;
 }
 
+export interface FamilyDto {
+  spouseId: string | null;
+  spouseName: string | null;
+  marriedDay: number | null;
+  children: number;
+}
+
+export interface ChatMessageDto {
+  id: string;
+  channelKind: string;
+  channelScope: string | null;
+  senderId: string;
+  recipientId: string | null;
+  body: string;
+  sentAt: number;
+}
+
+export interface ChatResponse {
+  channel: string;
+  scopeId: string | null;
+  count: number;
+  messages: ChatMessageDto[];
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
   items: ItemDefDto[];
@@ -187,6 +211,7 @@ export interface PlayStateResponse {
   prison: PrisonDto | null;
   social: SocialDto[];
   office: OfficeDto | null;
+  family: FamilyDto | null;
   diplomacy: DiplomacyDto[];
 }
 
@@ -227,7 +252,10 @@ export type PlayAction =
   | { action: "duel"; consented: boolean; opponentStrength?: number }
   | { action: "setRelationship"; targetId: string; kind: string }
   | { action: "seekOffice"; title: string }
-  | { action: "diplomacy"; kingdomId: string; diplomacyAction: string };
+  | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
+  | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
+  | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }
+  | { action: "haveChild" };
 
 /** Sistem katalogu (E8): istemci hangi mahsul, buyu, lonca ve etkinliklerin oldugunu buradan ogrenir. */
 export interface CatalogDto {
@@ -361,5 +389,12 @@ export class ApiClient {
   /** Sistem katalogu (E8): mahsul, buyu, lonca, etkinlik ve yeralti listeleri. */
   catalog(): Promise<CatalogDto> {
     return this.request("/api/catalog");
+  }
+
+  /** Sohbet gecmisi (belge 16.2): kanal + kapsam ile son mesajlar. */
+  chat(token: string, channel: string, scopeId: string | null = null): Promise<ChatResponse> {
+    const params = new URLSearchParams({ channel });
+    if (scopeId) params.set("scopeId", scopeId);
+    return this.request(`/api/chat?${params.toString()}`, { headers: { authorization: `Bearer ${token}` } });
   }
 }

@@ -93,4 +93,9 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.16 Arayüz genişletmesi: askeri, ekonomi, adalet, dövüş, sosyal ve siyaset panelleri — `PlayPanel.tsx` (8 arayüz testi)
 - [x] E8.17 Veritabanı: yeni kalıcı tablolar (`character_units`, `character_ships`, `character_loans`, `character_properties`, `character_prison`, `character_social`, `character_offices`, `character_family`) — `db/migrations/0007_systems_state.sql`
 - [x] E8.18 API testleri: 19 yeni uçtan uca test (`systems-api.test.ts`) — toplam 390 test geçiyor
+- [x] E8.19 Çok oyunculu sohbet (belge 16.2): genel/yerel/lonca/özel kanal, sunucu taraflı erişim ve uzunluk doğrulaması, `/api/chat` geçmiş ucu — `play/multiplayer.ts`
+- [x] E8.20 Aile ve hanedan (belge 7): evlilik (yaş + tek eş kuralı), çocuk sahibi olma, hanedan kaydı — `play/multiplayer.ts`, `character_family` tablosu
+- [x] E8.21 Bildirim yayma (belge 19): evlilik/çocuk/özel mesaj olayları hesaba bildirim yazar; öncelik eşiği özeti — `notifyCharacter`
+- [x] E8.22 Arayüz: aile paneli + sohbet paneli (mesaj listesi ve gönderme) — `PlayPanel.tsx`
+- [x] E8.23 Test: 7 yeni API testi + 2 yeni arayüz testi — toplam 400 test geçiyor
 
