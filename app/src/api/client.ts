@@ -51,10 +51,95 @@ export interface SessionDto {
   token: string;
   expiresAt: number;
 }
-
 export interface MeDto {
   accountId: string;
   role: "player" | "moderator" | "admin";
+}
+
+export interface CharacterDto {
+  id: string;
+  given_name: string;
+  surname: string;
+  birth_settlement: string | null;
+  current_settlement: string | null;
+  age_years: number;
+  generation: number;
+}
+
+export interface ItemDefDto {
+  id: string;
+  name: string;
+  category: string;
+  baseValue: number;
+  nutrition?: number;
+  healing?: number;
+}
+
+export interface RecipeDto {
+  id: string;
+  output: string;
+  outputQuantity: number;
+  baseChance: number;
+}
+
+export interface InjuryDto {
+  id: string;
+  kind: string;
+  severity: number;
+  bleeding: number;
+  infection: number;
+  treated: boolean;
+}
+
+export interface HealthDto {
+  health: number;
+  hunger: number;
+  fatigue: number;
+  alive: boolean;
+  injuries: InjuryDto[];
+  diseases: { id: string; name: string; severity: number }[];
+}
+
+export interface InventoryEntryDto {
+  itemId: string;
+  quantity: number;
+  condition: number;
+}
+
+export interface PlayStateDto {
+  characterId: string;
+  health: HealthDto;
+  inventory: InventoryEntryDto[];
+  gold: number;
+  debts: number;
+  reputation: number;
+  weapon: string;
+  weaponMastery: number;
+  strength: number;
+}
+
+export interface PlayStateResponse {
+  state: PlayStateDto;
+  items: ItemDefDto[];
+  recipes: RecipeDto[];
+  explorationSites: string[];
+}
+
+export type PlayAction =
+  | { action: "eat"; itemId: string }
+  | { action: "rest"; hours: number }
+  | { action: "craft"; recipeId: string }
+  | { action: "work"; profession: string; hours: number }
+  | { action: "travel"; toSettlementId: string; season: string; weather: string; roadQuality: number; isCaravan?: boolean }
+  | { action: "explore"; site: string; preparedness: number }
+  | { action: "trade"; itemId: string; quantity: number; side: "buy" | "sell" }
+  | { action: "treat"; injuryId: string; method: "bandage" | "herb" | "surgery" | "rest"; quality: number }
+  | { action: "treatDisease"; diseaseId: string; quality: number };
+
+export interface PlayActionResult {
+  ok: boolean;
+  state: PlayStateDto;
+  detail?: Record<string, unknown>;
 }
 
 export interface ApiClientOptions {
@@ -115,6 +200,11 @@ export class ApiClient {
     return this.request("/api/world/time");
   }
 
+  /** Dogum yeri bilgi paneli (belge 5.1): karsilastirilabilir arti/eksi. */
+  birthplace(settlementId: string): Promise<import("../screens/CharacterSetup").BirthplacePanelDto> {
+    return this.request(`/api/world/birthplaces?id=${encodeURIComponent(settlementId)}`);
+  }
+
   register(email: string, password: string, locale: "tr" | "en" = "tr"): Promise<{ accountId: string }> {
     return this.request("/api/auth/register", {
       method: "POST",
@@ -131,5 +221,34 @@ export class ApiClient {
 
   me(token: string): Promise<MeDto> {
     return this.request("/api/me", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  characters(token: string): Promise<{ characters: CharacterDto[] }> {
+    return this.request("/api/characters", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  createCharacter(
+    token: string,
+    input: { givenName: string; surname: string; birthSettlement: string; attributes: Record<string, number> },
+  ): Promise<{ characterId: string }> {
+    return this.request("/api/characters", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  }
+
+  /** Karakterin oynanis durumu (saglik, envanter, altin). Sahiplik sunucuda dogrulanir. */
+  playState(token: string, characterId: string): Promise<PlayStateResponse> {
+    return this.request(`/api/play/${characterId}/state`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Oynanis aksiyonu: miktar/fiyat SUNUCUDA hesaplanir; istemci otorite degildir. */
+  playAction(token: string, characterId: string, action: PlayAction): Promise<PlayActionResult> {
+    return this.request(`/api/play/${characterId}/action`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(action),
+    });
   }
 }

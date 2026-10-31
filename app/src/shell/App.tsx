@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { DEFAULT_LOCALE, getDictionary, type Locale } from "../i18n";
-import { ApiClient } from "../api/client";
+import { ApiClient, type CharacterDto } from "../api/client";
 import { AuthPanel } from "../screens/AuthPanel";
 import { WorldOverview } from "../screens/WorldOverview";
+import { CharacterSetup } from "../screens/CharacterSetup";
+import { PlayPanel } from "../screens/PlayPanel";
 
-type Screen = "title" | "intro" | "auth" | "world";
+type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8787";
 
@@ -12,8 +14,10 @@ export function App(): JSX.Element {
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [screen, setScreen] = useState<Screen>("title");
   const [account, setAccount] = useState<{ token: string; accountId: string } | null>(null);
+  const [character, setCharacter] = useState<CharacterDto | null>(null);
   const t = useMemo(() => getDictionary(locale), [locale]);
   const client = useMemo(() => new ApiClient({ baseUrl: API_BASE_URL }), []);
+
 
   return (
     <div className="kvt-root">
@@ -69,16 +73,32 @@ export function App(): JSX.Element {
             client={client}
             onAuthenticated={(token, accountId) => {
               setAccount({ token, accountId });
-              setScreen("world");
+              setScreen("setup");
             }}
           />
+        )}
+
+        {screen === "setup" && account && (
+          <CharacterSetup
+            t={t}
+            client={client}
+            token={account.token}
+            onCreated={(created) => {
+              setCharacter(created);
+              setScreen("play");
+            }}
+          />
+        )}
+
+        {screen === "play" && account && character && (
+          <PlayPanel t={t} client={client} token={account.token} character={character} />
         )}
 
         {screen === "world" && <WorldOverview t={t} client={client} />}
       </main>
 
       <nav className="kvt-bottomnav" aria-label="Ana gezinme">
-        {([["map", "world"], ["character", "world"], ["inventory", "world"], ["quests", "world"], ["chat", "world"]] as const).map(
+        {([["map", "world"], ["character", "setup"], ["inventory", "play"], ["quests", "play"], ["chat", "world"]] as const).map(
           ([key, target]) => (
             <button key={key} type="button" className="kvt-navbtn" onClick={() => setScreen(target)}>
               {t.nav[key]}
