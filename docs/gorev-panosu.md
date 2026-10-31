@@ -51,7 +51,7 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E5.2 Kuşatma sistemi — `military/army.ts` (surlar, erzak, kuşatma araçları, teslim)
 - [x] E5.3 Deniz savaşları + gemi sınıfları — `military/army.ts` (4 gemi sınıfı, filo gücü, deniz savaşı)
 - [x] E5.4 Krallık yönetimi, diplomasi, ittifak, savaş/barış — `military/army.ts` (5 duruş, diplomatik eylemler)
-- [ ] E5.5 Rütbe, makam, konseyler, siyasi mücadele — şema (government_positions) hazır; hizmet bekliyor
+- [x] E5.5 Rütbe, makam, konseyler, siyasi mücadele — `politics/government.ts` (atama/azil, rütbe, konsey oylaması, siyasi mücadele)
 
 ## E6 – Tam NPC, aile, çok oyunculu
 - [x] E6.1 NPC hedef/hafıza/ilişki/ekonomi modeli — `npc/model.ts` (5 etkenli karar, hafıza, duygu)
