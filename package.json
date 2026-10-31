@@ -26,6 +26,7 @@
     "db:migrate:local": "wrangler d1 migrations apply kul-ve-taht-db --local --config functions/wrangler.toml",
     "db:migrate:remote": "wrangler d1 migrations apply kul-ve-taht-db --remote --config functions/wrangler.toml",
     "deploy:api": "wrangler deploy --config functions/wrangler.toml",
+    "deploy:production": "node scripts/deploy-production.mjs",
     "deploy:web": "npm run build -w @kvt/app && wrangler pages deploy app/dist --project-name kul-ve-taht",
     "dev:api": "wrangler dev --local --config functions/wrangler.toml",
     "sync:assets": "node scripts/sync-assets.mjs"

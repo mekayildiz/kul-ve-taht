@@ -131,7 +131,21 @@ plana geçiş tetikleyen ayar olmadığını doğrular.
 Kod, yapılandırma ve yerel (Miniflare) doğrulama tamdır. Gerçek üretim
 kaynaklarını (`wrangler d1 create`, `r2 bucket create`, `wrangler deploy`)
 oluşturmak için **Cloudflare hesabı yetkilendirmesi** gerekir; bu adım
-ücretsizdir ama hesap sahibinin onayını (`npx wrangler login`) ister:
+ücretsizdir ama hesap sahibinin onayını ister. İki yol vardır:
+
+**A) Tek komutla otomatik yayın (önerilen).** Yetkilendirdikten sonra:
+
+```bash
+npx wrangler login                 # tarayıcıda ücretsiz hesap onayı
+# (alternatif: CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID ortam değişkenleri)
+npm run deploy:production          # D1 + R2 + secret + migration + deploy + sağlık kontrolü
+```
+
+`scripts/deploy-production.mjs` idempotenttir: D1/R2 varsa yeniden oluşturmaz,
+`SESSION_SECRET` tanımlıysa korur, dönen `database_id`'yi `wrangler.toml`'a
+yazar, migration'ları uygular, dağıtır ve canlı `/api/health` kontrolü yapar.
+
+**B) Elle adım adım:**
 
 ```bash
 npx wrangler login                     # tarayıcıda ücretsiz hesap onayı
@@ -141,6 +155,21 @@ npx wrangler r2 bucket create kul-ve-taht-assets
 npx wrangler secret put SESSION_SECRET --config functions/wrangler.toml
 npm run build -w @kvt/app && npx wrangler deploy --config functions/wrangler.toml
 ```
+
+> `SESSION_SECRET` yalnızca `wrangler secret put` ile ayarlanır; depodaki
+> `functions/wrangler.toml` içine **yazılmaz**. Yerel geliştirme için
+> `functions/.dev.vars` (git'e girmez) kullanılır.
+
+**Yayın sonrası dünya tohumlama (idempotent).** Şema migration'ları krallıkları
+ve 130 yerleşimi zaten yükler. NPC/saray/oyun saati tohumlaması için bir kez:
+
+```bash
+curl -X POST https://<worker>.workers.dev/api/admin/seed-world \
+  -H "authorization: Bearer <YÖNETİCİ_TOKEN>"
+```
+
+Yönetici hesabı gerekir (bkz. `docs/gorev-panosu.md`); tohumlama tekrar
+çalıştırılsa bile mevcut oyuncu verisini ezmez.
 
 Hesap yetkilendirmesi olmadan da tüm sistemler Miniflare ile yerel olarak
 çalışır ve doğrulanır (bkz. Bölüm 1); ücretli hiçbir adım yoktur.

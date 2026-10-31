@@ -66,7 +66,8 @@ enabled = true
 crons = ["0 * * * *"]
 
 # --- Yerel gelistirme degiskenleri ---
-# NOT: Bunlar YALNIZCA yerel Miniflare icindir ve gercek sir DEGILDIR.
-# Uretimde `wrangler secret put SESSION_SECRET` ile ayarlanir (ucretsiz).
+# Uretimde SESSION_SECRET YALNIZCA `wrangler secret put SESSION_SECRET` ile
+# ayarlanir; buraya yazilan deger uretime GITMEZ. Yerelde `functions/.dev.vars`
+# (git'e girmez) veya bu blogun bos kalmasi kullanilir.
 [vars]
-SESSION_SECRET = "yerel-gelistirme-anahtari-uretimde-degistirilir"
+# SESSION_SECRET buraya YAZILMAZ: gizli deger depoya islenmez.
