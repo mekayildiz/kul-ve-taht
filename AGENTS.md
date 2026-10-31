@@ -64,3 +64,21 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
   idempotenttir (`last_simulated_day`, `world_event_log.game_day`).
 - NPC'ler `seedWorld` icinde tohumlanir (yerlesim basina 1 onemli + 2 yerel +
   4 arka plan). Sema `db/migrations/0008_world_simulation.sql`.
+
+## Statik gorsel varliklar (belge 17)
+
+- Tek kaynak `assets/` (surum kontrolunde). `npm run gen:assets` deterministik
+  uretir; `npm run sync:assets` bunlari `app/public/assets/`'e kopyalar.
+  `app/public/assets/` .gitignore'dadir; ikili dosyalar depoda iki kez tutulmaz.
+- Kok `npm run build` once `sync:assets` calistirir; Cloudflare Pages derlemesi
+  de ayni komutu kullanmalidir.
+- Oyun icinde portre (`/assets/portraits/pool-NN.webp`) ve esya ikonlari
+  (`/assets/icons/<icon>.webp`) kullanilir; veri tasarrufu modunda 96/64px
+  turevler istenir (belge 17.5).
+
+## Hedefli islemler icin oyuncu rehberi (belge 16)
+
+- `functions/src/play/directory.ts` diger canli karakterleri (yalnizca herkese
+  acik alanlar) doner ve `/api/play/:id/state.directory` icinde yer alir.
+- Arayuzdeki hedef secici bu listeyi kullanir; takas, karsilikli kredi, emanet,
+  tapu uyusmazligi, ortaklik ve grup katilma gibi islemler bu kimligi kullanir.
