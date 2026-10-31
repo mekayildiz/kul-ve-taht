@@ -9,7 +9,12 @@ import { AdminPanel } from "../screens/AdminPanel";
 
 type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world" | "admin";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8787";
+// Uretimde arayuz ve API ayni Worker'dan sunulur; varsayilan olarak ayni
+// kaynak kullanilir (bos taban = goreli yol). Yerelde API ayri porttadir.
+// Ayri kaynakli yayinda VITE_API_BASE_URL ile mutlak adres verilir.
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+  (import.meta.env.PROD ? "" : "http://localhost:8787");
 
 export function App(): JSX.Element {
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
