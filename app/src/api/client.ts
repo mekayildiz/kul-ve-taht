@@ -273,6 +273,55 @@ export interface TitleDisputeDto {
   status: "open" | "resolved_a" | "resolved_b" | "dismissed";
 }
 
+export interface TradeItemDto {
+  itemId: string;
+  quantity: number;
+}
+
+export interface TradeOfferDto {
+  id: string;
+  fromId: string;
+  toId: string;
+  offerGold: number;
+  offerItems: TradeItemDto[];
+  requestGold: number;
+  requestItems: TradeItemDto[];
+  status: "pending" | "accepted" | "rejected" | "cancelled";
+}
+
+export interface AllianceDto {
+  id: string;
+  name: string;
+  leaderId: string;
+  members: string[];
+}
+
+export interface ChildDto {
+  id: string;
+  name: string;
+  stage: string;
+  stageLabel: string;
+  developmentBonus: number;
+  daysToAdulthood: number;
+}
+
+export interface KingdomRelationDto {
+  fromKingdomId: string;
+  toKingdomId: string;
+  stance: "neutral" | "allied" | "war" | "truce";
+  affinity: number;
+  allianceUntil: number | null;
+}
+
+export interface MotionDto {
+  id: string;
+  kingdomId: string;
+  title: string;
+  status: "open" | "passed" | "rejected";
+  yesWeight: number;
+  noWeight: number;
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -319,6 +368,11 @@ export interface PlayStateResponse {
   companies: CompanyDto[];
   rentals: RentalDto[];
   titleDisputes: TitleDisputeDto[];
+  trades: TradeOfferDto[];
+  alliance: AllianceDto | null;
+  children: ChildDto[];
+  relations: KingdomRelationDto[];
+  motions: MotionDto[];
   storage: StorageDto;
   diplomacy: DiplomacyDto[];
 }
@@ -444,6 +498,19 @@ export type PlayAction =
   | { action: "autoForecloseTaxes" }
   | { action: "openTitleDispute"; propertyId: string; claimantB: string }
   | { action: "resolveTitleDispute"; disputeId: string }
+  | { action: "offerTrade"; toId: string; offerGold: number; offerItems: TradeItemDto[]; requestGold: number; requestItems: TradeItemDto[] }
+  | { action: "acceptTrade"; offerId: string }
+  | { action: "rejectTrade"; offerId: string }
+  | { action: "formAlliance"; fromKingdomId: string; toKingdomId: string }
+  | { action: "declareWar"; fromKingdomId: string; toKingdomId: string }
+  | { action: "makePeace"; fromKingdomId: string; toKingdomId: string }
+  | { action: "createAlliance"; name: string }
+  | { action: "joinAlliance"; allianceId: string }
+  | { action: "recordChild"; name: string; parentAttention?: number; wetNurseQuality?: number }
+  | { action: "councilMotion"; title: string; quorum?: number }
+  | { action: "resignOffice" }
+  | { action: "recordDeath"; note: string }
+  | { action: "councilMotion"; title: string; quorum?: number }
   | { action: "diplomacy"; kingdomId: string; diplomacyAction: string }
   | { action: "sendMessage"; channel: string; scopeId?: string | null; body: string; recipientId?: string | null }
   | { action: "marry"; spouseName: string; spouseId?: string | null; consented?: boolean }

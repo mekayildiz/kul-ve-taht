@@ -154,9 +154,9 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 ### P2 – Mülk, çok oyunculu ve kalan saf fonksiyonlar (belge 9, 10, 16)
 
 - [x] E9.9 Mülk tamamlayıcıları: kira, haciz, tapu uyuşmazlığı (belge 9.3, 20): `monthlyRent`, `rentAfterTax`, haciz (foreclosure), tapu uyuşmazlığı — `economy/extras.ts`, `play/systems.ts`, migration
-- [ ] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
-- [ ] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
-- [ ] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`
+- [x] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
+- [x] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
+- [x] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`
 - [ ] E9.13 P2 arayüz ve testleri (belge 16, 20) — `PlayPanel.tsx`, i18n, API testleri
 
 ### P3 – Görsel varlık, yönetim, erişilebilirlik ve doğrulama (belge 17, 19, 21.4, 25)

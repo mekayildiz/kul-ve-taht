@@ -67,6 +67,11 @@ const stateResponse = {
   companies: [],
   rentals: [],
   titleDisputes: [],
+  trades: [],
+  alliance: null,
+  children: [],
+  relations: [],
+  motions: [],
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 

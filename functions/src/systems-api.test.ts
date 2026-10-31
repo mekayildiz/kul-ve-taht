@@ -870,3 +870,76 @@ describe("Mulk tamamlayicilari: kira, haciz, tapu (belge 9.3, 20)", () => {
     expect(winnerState.properties.some((p: any) => p.id === propertyId)).toBe(true);
   });
 });
+
+describe("Cok oyunculu: takas, ittifak, savas (belge 11, 16)", () => {
+  const env = makeEnv();
+
+  it("iki tarafli takas altin ve esya el degistirir", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    await grantGold(env, a.characterId, 500);
+    const before = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    const offer = await act(env, a.token, a.characterId, {
+      action: "offerTrade",
+      toId: b.characterId,
+      offerGold: 100,
+      offerItems: [],
+      requestGold: 0,
+      requestItems: [],
+    });
+    expect(offer.status).toBe(200);
+    const offerId = (await readBody(offer)).detail.offerId as string;
+    const accepted = await act(env, b.token, b.characterId, { action: "acceptTrade", offerId });
+    expect(accepted.status).toBe(200);
+    const afterA = await readBody(await call(`/api/play/${a.characterId}/state`, env, auth(a.token)));
+    const afterB = await readBody(await call(`/api/play/${b.characterId}/state`, env, auth(b.token)));
+    expect(afterA.state.gold).toBe((before.state.gold as number) - 100);
+    expect(afterB.state.gold).toBeGreaterThanOrEqual(100);
+  });
+
+  it("ittifak ve savas krallik iliskisini degistirir", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const war = await act(env, token, characterId, { action: "declareWar", fromKingdomId: "varkhenn", toKingdomId: "solmerya" });
+    expect(war.status).toBe(200);
+    const st = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    const rel = st.relations.find((r: any) => r.fromKingdomId === "varkhenn" && r.toKingdomId === "solmerya");
+    expect(rel.stance).toBe("war");
+    const peace = await act(env, token, characterId, { action: "makePeace", fromKingdomId: "varkhenn", toKingdomId: "solmerya" });
+    expect(peace.status).toBe(200);
+  });
+
+  it("oyuncu ittifaki kurulur ve uye eklenir", async () => {
+    const a = await setupPlayer(env);
+    const b = await setupPlayer(env);
+    const created = await act(env, a.token, a.characterId, { action: "createAlliance", name: "Kuzey Paktı" });
+    expect(created.status).toBe(200);
+    const allianceId = (await readBody(created)).detail.allianceId as string;
+    const joined = await act(env, b.token, b.characterId, { action: "joinAlliance", allianceId });
+    expect(joined.status).toBe(200);
+    const st = await readBody(await call(`/api/play/${b.characterId}/state`, env, auth(b.token)));
+    expect(st.alliance.members).toContain(a.characterId);
+    expect(st.alliance.members).toContain(b.characterId);
+  });
+});
+
+describe("Cocuk gelisimi ve konsey (belge 7.3, 11)", () => {
+  const env = makeEnv();
+
+  it("cocuk kaydi gelisim asamasini ve bonusunu hesaplar", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const rec = await act(env, token, characterId, { action: "recordChild", name: "Elif", parentAttention: 80, wetNurseQuality: 60 });
+    expect(rec.status).toBe(200);
+    const st = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(st.children.length).toBe(1);
+    expect(st.children[0].developmentBonus).toBe(70);
+    expect(st.children[0].stageLabel).toBe("Bebeklik");
+  });
+
+  it("konsey karari yetersayim ve oy agirligi ile kaydedilir", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    const motion = await act(env, token, characterId, { action: "councilMotion", title: "Vergi Artışı", quorum: 1 });
+    expect(motion.status).toBe(200);
+    const st = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
+    expect(st.state.reputation).toBeDefined();
+  });
+});

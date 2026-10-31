@@ -14,6 +14,11 @@ import {
   type EscrowDto,
   type RentalDto,
   type TitleDisputeDto,
+  type TradeOfferDto,
+  type AllianceDto,
+  type ChildDto,
+  type KingdomRelationDto,
+  type MotionDto,
   type FamilyDto,
   type GroupDto,
   type StorageDto,
@@ -59,6 +64,11 @@ interface State {
   companies: CompanyDto[];
   rentals: RentalDto[];
   titleDisputes: TitleDisputeDto[];
+  trades: TradeOfferDto[];
+  alliance: AllianceDto | null;
+  children: ChildDto[];
+  relations: KingdomRelationDto[];
+  motions: MotionDto[];
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -95,6 +105,11 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     companies: [],
     rentals: [],
     titleDisputes: [],
+    trades: [],
+    alliance: null,
+    children: [],
+    relations: [],
+    motions: [],
     storage: null,
     diplomacy: [],
     quests: [],
@@ -138,6 +153,11 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           companies: res.companies,
           rentals: res.rentals,
           titleDisputes: res.titleDisputes,
+          trades: res.trades,
+          alliance: res.alliance,
+          children: res.children,
+          relations: res.relations,
+          motions: res.motions,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -740,6 +760,45 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             </button>
           </div>
         </>
+      )}
+
+      <h3>{t.play.multiplayer}</h3>
+      {state.alliance && (
+        <p className="kvt-alliance">
+          {t.play.alliance}: {state.alliance.name} ({state.alliance.members.length})
+        </p>
+      )}
+      {state.trades.length > 0 && (
+        <ul className="kvt-trades">
+          {state.trades.map((tr) => (
+            <li key={tr.id}>
+              <span>
+                {t.play.barter}: {tr.offerGold} {t.play.gold} → {tr.toId.slice(0, 6)}
+              </span>
+              <button type="button" onClick={() => act({ action: "acceptTrade", offerId: tr.id }, t.play.committed)}>
+                {t.play.accept}
+              </button>
+              <button type="button" onClick={() => act({ action: "rejectTrade", offerId: tr.id }, t.play.committed)}>
+                {t.play.reject}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {state.relations.length > 0 && (
+        <p className="kvt-relations">
+          {t.play.diplomacy}: {state.relations.filter((r) => r.stance === "war").length} {t.play.wars},{" "}
+          {state.relations.filter((r) => r.stance === "allied").length} {t.play.alliances}
+        </p>
+      )}
+      {state.children.length > 0 && (
+        <ul className="kvt-children">
+          {state.children.map((c) => (
+            <li key={c.id}>
+              {c.name} — {c.stageLabel} ({t.play.development}: {c.developmentBonus})
+            </li>
+          ))}
+        </ul>
       )}
 
       <h3>{t.play.appearance}</h3>

@@ -123,6 +123,28 @@ import {
   performOpenTitleDispute,
   performResolveTitleDispute,
 } from "./play/property-extras";
+import {
+  tradeOffers,
+  performOfferTrade,
+  performAcceptTrade,
+  performRejectTrade,
+  kingdomRelations,
+  performFormAlliance,
+  performDeclareWar,
+  performMakePeace,
+  performCreateAlliance,
+  performJoinAlliance,
+  allianceStatus,
+} from "./play/multiplayer-extras";
+import {
+  childList,
+  performRecordChild,
+  motionList,
+  performCouncilMotion,
+  performResignOffice,
+  performRecordDeath,
+  playerMarketShare,
+} from "./play/family-politics";
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
@@ -444,6 +466,18 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     escrowList(env.DB, params.characterId!),
     bankLoanList(env.DB, params.characterId!),
   ]);
+  const kingdomId = (await queryOne<{ current_settlement: string | null }>(
+    env.DB,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    params.characterId!,
+  ))?.current_settlement?.split("-")[0] ?? "varkhenn";
+  const [trades, alliance, children, relations, motions] = await Promise.all([
+    tradeOffers(env.DB, params.characterId!),
+    allianceStatus(env.DB, params.characterId!),
+    childList(env.DB, params.characterId!),
+    kingdomRelations(env.DB),
+    motionList(env.DB, kingdomId),
+  ]);
   const [units, ships, properties, loan, prison, social, office, family] = await Promise.all([
     listUnits(env.DB, params.characterId!),
     listShips(env.DB, params.characterId!),
@@ -475,6 +509,11 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     companies,
     rentals,
     titleDisputes,
+    trades,
+    alliance,
+    children,
+    relations,
+    motions,
     storage,
     diplomacy: await diplomacyStances(),
   });
@@ -489,7 +528,9 @@ router.get("/api/market/:itemId", async ({ params, url, env }: Ctx) => {
   if (!quote) return error("not_found", "Esya bulunamadi.", 404);
   // Bolgesel tekel: pazar payi esigi asilirsa fiyat carpani uygulanir (belge 9.4).
   const monopoly = settlementId ? await monopolyFactor(env.DB, settlementId, params.itemId!) : 1;
-  return json({ ...quote, monopoly, buy: Math.round(quote.buy * monopoly), sell: Math.round(quote.sell * monopoly) });
+  // Bolgesel arz payi (belge 9.4): pazar payi saf fonksiyonu ile raporlanir.
+  const share = settlementId ? await playerMarketShare(env.DB, settlementId, params.itemId!) : 0;
+  return json({ ...quote, monopoly, share, buy: Math.round(quote.buy * monopoly), sell: Math.round(quote.sell * monopoly) });
 });
 
 router.get("/api/lodging", ({ url }: Ctx) => {
@@ -772,6 +813,50 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
       break;
     case "resolveTitleDispute":
       result = await performResolveTitleDispute(env.DB, characterId, String(body?.disputeId ?? ""));
+      break;
+    case "offerTrade":
+      result = await performOfferTrade(
+        env.DB,
+        characterId,
+        String(body?.toId ?? ""),
+        Number(body?.offerGold ?? 0),
+        Array.isArray(body?.offerItems) ? body.offerItems : [],
+        Number(body?.requestGold ?? 0),
+        Array.isArray(body?.requestItems) ? body.requestItems : [],
+      );
+      break;
+    case "acceptTrade":
+      result = await performAcceptTrade(env.DB, characterId, String(body?.offerId ?? ""));
+      break;
+    case "rejectTrade":
+      result = await performRejectTrade(env.DB, characterId, String(body?.offerId ?? ""));
+      break;
+    case "formAlliance":
+      result = await performFormAlliance(env.DB, characterId, String(body?.fromKingdomId ?? ""), String(body?.toKingdomId ?? ""));
+      break;
+    case "declareWar":
+      result = await performDeclareWar(env.DB, characterId, String(body?.fromKingdomId ?? ""), String(body?.toKingdomId ?? ""));
+      break;
+    case "makePeace":
+      result = await performMakePeace(env.DB, characterId, String(body?.fromKingdomId ?? ""), String(body?.toKingdomId ?? ""));
+      break;
+    case "createAlliance":
+      result = await performCreateAlliance(env.DB, characterId, String(body?.name ?? ""));
+      break;
+    case "joinAlliance":
+      result = await performJoinAlliance(env.DB, characterId, String(body?.allianceId ?? ""));
+      break;
+    case "recordChild":
+      result = await performRecordChild(env.DB, characterId, String(body?.name ?? ""), Number(body?.parentAttention ?? 50), Number(body?.wetNurseQuality ?? 50));
+      break;
+    case "councilMotion":
+      result = await performCouncilMotion(env.DB, characterId, String(body?.title ?? ""), Number(body?.quorum ?? 3));
+      break;
+    case "resignOffice":
+      result = await performResignOffice(env.DB, characterId);
+      break;
+    case "recordDeath":
+      result = await performRecordDeath(env.DB, characterId, String(body?.note ?? ""));
       break;
     case "sendMessage":
       result = await performSendMessage(
