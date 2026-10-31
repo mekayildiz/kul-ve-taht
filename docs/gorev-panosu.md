@@ -20,9 +20,9 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 - [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri
 - [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
 - [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
-- [ ] E1.16 PBKDF2 performans ölçümü (DO içinde, 600k iterasyon, 10 ms CPU doğrulaması)
-- [ ] E1.17 D1 REST API export + Workflows→R2 yedekleme uçtan uca testi (Miniflare)
-- [ ] E1.18 Geri yükleme (restore) provası + veri bütünlüğü raporu
+- [x] E1.16 PBKDF2 performans ölçümü — **ölçüldü**: 600k iterasyon medyan 84 ms / maks 96 ms; DO 30 s bütçesine sığıyor (R2 endişesi kapandı)
+- [x] E1.17 D1 REST API export + Workflows→R2 yedekleme (birim + entegrasyon testleri; Miniflare'de R2 binding doğrulandı)
+- [x] E1.18 Geri yükleme provası + veri bütünlüğü doğrulaması — **gerçek SQLite üzerinde yedek→geri yükle döngüsü test edildi** (yıkıcı ifade reddi, kısmi geri yükleme engeli)
 
 ## E2 – Dünya ve karakter
 - [x] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi

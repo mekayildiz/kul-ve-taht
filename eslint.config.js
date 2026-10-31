@@ -17,6 +17,17 @@ export default tseslint.config(
   },
   {
     files: ["**/*.mjs"],
-    languageOptions: { ecmaVersion: 2022, sourceType: "module", globals: { console: "readonly", process: "readonly", URL: "readonly" } },
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        URL: "readonly",
+        TextEncoder: "readonly",
+        performance: "readonly",
+        fetch: "readonly",
+      },
+    },
   },
 );
