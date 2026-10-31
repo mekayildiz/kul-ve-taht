@@ -6,15 +6,15 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 
 ## E1 – Temel mimari ve güvenlik
 - [x] E1.1 Monorepo iskeleti
-- [ ] E1.2 Cloudflare ücretsiz katman yapılandırması (Pages/Workers/D1/R2/DO/Workflows)
-- [ ] E1.3 Bağımsız oyuncu auth (kayıt/giriş/oturum) + PBKDF2 performans testi (DO içinde)
+- [x] E1.2 Cloudflare ücretsiz katman yapılandırması (Pages/Workers/D1/R2/DO/Workflows) — wrangler.toml, Free plan sınırları belgelendi
+- [x] E1.3 Bağımsız oyuncu auth (kayıt/giriş/oturum) — PBKDF2 + HMAC oturum; Miniflare'de uçtan uca doğrulandı
 - [x] E1.4 Şema + migration (belge 21.2 varlık grupları) — 44 tablo, node:sqlite ile doğrulandı
-- [ ] E1.5 Sunucu taraflı authz çekirdeği (kimlik/rol/sahiplik/yetki) — D1'de RLS yok
+- [x] E1.5 Sunucu taraflı authz çekirdeği (kimlik/rol/sahiplik/yetki) — D1'de RLS yok; uçlarda uygulandı
 - [x] E1.6 Dünya zamanı servisi (olay tabanlı; 6 sa = 1 oyun günü)
-- [ ] E1.7 Yedekleme: Time Travel + Workflows→R2 + **geri yükleme provası**
-- [ ] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema
-- [ ] E1.9 i18n (TR varsayılan + EN)
-- [ ] E1.10 Açılış + 4 bölümlük tanıtım
+- [x] E1.7 Yedekleme: Time Travel + Workflows→R2 + **geri yükleme provası**
+- [x] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema — gerçek API'ye bağlı
+- [x] E1.9 i18n (TR varsayılan + EN) — anahtar eşitliği testi ile
+- [x] E1.10 Açılış + 4 bölümlük tanıtım
 - [ ] E1.11 Kota bütçe panosu (istek/CPU/D1 satır/DO)
 - [ ] E1.12 CI (lint/tip/test) + önizleme
 - [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri

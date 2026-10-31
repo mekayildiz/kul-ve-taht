@@ -49,3 +49,9 @@ class_name = "BackupWorkflow"
 # Workflows: 3.000 adim/gun, 1 GB-ay
 [observability]
 enabled = true
+
+# --- Yerel gelistirme degiskenleri ---
+# NOT: Bunlar YALNIZCA yerel Miniflare icindir ve gercek sir DEGILDIR.
+# Uretimde `wrangler secret put SESSION_SECRET` ile ayarlanir (ucretsiz).
+[vars]
+SESSION_SECRET = "yerel-gelistirme-anahtari-uretimde-degistirilir"

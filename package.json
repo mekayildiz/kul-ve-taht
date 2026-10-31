@@ -17,7 +17,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "check:paid": "node scripts/check-no-paid-config.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run build && npm run test && npm run check:paid"
+    "verify": "npm run lint && npm run typecheck && npm run build && npm run test && npm run check:paid",
+    "gen:world": "vite-node scripts/gen-world-seed.ts",
+    "db:migrate:local": "wrangler d1 migrations apply kul-ve-taht-db --local --config functions/wrangler.toml"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

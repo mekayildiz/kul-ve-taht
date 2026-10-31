@@ -110,6 +110,9 @@ router.post("/api/auth/login", async ({ request, env }: Ctx) => {
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
   }
+  if (!env.SESSION_SECRET) {
+    return error("server_misconfigured", "Oturum sirri yapilandirilmamis.", 500);
+  }
   const result = await loginAccount(env.DB, { email: body.email, password: body.password }, env.SESSION_SECRET);
   if (!result.ok) {
     const status = result.error === "suspended" ? 403 : 401;

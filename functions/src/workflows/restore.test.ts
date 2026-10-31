@@ -57,15 +57,16 @@ describe("gercek yedek -> geri yukleme dongusu", () => {
     source.exec(
       "INSERT INTO accounts (id, email, password_hash, role, locale, status, created_at, updated_at) VALUES ('a1','x@y.tr','h','player','tr','active',1,1)",
     );
-    source.exec(
-      "INSERT INTO settlements (id, name, kind, x, y, primary_output) VALUES ('varkhenn-drahkmar','Drahkmar','capital',50,15,'Yönetim')",
-    );
 
     // Kaynak semadan gercek bir dump uret.
-    const schemaSql = readFileSync(join(process.cwd(), "db", "migrations", "0001_core_schema.sql"), "utf8");
+    const schemaSql = readdirSync(join(process.cwd(), "db", "migrations"))
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => readFileSync(join(process.cwd(), "db", "migrations", f), "utf8"))
+      .join("\n");
+    // Dump = sema + referans veri + oyuncu verisi (0003 zaten yerlesimleri ekler).
     const dump = `${schemaSql}
-INSERT INTO accounts (id, email, password_hash, role, locale, status, created_at, updated_at) VALUES ('a1','x@y.tr','h','player','tr','active',1,1);
-INSERT INTO settlements (id, name, kind, x, y, primary_output) VALUES ('varkhenn-drahkmar','Drahkmar','capital',50,15,'Yönetim');`;
+INSERT INTO accounts (id, email, password_hash, role, locale, status, created_at, updated_at) VALUES ('a1','x@y.tr','h','player','tr','active',1,1);`;
 
     // Bos hedef veritabani.
     const target = new DatabaseSync(":memory:");
@@ -80,7 +81,8 @@ INSERT INTO settlements (id, name, kind, x, y, primary_output) VALUES ('varkhenn
     const row = target.prepare("SELECT email FROM accounts WHERE id = 'a1'").get() as { email: string } | undefined;
     expect(row?.email).toBe("x@y.tr");
     const count = target.prepare("SELECT COUNT(*) AS c FROM settlements").get() as { c: number };
-    expect(count.c).toBe(1);
+    // Referans veri (0003) da geri yuklenir: 130 yerlesim.
+    expect(count.c).toBe(130);
   });
 
   it("bozuk dump HICBIR sey uygulamaz (kismi geri yukleme yok)", async () => {

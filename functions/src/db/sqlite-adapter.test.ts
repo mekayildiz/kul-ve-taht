@@ -112,8 +112,9 @@ describe("saglayici bagimsiz veri katmani", () => {
     const now = Date.now();
     await execute(
       db,
-      "INSERT INTO settlements (id, name, kind, x, y, primary_output) VALUES (?,?,?,?,?,?)",
-      "varkhenn-drahkmar", "Drahkmar", "capital", 50, 15, "Yönetim",
+      // 0003 referans migration'i bu yerlesimi zaten ekler (tek kaynak).
+      "SELECT 1 FROM settlements WHERE id = ?",
+      "varkhenn-drahkmar",
     );
     await execute(
       db,
