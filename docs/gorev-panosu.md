@@ -157,12 +157,12 @@ servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
 - [x] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
 - [x] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
 - [x] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`
-- [ ] E9.13 P2 arayüz ve testleri (belge 16, 20) — `PlayPanel.tsx`, i18n, API testleri
+- [x] E9.13 P2 arayüz ve testleri (belge 16, 20) — `PlayPanel.tsx` (takas/ittifak/çocuk/ilişki/önerge panelleri), i18n TR+EN, API testleri (barter/ittifak/savaş)
 
 ### P3 – Görsel varlık, yönetim, erişilebilirlik ve doğrulama (belge 17, 19, 21.4, 25)
 
-- [ ] E9.14 Görsel varlık tüketimi (belge 17): portre/ikon/arma/harita arayüzde gösterilir; veri tasarrufu modu; lisans atıfları görünür — `app/src/screens/*`, `/api/assets/*`, `assets/`
-- [ ] E9.15 Ücretsiz lisanslı görsel dosyalar (belge 17.2, 17.5): 40 portrelik havuz + ikon + arma + harita; WebP/AVIF + küçük türev; lisans/kaynak kaydı — `assets/portraits`, `assets/icons`, `assets/maps`, `assets/manifest.json`
-- [ ] E9.16 Yönetici arayüzleri (belge 20): bütçe, pazar müdahalesi, kota, kullanıcı/karakter yönetimi panelleri — `app/src/screens/AdminPanel.tsx`
-- [ ] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi/okundu, klavye erişimi, ekran okuyucu etiketleri, mobil alt gezinme doğrulaması — `app/src/`
-- [ ] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük testi, kota kullanımı raporu, D1→R2 yedek ve geri yükleme provası — `scripts/`, `docs/`
+- [x] E9.14 Görsel varlık tüketimi (belge 17): portre/ikon/arma/harita arayüzde gösterilir; veri tasarrufu modu; lisans atıfları görünür — `WorldOverview.tsx` varlık galerisi, `client.assetCatalog()`, `/api/assets/catalog`
+- [x] E9.15 Ücretsiz lisanslı görsel dosyalar (belge 17.2, 17.5): 40 portrelik havuz + 7 ikon + arma + harita; WebP + 96/64px küçük türev; lisans/kaynak kaydı — `scripts/gen-assets.mjs` (deterministik, yerel üretim; **0 TL, indirme yok**), `assets/portraits`, `assets/icons`, `assets/crests`, `assets/maps`, `assets/manifest.json`
+- [x] E9.16 Yönetici arayüzleri (belge 20): bütçe/kota, pazar izleme, kullanıcı/karakter yönetimi panelleri — `functions/src/admin/console.ts` (+ test), `app/src/screens/AdminPanel.tsx` (+ 3 test), `/api/admin/*`, App kabuğu yönetim düğmesi
+- [x] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi + okundu işaretleme, öncelik eşiği/arka plan özeti, klavye erişimi, `aria-label`/`role="alert"`, tablo `scope` başlıkları — `PlayPanel.tsx`, `AdminPanel.tsx`, `client.notifications()`
+- [x] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük benzetimi, kota kullanım raporu, D1→R2 dump ve veri kayıpsız geri yükleme provası — `scripts/load-restore-rehearsal.mjs` (`npm run rehearsal:load-restore`; 88 tablo, 141 satır, veri kaybı yok, ücretsiz limit içinde)

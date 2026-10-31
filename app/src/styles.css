@@ -132,3 +132,90 @@ body {
 .kvt-navbtn:disabled {
   opacity: 0.5;
 }
+
+/* Bildirim gecmisi (belge 19): oncelik esigi uzeri tek tek, arka plan tek satir. */
+.kvt-notifications ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.kvt-notifications li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-notif-unread {
+  font-weight: 600;
+}
+
+.kvt-notif-read {
+  opacity: 0.7;
+}
+
+.kvt-notif-bg {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.kvt-badge {
+  color: var(--kvt-gold, #c9a227);
+}
+
+/* Gorsel varlik galerisi (belge 17.4) ve veri tasarrufu modu (17.5). */
+.kvt-assets-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kvt-assetlist {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.kvt-asset {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--kvt-brown);
+  border-radius: 4px;
+}
+
+.kvt-assetfile {
+  font-size: 11px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.kvt-attributions {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Yonetim konsolu (belge 20). */
+.kvt-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.kvt-admin th,
+.kvt-admin td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-admin caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 4px;
+}

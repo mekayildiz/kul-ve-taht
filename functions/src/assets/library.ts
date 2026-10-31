@@ -99,21 +99,23 @@ export function attributionList(catalog: readonly AssetRecord[]): string[] {
   return out;
 }
 
-const ICON_SOURCE = "https://game-icons.net";
+// Ikonlar da yerel uretilir (scripts/gen-assets.mjs); harici kaynak yok.
+const ICON_SOURCE = "self";
 
 /**
- * Baslangic katalogu: yalnizca ucretsiz lisansli varliklar. Dosyalar R2
- * (ASSETS_BUCKET) altinda tutulur; burada yalnizca kayit ve kimlik tutulur.
- * Yeni varliklar eklendikce manifest guncellenir.
+ * Baslangic katalogu: yalnizca ucretsiz lisansli varliklar. Tum dosyalar
+ * yerel uretilir (scripts/gen-assets.mjs), bu nedenle lisans CC0/self olup
+ * atif zorunlulugu yoktur. Dosyalar R2 (ASSETS_BUCKET) altinda tutulur;
+ * burada yalnizca kayit ve kimlik tutulur.
  */
 export const ASSET_CATALOG: readonly AssetRecord[] = [
-  { assetKey: "icon/sword", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/sword.webp", thumbnailKey: "icons/sword-64.webp", tags: ["combat", "item"] },
-  { assetKey: "icon/shield", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/shield.webp", thumbnailKey: "icons/shield-64.webp", tags: ["combat", "defense"] },
-  { assetKey: "icon/gold", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/gold.webp", thumbnailKey: "icons/gold-64.webp", tags: ["economy"] },
-  { assetKey: "icon/crown", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/crown.webp", thumbnailKey: "icons/crown-64.webp", tags: ["kingdom", "politics"] },
-  { assetKey: "icon/scroll", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/scroll.webp", thumbnailKey: "icons/scroll-64.webp", tags: ["quest"] },
-  { assetKey: "icon/horse", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/horse.webp", thumbnailKey: "icons/horse-64.webp", tags: ["travel"] },
-  { assetKey: "icon/heart", category: "icon", license: "CC-BY-3.0", source: ICON_SOURCE, r2Key: "icons/heart.webp", thumbnailKey: "icons/heart-64.webp", tags: ["health"] },
+  { assetKey: "icon/sword", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/sword.webp", thumbnailKey: "icons/sword-64.webp", tags: ["combat", "item"] },
+  { assetKey: "icon/shield", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/shield.webp", thumbnailKey: "icons/shield-64.webp", tags: ["combat", "defense"] },
+  { assetKey: "icon/gold", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/gold.webp", thumbnailKey: "icons/gold-64.webp", tags: ["economy"] },
+  { assetKey: "icon/crown", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/crown.webp", thumbnailKey: "icons/crown-64.webp", tags: ["kingdom", "politics"] },
+  { assetKey: "icon/scroll", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/scroll.webp", thumbnailKey: "icons/scroll-64.webp", tags: ["quest"] },
+  { assetKey: "icon/horse", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/horse.webp", thumbnailKey: "icons/horse-64.webp", tags: ["travel"] },
+  { assetKey: "icon/heart", category: "icon", license: "CC0", source: ICON_SOURCE, r2Key: "icons/heart.webp", thumbnailKey: "icons/heart-64.webp", tags: ["health"] },
   { assetKey: "crest/neutral", category: "crest", license: "CC0", source: "self", r2Key: "crests/neutral.webp", thumbnailKey: "crests/neutral-96.webp", tags: ["kingdom"] },
 ];
 

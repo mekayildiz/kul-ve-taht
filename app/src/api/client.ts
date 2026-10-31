@@ -322,6 +322,70 @@ export interface MotionDto {
   noWeight: number;
 }
 
+export interface AdminOverviewDto {
+  accounts: number;
+  characters: number;
+  aliveCharacters: number;
+  settlements: number;
+  kingdoms: number;
+  totalGold: number;
+  properties: number;
+  companies: number;
+  auctionsOpen: number;
+  gameDay: number;
+  gameYear: number;
+}
+
+export interface AdminCharacterDto {
+  id: string;
+  givenName: string;
+  surname: string;
+  accountId: string;
+  alive: boolean;
+  gold: number;
+  reputation: number;
+  currentSettlement: string | null;
+}
+
+export interface AdminEconomyDto {
+  settlementId: string;
+  itemId: string;
+  supply: number;
+  demand: number;
+  price: number;
+}
+
+export interface NotificationDto {
+  id: string;
+  kind: string;
+  priority: number;
+  summary: string;
+  createdAtMs: number;
+  read: boolean;
+}
+
+export interface NotificationDigestDto {
+  visible: NotificationDto[];
+  backgroundSummary: string | null;
+  unreadCount: number;
+}
+
+export interface AssetDto {
+  assetKey: string;
+  category: "portrait" | "icon" | "map" | "crest" | "environment";
+  license: string;
+  source: string;
+  r2Key: string;
+  thumbnailKey?: string;
+  tags: string[];
+}
+
+export interface AssetCatalogDto {
+  count: number;
+  assets: AssetDto[];
+  attributions: string[];
+}
+
 export interface GroupDto {
   id: string;
   name: string;
@@ -686,5 +750,52 @@ export class ApiClient {
     if (settlementId) params.set("settlementId", settlementId);
     const suffix = params.toString();
     return this.request(`/api/market/${encodeURIComponent(itemId)}${suffix ? `?${suffix}` : ""}`);
+  }
+
+  /** Bildirim ozeti (belge 19): esik uzeri tek tek, arka plan tek satir. */
+  notifications(token: string): Promise<NotificationDigestDto> {
+    return this.request("/api/notifications", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Bildirimleri okundu isaretle (belge 19). */
+  markNotificationsRead(token: string, ids: string[]): Promise<{ ok: boolean; marked: number }> {
+    return this.request("/api/notifications/read", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ids }),
+    });
+  }
+
+  /** Gorsel varlik katalogu (belge 17.4): lisans uyumlu varliklar + atiflar. */
+  assetCatalog(filter: { category?: string; tag?: string } = {}): Promise<AssetCatalogDto> {
+    const params = new URLSearchParams();
+    if (filter.category) params.set("category", filter.category);
+    if (filter.tag) params.set("tag", filter.tag);
+    const suffix = params.toString();
+    return this.request(`/api/assets/catalog${suffix ? `?${suffix}` : ""}`);
+  }
+
+  /** Yonetim panosu ozeti (belge 20). Yalnizca yonetici oturumu. */
+  adminOverview(token: string): Promise<AdminOverviewDto> {
+    return this.request("/api/admin/overview", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Kullanici/karakter yonetimi listesi (belge 20). */
+  adminCharacters(token: string, limit = 50): Promise<{ characters: AdminCharacterDto[] }> {
+    return this.request(`/api/admin/characters?limit=${limit}`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Karakter durumunu degistirir (canli/olu) (belge 20). */
+  adminSetCharacterStatus(token: string, characterId: string, status: "alive" | "dead"): Promise<{ ok: boolean }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/status`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  /** Pazar/ekonomi izleme (belge 20). */
+  adminEconomy(token: string, limit = 50): Promise<{ economy: AdminEconomyDto[] }> {
+    return this.request(`/api/admin/economy?limit=${limit}`, { headers: { authorization: `Bearer ${token}` } });
   }
 }

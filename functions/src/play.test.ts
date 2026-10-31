@@ -159,13 +159,15 @@ describe("Oynanis uclari (E3-E6)", () => {
 });
 
 describe("Gorsel varlik uclari (E7)", () => {
-  it("katalog yalnizca lisans uyumlu varliklar ve atif listesi doner", async () => {
+  it("katalog yalnizca lisans uyumlu varliklar doner (yerel uretim, CC0)", async () => {
     const env = makeEnv();
     const res = await call("/api/assets/catalog", env);
-    const body = (await res.json()) as { count: number; assets: { assetKey: string }[]; attributions: string[] };
+    const body = (await res.json()) as { count: number; assets: { assetKey: string; license: string }[]; attributions: string[] };
     expect(res.status).toBe(200);
     expect(body.count).toBeGreaterThan(0);
-    expect(body.attributions.some((a) => a.includes("game-icons.net"))).toBe(true);
+    expect(body.assets.every((a) => a.license === "CC0")).toBe(true);
+    // Yerel uretim oldugu icin atif zorunlulugu yoktur.
+    expect(body.attributions).toHaveLength(0);
   });
 
   it("katalog kategori suzmesi yapar (portre havuzu 40)", async () => {

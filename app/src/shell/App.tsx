@@ -5,8 +5,9 @@ import { AuthPanel } from "../screens/AuthPanel";
 import { WorldOverview } from "../screens/WorldOverview";
 import { CharacterSetup } from "../screens/CharacterSetup";
 import { PlayPanel } from "../screens/PlayPanel";
+import { AdminPanel } from "../screens/AdminPanel";
 
-type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world";
+type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world" | "admin";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8787";
 
@@ -25,6 +26,11 @@ export function App(): JSX.Element {
         <span className="kvt-brand">{t.appTitle}</span>
         <div className="kvt-topright">
           {account && <span className="kvt-account">{t.auth.loggedInAs}</span>}
+          {account && (
+            <button type="button" className="kvt-adminbtn" onClick={() => setScreen("admin")}>
+              {t.nav.admin}
+            </button>
+          )}
           <button
             type="button"
             className="kvt-lang"
@@ -95,6 +101,8 @@ export function App(): JSX.Element {
         )}
 
         {screen === "world" && <WorldOverview t={t} client={client} />}
+
+        {screen === "admin" && account && <AdminPanel t={t} client={client} token={account.token} />}
       </main>
 
       <nav className="kvt-bottomnav" aria-label="Ana gezinme">

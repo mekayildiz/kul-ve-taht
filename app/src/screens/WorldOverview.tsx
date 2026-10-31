@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Dictionary } from "../i18n";
-import { ApiClient, ApiRequestError, type SettlementDto, type WorldSummaryDto, type WorldTimeDto } from "../api/client";
+import {
+  ApiClient,
+  ApiRequestError,
+  type AssetCatalogDto,
+  type SettlementDto,
+  type WorldSummaryDto,
+  type WorldTimeDto,
+} from "../api/client";
 
 export interface WorldOverviewProps {
   t: Dictionary;
@@ -11,6 +18,7 @@ interface State {
   summary: WorldSummaryDto | null;
   time: WorldTimeDto | null;
   settlements: SettlementDto[];
+  assets: AssetCatalogDto | null;
   error: string | null;
   loading: boolean;
 }
@@ -20,10 +28,13 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
     summary: null,
     time: null,
     settlements: [],
+    assets: null,
     error: null,
     loading: true,
   });
   const [kingdom, setKingdom] = useState<string>("");
+  // Veri tasarrufu modu (belge 17.5): kucuk turev gorseller istenir.
+  const [dataSaver, setDataSaver] = useState<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,10 +43,11 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
       client.worldSummary(),
       client.worldTime(),
       client.settlements(kingdom ? { kingdom } : {}),
+      client.assetCatalog().catch(() => ({ count: 0, assets: [], attributions: [] })),
     ])
-      .then(([summary, time, settlements]) => {
+      .then(([summary, time, settlements, assets]) => {
         if (cancelled) return;
-        setState({ summary, time, settlements: settlements.settlements, error: null, loading: false });
+        setState({ summary, time, settlements: settlements.settlements, assets, error: null, loading: false });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -111,6 +123,37 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
           </li>
         ))}
       </ul>
+
+      {state.assets && state.assets.assets.length > 0 && (
+        <section className="kvt-assets" aria-label={t.world.assets}>
+          <div className="kvt-assets-head">
+            <h3>{t.world.assets}</h3>
+            <label className="kvt-datasaver">
+              <input type="checkbox" checked={dataSaver} onChange={(e) => setDataSaver(e.target.checked)} />
+              {t.world.dataSaver}
+            </label>
+          </div>
+          <ul className="kvt-assetlist">
+            {state.assets.assets.slice(0, 24).map((a) => (
+              <li key={a.assetKey} className="kvt-asset">
+                <span className={`kvt-asseticon kvt-asset-${a.category}`} aria-hidden="true">
+                  ▣
+                </span>
+                <span className="kvt-assetname">{a.assetKey}</span>
+                <span className="kvt-assetlicense">{a.license}</span>
+                <span className="kvt-assetfile">{dataSaver ? a.thumbnailKey ?? a.r2Key : a.r2Key}</span>
+              </li>
+            ))}
+          </ul>
+          {state.assets.attributions.length > 0 && (
+            <ul className="kvt-attributions" aria-label={t.world.attributions}>
+              {state.assets.attributions.map((text) => (
+                <li key={text}>{text}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </section>
   );
 }

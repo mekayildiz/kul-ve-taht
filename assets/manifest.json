@@ -1,19 +1,118 @@
 {
   "schemaVersion": 1,
-  "note": "Görsel varlık kaydı. Her varlık kimlik + lisans + kaynak + kullanım yeri ile kayıtlıdır. BLOB veritabanına konmaz; varlıklar R2'de tutulur.",
+  "note": "Görsel varlık kaydı. Tüm dosyalar yerel üretilir (scripts/gen-assets.mjs, deterministik SVG→WebP) ve CC0/self lisanslıdır; harici indirme veya atıf zorunluluğu yoktur. Her varlık kimlik + lisans + kaynak + kullanım yeri ile kayıtlıdır. BLOB veritabanına konmaz; varlıklar R2'de tutulur.",
   "licenses": {
-    "CC0": { "attributionRequired": false },
-    "CC-BY-3.0": { "attributionRequired": true, "attributionText": "Icons by game-icons.net (CC BY 3.0)" }
+    "CC0": {
+      "attributionRequired": false
+    },
+    "CC-BY-3.0": {
+      "attributionRequired": true,
+      "attributionText": "Icons by game-icons.net (CC BY 3.0)"
+    }
   },
   "assets": [
-    { "assetKey": "icon/sword", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/sword.webp", "thumbnailKey": "icons/sword-64.webp", "tags": ["combat", "item"] },
-    { "assetKey": "icon/shield", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/shield.webp", "thumbnailKey": "icons/shield-64.webp", "tags": ["combat", "defense"] },
-    { "assetKey": "icon/gold", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/gold.webp", "thumbnailKey": "icons/gold-64.webp", "tags": ["economy"] },
-    { "assetKey": "icon/crown", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/crown.webp", "thumbnailKey": "icons/crown-64.webp", "tags": ["kingdom", "politics"] },
-    { "assetKey": "icon/scroll", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/scroll.webp", "thumbnailKey": "icons/scroll-64.webp", "tags": ["quest"] },
-    { "assetKey": "icon/horse", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/horse.webp", "thumbnailKey": "icons/horse-64.webp", "tags": ["travel"] },
-    { "assetKey": "icon/heart", "category": "icon", "license": "CC-BY-3.0", "source": "https://game-icons.net", "r2Key": "icons/heart.webp", "thumbnailKey": "icons/heart-64.webp", "tags": ["health"] },
-    { "assetKey": "crest/neutral", "category": "crest", "license": "CC0", "source": "self", "r2Key": "crests/neutral.webp", "thumbnailKey": "crests/neutral-96.webp", "tags": ["kingdom"] },
-    { "assetKey": "portrait/pool", "category": "portrait", "license": "CC0", "source": "self", "r2Key": "portraits/pool-{00..39}.webp", "thumbnailKey": "portraits/pool-{00..39}-96.webp", "tags": ["npc"], "note": "40 portrelik ortak havuz (belge 17.2); oyun verisi yalnizca kimlige referans verir." }
+    {
+      "assetKey": "icon/sword",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/sword.webp",
+      "thumbnailKey": "icons/sword-64.webp",
+      "tags": [
+        "combat",
+        "item"
+      ]
+    },
+    {
+      "assetKey": "icon/shield",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/shield.webp",
+      "thumbnailKey": "icons/shield-64.webp",
+      "tags": [
+        "combat",
+        "defense"
+      ]
+    },
+    {
+      "assetKey": "icon/gold",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/gold.webp",
+      "thumbnailKey": "icons/gold-64.webp",
+      "tags": [
+        "economy"
+      ]
+    },
+    {
+      "assetKey": "icon/crown",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/crown.webp",
+      "thumbnailKey": "icons/crown-64.webp",
+      "tags": [
+        "kingdom",
+        "politics"
+      ]
+    },
+    {
+      "assetKey": "icon/scroll",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/scroll.webp",
+      "thumbnailKey": "icons/scroll-64.webp",
+      "tags": [
+        "quest"
+      ]
+    },
+    {
+      "assetKey": "icon/horse",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/horse.webp",
+      "thumbnailKey": "icons/horse-64.webp",
+      "tags": [
+        "travel"
+      ]
+    },
+    {
+      "assetKey": "icon/heart",
+      "category": "icon",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "icons/heart.webp",
+      "thumbnailKey": "icons/heart-64.webp",
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "assetKey": "crest/neutral",
+      "category": "crest",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "crests/neutral.webp",
+      "thumbnailKey": "crests/neutral-96.webp",
+      "tags": [
+        "kingdom"
+      ]
+    },
+    {
+      "assetKey": "portrait/pool",
+      "category": "portrait",
+      "license": "CC0",
+      "source": "self",
+      "r2Key": "portraits/pool-{00..39}.webp",
+      "thumbnailKey": "portraits/pool-{00..39}-96.webp",
+      "tags": [
+        "npc"
+      ],
+      "note": "40 portrelik ortak havuz (belge 17.2); oyun verisi yalnizca kimlige referans verir."
+    }
   ]
 }

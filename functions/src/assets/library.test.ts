@@ -25,9 +25,9 @@ describe("Gorsel varlik kutuphanesi (belge 17)", () => {
     }
   });
 
-  it("atif zorunlu lisanslar icin atif metni uretir", () => {
-    const list = attributionList(ASSET_CATALOG);
-    expect(list.some((text) => text.includes("game-icons.net"))).toBe(true);
+  it("yerel uretilen varliklar CC0 oldugu icin atif zorunlulugu yoktur", () => {
+    expect(ASSET_CATALOG.every((a) => a.license === "CC0")).toBe(true);
+    expect(attributionList(ASSET_CATALOG)).toHaveLength(0);
   });
 
   it("atif zorunlu ama atifsiz varlik uyumsuz sayilir", () => {

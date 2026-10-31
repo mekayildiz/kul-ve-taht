@@ -72,6 +72,7 @@ const stateResponse = {
   children: [],
   relations: [],
   motions: [],
+  notifications: null,
   diplomacy: [{ from: "varkhenn", to: "player", stance: "neutral" }],
 };
 
@@ -316,6 +317,30 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     await waitFor(() => expect(screen.getByText("Kayip Yerler")).toBeInTheDocument());
     expect(screen.getByText(/Ödülü Al/)).toBeInTheDocument();
     expect(screen.getByText(/En Yüksek Teklif: 12/)).toBeInTheDocument();
+  });
+
+  it("bildirim ozetini ve okundu isaretlemeyi gosterir (belge 19)", async () => {
+    const sent: unknown[] = [];
+    const digest = {
+      visible: [{ id: "n1", kind: "trade_offer", priority: 2, summary: "Takas teklifi geldi", createdAtMs: 1, read: false }],
+      backgroundSummary: "property_growth×2",
+      unreadCount: 1,
+    };
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/notifications/read")) {
+        sent.push(JSON.parse(String(init?.body)));
+        return json({ ok: true, marked: 1 });
+      }
+      if (path.startsWith("/api/notifications")) return json(digest);
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Takas teklifi geldi")).toBeTruthy());
+    expect(screen.getByText("property_growth×2")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: `${t.play.markRead}: Takas teklifi geldi` }));
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect((sent[0] as { ids: string[] }).ids).toEqual(["n1"]);
   });
 
   it("görevi başlatma aksiyonu gönderir", async () => {

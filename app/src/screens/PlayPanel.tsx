@@ -19,6 +19,7 @@ import {
   type ChildDto,
   type KingdomRelationDto,
   type MotionDto,
+  type NotificationDigestDto,
   type FamilyDto,
   type GroupDto,
   type StorageDto,
@@ -69,6 +70,7 @@ interface State {
   children: ChildDto[];
   relations: KingdomRelationDto[];
   motions: MotionDto[];
+  notifications: NotificationDigestDto | null;
   storage: StorageDto | null;
   diplomacy: DiplomacyDto[];
   quests: QuestLogEntryDto[];
@@ -110,6 +112,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     children: [],
     relations: [],
     motions: [],
+    notifications: null,
     storage: null,
     diplomacy: [],
     quests: [],
@@ -131,8 +134,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       client.chat(token, "global").catch(() => null),
       client.quests(token, character.id).catch(() => null),
       client.auctions().catch(() => null),
+      client.notifications(token).catch(() => null),
     ])
-      .then(([res, catalog, chat, quests, auctions]) => {
+      .then(([res, catalog, chat, quests, auctions, notifications]) => {
         setState({
           play: res.state,
           items: res.items,
@@ -158,6 +162,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           children: res.children,
           relations: res.relations,
           motions: res.motions,
+          notifications,
           storage: res.storage,
           diplomacy: res.diplomacy,
           quests: quests?.log ?? [],
@@ -217,6 +222,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const play = state.play;
   const itemName = (id: string): string => state.items.find((i) => i.id === id)?.name ?? id;
+  // Bildirim ozeti eksik/bozuk gelebilir (uc nokta istege bagli); guvenli oku.
+  const notifVisible = Array.isArray(state.notifications?.visible) ? state.notifications.visible : [];
 
   return (
     <section className="kvt-play">
@@ -760,6 +767,36 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             </button>
           </div>
         </>
+      )}
+
+      {state.notifications && (notifVisible.length > 0 || state.notifications.backgroundSummary) && (
+        <section className="kvt-notifications" aria-label={t.play.notifications}>
+          <h3>
+            {t.play.notifications}
+            {(state.notifications.unreadCount ?? 0) > 0 && <span className="kvt-badge"> ({state.notifications.unreadCount})</span>}
+          </h3>
+          {notifVisible.length > 0 && (
+            <ul>
+              {notifVisible.map((n) => (
+                <li key={n.id} className={n.read ? "kvt-notif-read" : "kvt-notif-unread"}>
+                  <span>{n.summary}</span>
+                  {!n.read && (
+                    <button
+                      type="button"
+                      aria-label={`${t.play.markRead}: ${n.summary}`}
+                      onClick={() => {
+                        void client.markNotificationsRead(token, [n.id]).then(() => load());
+                      }}
+                    >
+                      {t.play.markRead}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {state.notifications.backgroundSummary && <p className="kvt-notif-bg">{state.notifications.backgroundSummary}</p>}
+        </section>
       )}
 
       <h3>{t.play.multiplayer}</h3>

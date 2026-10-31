@@ -136,6 +136,7 @@ import {
   performJoinAlliance,
   allianceStatus,
 } from "./play/multiplayer-extras";
+import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
 import {
   childList,
   performRecordChild,
@@ -367,6 +368,44 @@ router.post("/api/admin/market/intervene", async ({ request, env }: Ctx) => {
   if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
   const result = await interveneMarket(env.DB, body.kingdomId, body.grainAmount ?? 100, body.unitCost ?? 2);
   return result.ok ? json(result) : error("not_enough_gold", "Hazine yetersiz.", 400);
+});
+
+/** Yonetim panosu ozeti (belge 20). Yalnizca yonetici. */
+router.get("/api/admin/overview", async ({ request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  return json(await adminOverview(env.DB));
+});
+
+/** Kullanici/karakter yonetimi listesi (belge 20). Yalnizca yonetici. */
+router.get("/api/admin/characters", async ({ request, url, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
+  return json({ characters: await adminCharacters(env.DB, Number.isFinite(limit) ? limit : 50) });
+});
+
+/** Karakter durumu degistirir (canli/olu) (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/characters/:id/status", async ({ params, request, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { status?: string } | null;
+  const status = body?.status === "dead" ? "dead" : body?.status === "alive" ? "alive" : null;
+  if (!status) return error("invalid_body", "status 'alive' veya 'dead' olmalidir.", 400);
+  const result = await adminSetCharacterStatus(env.DB, params.id!, status);
+  return result.ok ? json({ ok: true }) : error("not_found", "Karakter bulunamadi.", 404);
+});
+
+/** Pazar/ekonomi izleme (belge 20). Yalnizca yonetici. */
+router.get("/api/admin/economy", async ({ request, url, env }: Ctx) => {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
+  return json({ economy: await adminEconomy(env.DB, Number.isFinite(limit) ? limit : 50) });
 });
 
 router.post("/api/admin/seed-world", async ({ request, env }: Ctx) => {
