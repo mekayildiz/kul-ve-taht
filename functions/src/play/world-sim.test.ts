@@ -15,6 +15,7 @@ import {
   applyWorldDisruption,
   disruptionFor,
   intervalFor,
+  assignNpcOffices,
 } from "./world-sim";
 import type { SqlDatabase } from "../db/client";
 import { queryAll, queryOne } from "../db/client";
@@ -132,5 +133,33 @@ describe("Katmanli dunya simulasyonu (belge 8.8, 9.4, 19.4)", () => {
     for (let day = 0; day < 10; day += 1) {
       expect(kinds.has(disruptionFor(day))).toBe(true);
     }
+  });
+
+  it("saray makamlari NPC'lerle dolu baslar (belge 8.7)", async () => {
+    const total = await count(db, "SELECT COUNT(*) AS n FROM offices");
+    expect(total).toBeGreaterThanOrEqual(5 * 7);
+
+    const npcHeld = await count(
+      db,
+      "SELECT COUNT(*) AS n FROM offices WHERE holder_type = 'npc' AND holder_id IS NOT NULL",
+    );
+    expect(npcHeld).toBe(total);
+  });
+
+  it("bos makamlar dunya turunda NPC ile doldurulur (belge 8.7)", async () => {
+    await db
+      .prepare(
+        "INSERT INTO offices (id, kingdom_id, settlement_id, title, holder_type, holder_id, rank, service_points, appointed_day) VALUES ('o-bos','varkhenn','varkhenn-drahkmar','Bos Makam','character',NULL,'recruit',0,1)",
+      )
+      .bind()
+      .run();
+    const assigned = await assignNpcOffices(db, 2);
+    expect(assigned).toBeGreaterThan(0);
+    const row = await queryOne<{ holder_type: string; holder_id: string | null }>(
+      db,
+      "SELECT holder_type, holder_id FROM offices WHERE id = 'o-bos'",
+    );
+    expect(row!.holder_type).toBe("npc");
+    expect(row!.holder_id).not.toBeNull();
   });
 });

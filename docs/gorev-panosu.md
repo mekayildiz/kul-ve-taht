@@ -104,4 +104,8 @@ sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
 - [x] E8.27 Zamanlanmış dünya turu (belge 8.8): Free plan Cron Trigger (saatlik) + dünya saati ilerlemesinde tetikleme — `wrangler.toml`, `scheduled()`
 - [x] E8.28 Yeni kalıcı tablolar (belge 9, 10, 18): `market_state`, `auctions`, `offices`, `character_quests` + NPC simülasyon kolonları — `db/migrations/0008_world_simulation.sql`
 - [x] E8.29 Test: 10 yeni simülasyon testi (`world-sim.test.ts`) — toplam 410 test geçiyor
+- [x] E8.30 Siyasi sistem bağlantısı (belge 10–11): makam tek sahipli, rütbe yükseltme ve siyasi mücadele sunucuda çözülür — `play/systems.ts` + `politics/government.ts`
+- [x] E8.31 Saray makamları (belge 8.7): oyun başında hükümdardan kâtibe kadar makamlar NPC'lerle dolu — `world/seed.ts` (`seedCourtOffices`)
+- [x] E8.32 NPC yönetimi (belge 8.7): boş makamlar dünya turunda NPC'lerle doldurulur — `world-sim.ts` (`assignNpcOffices`)
+- [x] E8.33 Test: 4 yeni siyaset/makam testi — toplam 414 test geçiyor
 

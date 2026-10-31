@@ -115,8 +115,64 @@ export async function seedWorld(db: SqlDatabase, nowMs: number = Date.now()): Pr
   );
 
   const npcs = await seedNpcs(db, nowMs);
+  await seedCourtOffices(db, nowMs);
   return { kingdoms: kingdomCount, settlements: settlementCount, npcs };
 }
+
+/**
+ * Saray makamlarini NPC'lerle doldurur (belge 8.7). Oyun basladiginda
+ * kral/kraliceden en alt memura kadar butun makamlar doludur; oyuncular
+ * otomatik makam sahibi olmaz, bu makamlar icin rekabet eder (belge 8.6).
+ */
+export async function seedCourtOffices(db: SqlDatabase, nowMs: number = Date.now()): Promise<number> {
+  const before = await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM offices");
+  for (const kingdom of KINGDOMS) {
+    // `capital` alani yerlesim ADIDIR (kimlik degil); once kimlige cevrilir.
+    const capital = await queryOne<{ id: string }>(
+      db,
+      "SELECT id FROM settlements WHERE name = ? AND kingdom_id = ? LIMIT 1",
+      kingdom.capital,
+      kingdom.id,
+    );
+    const capitalId = capital?.id ?? kingdom.capital;
+    // Saray gorevlileri baska NPC'ler olsun; her makama sirayla atanir.
+    const courtiers = await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM npcs WHERE settlement_id = ? AND alive = 1 ORDER BY importance, gold DESC LIMIT ?",
+      capitalId,
+      COURT_TITLES.length,
+    );
+    for (const [index, title] of COURT_TITLES.entries()) {
+      await execute(
+        db,
+        `INSERT OR IGNORE INTO offices (id, kingdom_id, settlement_id, title, holder_type, holder_id, rank, service_points, appointed_day)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `office-${kingdom.id}-${title.key}`,
+        kingdom.id,
+        capitalId,
+        title.label,
+        "npc",
+        courtiers[index]?.id ?? courtiers[0]?.id ?? null,
+        title.rank,
+        title.points,
+        nowMs,
+      );
+    }
+  }
+  const after = await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM offices");
+  return (after?.n ?? 0) - (before?.n ?? 0);
+}
+
+/** Saray makam zinciri: hükümdardan alt memura (belge 8.7, 10). */
+const COURT_TITLES: { key: string; label: string; rank: string; points: number }[] = [
+  { key: "ruler", label: "Hukumdar", rank: "general", points: 200 },
+  { key: "chancellor", label: "Bas Vezir", rank: "marshal", points: 150 },
+  { key: "treasurer", label: "Hazine Bakani", rank: "knight", points: 110 },
+  { key: "marshal", label: "Ordu Komutani", rank: "marshal", points: 150 },
+  { key: "spymaster", label: "Istihbarat Basi", rank: "captain", points: 90 },
+  { key: "diplomat", label: "Bas Diplomat", rank: "captain", points: 80 },
+  { key: "clerk", label: "Katip", rank: "recruit", points: 10 },
+];
 
 /** Yerlesimlere katmanli NPC tohumlar (belge 8.8). Idempotent. */
 export async function seedNpcs(db: SqlDatabase, nowMs: number = Date.now()): Promise<number> {

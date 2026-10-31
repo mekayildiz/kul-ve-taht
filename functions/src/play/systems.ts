@@ -30,6 +30,15 @@ import { arrestChance, sentence, attemptEscape, escapeChance, CRIME_SEVERITY, ty
 import { resolveCombat, canDuel, type CombatantStats, type Terrain, TERRAIN_BONUS } from "../combat/resolve";
 import { SETTLEMENTS } from "../world/settlements";
 import { KINGDOMS } from "../world/kingdoms";
+import {
+  RANKS,
+  appoint,
+  promote,
+  resolvePowerStruggle,
+  type Government,
+  type Position,
+  type Rank,
+} from "../politics/government";
 import { settlementProfile } from "../world/settlement-profile";
 import { emptyAttributes } from "../character/attributes";
 
@@ -780,7 +789,13 @@ export async function officeStatus(db: SqlDatabase, characterId: string): Promis
   return row ? { kingdomId: row.kingdom_id, title: row.title, rank: row.rank, servicePoints: row.service_points } : null;
 }
 
-/** Hizmet puani ve itibar ile rutbe yukseltme (belge 10). */
+/**
+ * Hizmet puani ve itibar ile rutbe yukseltme ve makam atamasi (belge 10, 11).
+ *
+ * Rutbe `politics/government` kurallarindan turer; makam kaydi `offices`
+ * tablosuna yazilir ki NPC'ler ve oyuncular AYNI makamlar icin rekabet
+ * edebilsin (belge 8.6). Konsey yonetiminde atama onay gerektirir.
+ */
 export async function performSeekOffice(
   db: SqlDatabase,
   characterId: string,
@@ -793,7 +808,82 @@ export async function performSeekOffice(
   const settlement = await currentSettlement(db, characterId);
   const kingdomId = SETTLEMENTS.find((s) => s.id === settlement)?.kingdomId ?? KINGDOMS[0]!.id;
   const points = Math.max(0, state.reputation) + state.weaponMastery;
-  const rank = points >= 60 ? "captain" : points >= 40 ? "sergeant" : points >= 20 ? "soldier" : "recruit";
+
+  // Mevcut rutbeden yukseltme; yetki makam sahipliginden gelir.
+  const kingdom = await queryOne<{ government: string }>(db, "SELECT government FROM kingdoms WHERE id = ?", kingdomId);
+  const government = (kingdom?.government ?? "feudal_monarchy") as Government;
+  const currentRank = await queryOne<{ rank: string }>(
+    db,
+    "SELECT rank FROM offices WHERE kingdom_id = ? AND title = ? AND holder_id = ? LIMIT 1",
+    kingdomId,
+    safeTitle,
+    characterId,
+  );
+  const baseRank = (RANKS.includes((currentRank?.rank ?? "") as Rank) ? currentRank!.rank : "recruit") as Rank;
+  const rank = promote(baseRank, points, true);
+
+  // Makam tek sahipli: musait veya devredilebilir olmali (belge 10.4).
+  const position: Position = {
+    id: `office-${kingdomId}-${safeTitle}`,
+    kingdomId,
+    title: safeTitle,
+    authority: "general",
+    holderType: null,
+    holderId: null,
+    appointedAt: null,
+  };
+  const existing = await queryOne<{ holder_id: string | null; service_points: number }>(
+    db,
+    "SELECT holder_id, service_points FROM offices WHERE id = ?",
+    position.id,
+  );
+  const occupant = existing?.holder_id ?? null;
+  const incumbentPoints = existing?.service_points ?? 0;
+  const needsCouncil = government === "council_monarchy" || government === "noble_council_monarchy";
+  const councilApproval = !needsCouncil || points >= 40;
+
+  // Makam doluysa siyasi mucadele cozulur (belge 8.6, 10.4, 11). Destek +
+  // itibar toplami yuksek olan kazanir; esitlikte mevcut sahip avantajlidir.
+  if (occupant !== null && occupant !== characterId) {
+    if (!councilApproval) {
+      return { ok: false, error: "invalid_action", state, detail: { reason: "council_approval_required", government } };
+    }
+    const winner = resolvePowerStruggle({
+      challengerSupport: points,
+      incumbentSupport: incumbentPoints,
+      challengerReputation: Math.max(0, state.reputation),
+      incumbentReputation: Math.max(0, incumbentPoints - 40),
+    });
+    if (winner !== "challenger") {
+      return { ok: false, error: "invalid_action", state, detail: { reason: "office_held", incumbentPoints } };
+    }
+  }
+  const decision = appoint(
+    { ...position, holderId: occupant, holderType: occupant ? "character" : null },
+    "character",
+    characterId,
+    nowMs,
+    councilApproval,
+    government,
+  );
+  if (!decision.ok) {
+    return { ok: false, error: "invalid_action", state, detail: { reason: "council_approval_required", government } };
+  }
+  await execute(
+    db,
+    `INSERT INTO offices (id, kingdom_id, settlement_id, title, holder_type, holder_id, rank, service_points, appointed_day)
+     VALUES (?,?,?,?,?,?,?,?,?)
+     ON CONFLICT(id) DO UPDATE SET holder_type='character', holder_id=excluded.holder_id, rank=excluded.rank, service_points=excluded.service_points, appointed_day=excluded.appointed_day`,
+    position.id,
+    kingdomId,
+    settlement,
+    safeTitle,
+    "character",
+    characterId,
+    rank,
+    points,
+    nowMs,
+  );
   await execute(
     db,
     `INSERT INTO character_offices (character_id, kingdom_id, title, rank, service_points, updated_at)

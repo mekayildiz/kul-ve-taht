@@ -370,4 +370,34 @@ describe("Belge 20 sistem baglantisi (askeri/ekonomi/adalet/dovus/sosyal/siyaset
     const shown = JSON.stringify(body);
     expect(shown).toContain("evlendiniz");
   });
+
+  it("makam atamasi offices tablosuna yazilir ve tek sahipli olur (belge 10.4)", async () => {
+    const owner = await setupPlayer(env);
+    const first = await act(env, owner.token, owner.characterId, { action: "seekOffice", title: "Vergi Memuru" });
+    expect(first.status).toBe(200);
+    expect((await readBody(first)).detail.rank).toBe("recruit");
+
+    const stored = await env.DB.prepare("SELECT holder_id FROM offices WHERE title = 'Vergi Memuru'")
+      .bind()
+      .first<{ holder_id: string }>();
+    expect(stored?.holder_id).toBe(owner.characterId);
+
+    // Ikinci oyuncu mevcut sahibi gecmeden ayni makami alamaz (belge 10.4).
+    const other = await setupPlayer(env);
+    const denied = await act(env, other.token, other.characterId, { action: "seekOffice", title: "Vergi Memuru" });
+    expect(denied.status).toBe(400);
+    expect((await readBody(denied)).error.reason).toBe("office_held");
+  });
+
+  it("hizmet puani arttikca rutbe yukselir (belge 10.3)", async () => {
+    const { token, characterId } = await setupPlayer(env);
+    // Durum satiri ilk oynanista olusur; once olustur, sonra itibar ver.
+    await grantGold(env, characterId, 0);
+    await env.DB.prepare("UPDATE character_state SET reputation = 70 WHERE character_id = ?").bind(characterId).run();
+    const res = await act(env, token, characterId, { action: "seekOffice", title: "Kaptan" });
+    expect(res.status).toBe(200);
+    const detail = (await readBody(res)).detail;
+    expect(["soldier", "sergeant", "captain"]).toContain(detail.rank);
+    expect(detail.servicePoints).toBeGreaterThanOrEqual(70);
+  });
 });

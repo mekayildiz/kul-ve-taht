@@ -194,12 +194,49 @@ export async function applyWorldDisruption(
 }
 
 /**
+ * Bos makamlari onemli NPC'lerle doldurur (belge 8.7, 10.4). Boylece oyun
+ * basladiginda kral/memur zinciri hazirdir ve oyuncular NPC'lerle AYNI
+ * makamlar icin rekabet eder (belge 8.6).
+ */
+export async function assignNpcOffices(db: SqlDatabase, gameDay: number, limit = 20): Promise<number> {
+  const vacant = await queryAll<{ id: string; kingdom_id: string | null; settlement_id: string | null; title: string }>(
+    db,
+    `SELECT id, kingdom_id, settlement_id, title FROM offices
+     WHERE holder_id IS NULL AND (kingdom_id IS NOT NULL OR settlement_id IS NOT NULL)
+     ORDER BY id LIMIT ?`,
+    limit,
+  );
+  let assigned = 0;
+  for (const office of vacant) {
+    const npc = await queryOne<{ id: string }>(
+      db,
+      `SELECT id FROM npcs
+       WHERE importance = 'critical' AND settlement_id = ? AND alive = 1
+       ORDER BY gold DESC LIMIT 1`,
+      office.settlement_id,
+    );
+    if (!npc) continue;
+    await execute(
+      db,
+      "UPDATE offices SET holder_type = 'npc', holder_id = ?, rank = 'sergeant', service_points = 30, appointed_day = ? WHERE id = ?",
+      npc.id,
+      gameDay,
+      office.id,
+    );
+    assigned += 1;
+  }
+  return assigned;
+}
+
+/**
  * Dunya ilerlemesinin tam turu: gun atlandiysa katmanli NPC simulasyonu,
- * ardindan bir yerlesimde bozulma olayi. Idempotent: ayni gun icin tekrar
- * cagrilirsa is yapmaz (last_simulated_day ile).
+ * ardindan bos makamlarin NPC'lerle doldurulmasi ve bir yerlesimde bozulma
+ * olayi. Idempotent: ayni gun icin tekrar cagrilirsa is yapmaz
+ * (last_simulated_day ve world_event_log.game_day ile).
  */
 export async function runWorldSimulation(db: SqlDatabase, gameDay: number, nowMs = Date.now()): Promise<SimulationResult> {
   const processed = await simulateNpcBatch(db, gameDay);
+  await assignNpcOffices(db, gameDay);
 
   const events: string[] = [];
   // Ayni gun icin ikinci kez olay uretilmez.
