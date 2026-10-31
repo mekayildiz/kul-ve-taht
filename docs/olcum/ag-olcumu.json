@@ -1,51 +1,51 @@
 {
-  "base": "http://localhost:8787",
-  "startedAt": "2026-10-31T15:19:35.778Z",
+  "base": "http://127.0.0.1:12000",
+  "startedAt": "2026-10-31T15:59:57.296Z",
   "endpoints": {
     "register": {
       "status": 201,
-      "ms": 147.012,
+      "ms": 135.446,
       "bytes": 52
     },
     "health": {
       "status": 200,
-      "ms": 10.066,
+      "ms": 11.789,
       "bytes": 70
     },
     "worldSummary": {
       "status": 200,
-      "ms": 9.651,
+      "ms": 17.051,
       "bytes": 113
     },
     "worldSettlements": {
       "status": 200,
-      "ms": 10.553,
+      "ms": 12.652,
       "bytes": 18289
     },
     "worldTime": {
       "status": 200,
-      "ms": 11.771,
+      "ms": 13.743,
       "bytes": 61
     },
     "assetsCatalog": {
       "status": 200,
-      "ms": 9.823,
+      "ms": 11.638,
       "bytes": 8428
     }
   },
   "load": {
     "requests": 300,
     "errors": 0,
-    "wallMs": 2726.314,
-    "rps": 110.039,
+    "wallMs": 3212.069,
+    "rps": 93.398,
     "totalBytes": 2016825,
     "latencyMs": {
       "n": 300,
-      "min": 7.339,
-      "max": 22.136,
-      "mean": 9.066,
-      "p50": 8.812,
-      "p95": 10.853
+      "min": 8.474,
+      "max": 37.083,
+      "mean": 10.685,
+      "p50": 10.202,
+      "p95": 14.323
     }
   },
   "quota": {
@@ -53,9 +53,9 @@
     "rows": [
       {
         "metric": "requests",
-        "used": 730,
+        "used": 1067,
         "limit": 100000,
-        "percentUsed": 0.7,
+        "percentUsed": 1.1,
         "state": "ok"
       },
       {
@@ -87,9 +87,9 @@
         "state": "ok"
       }
     ],
-    "requestsUsed": 730,
+    "requestsUsed": 1067,
     "requestsLimit": 100000,
-    "requestsPct": 0.73,
+    "requestsPct": 1.067,
     "withinFreeTier": true
   },
   "limits": {
@@ -98,5 +98,5 @@
     "d1_writes": 100000
   },
   "withinFreeTier": true,
-  "finishedAt": "2026-10-31T15:19:38.719Z"
+  "finishedAt": "2026-10-31T16:00:00.726Z"
 }

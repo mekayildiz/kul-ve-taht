@@ -139,4 +139,23 @@ describe("Worker uctan uca", () => {
     const body = (await res.json()) as { status: string };
     expect(body.status).toBe("queued");
   });
+
+  it("CORS: on kontrol istegi izin basliklariyla 204 doner (belge 21.1)", async () => {
+    const res = await call("/api/world/summary", env, { method: "OPTIONS" });
+    expect(res.status).toBe(204);
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-headers")).toContain("authorization");
+  });
+
+  it("CORS: normal yanit erisim izni basligi tasir (belge 21.1)", async () => {
+    const res = await call("/api/health", env);
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
+  it("CORS: ALLOWED_ORIGIN ayarliysa yalnizca o kaynak izinli olur", async () => {
+    const scoped = makeEnv({ ALLOWED_ORIGIN: "https://kul-ve-taht.pages.dev" });
+    const res = await call("/api/health", scoped);
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://kul-ve-taht.pages.dev");
+    expect(res.headers.get("vary")).toContain("Origin");
+  });
 });

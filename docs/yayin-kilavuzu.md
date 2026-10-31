@@ -62,17 +62,47 @@ değerlerini yerleşim profilinden yükler. Tohumlama idempotenttir.
 
 ## 4. Yayın
 
-```bash
-# Arka uç (Workers + D1 + R2 + DO + Workflows)
-npx wrangler deploy --config functions/wrangler.toml
+Önerilen (tek kaynak, ücretsiz): arayüz ve API **aynı Worker**'dan sunulur.
+`functions/wrangler.toml` içindeki `[assets]` bloğu `app/dist`'i statik
+varlık olarak bağlar; `not_found_handling = "single-page-application"`
+derin bağlantıları `index.html`'e düşürür. Bu sayede tarayıcıda kaynaklar
+arası (CORS) sorunu yaşanmaz ve ayrı bir Pages projesine gerek kalmaz.
 
-# Arayüz (Cloudflare Pages, ücretsiz)
+```bash
+# 1) Arayüzü derle (statik varlıklar)
 npm run build -w @kvt/app
-npx wrangler pages deploy app/dist --project-name kul-ve-taht
+
+# 2) Arka uç + arayüzü birlikte yayınla (Workers + D1 + R2 + DO + Workflows + assets)
+npx wrangler deploy --config functions/wrangler.toml
 ```
 
-Arayüzün arka uca bağlanması için `VITE_API_BASE_URL` ortam değişkeni Pages
-projesinde Worker adresine ayarlanır.
+Yerel doğrulama da aynı yapıyı kullanır:
+
+```bash
+npx wrangler dev --local --ip 0.0.0.0 --config functions/wrangler.toml
+# http://localhost:8787/ arayüzü, /api/* arka ucu aynı kaynaktan sunar
+```
+
+### Ayrı kaynakta (Pages) yayın isteğe bağlıdır
+
+Arayüz ayrı bir Cloudflare Pages projesinde barındırılacaksa, tarayıcı
+farklı kaynaktan API'ye erişeceği için CORS gerekir (belge 21.1):
+
+```bash
+npm run build -w @kvt/app
+VITE_API_BASE_URL=https://kul-ve-taht-functions.<hesap>.workers.dev \
+  npx wrangler pages deploy app/dist --project-name kul-ve-taht
+```
+
+Arka uçta izinli kaynağı kilit (isteğe bağlı, önerilir):
+
+```bash
+npx wrangler secret put ALLOWED_ORIGIN --config functions/wrangler.toml
+# değer: https://kul-ve-taht.pages.dev
+```
+
+`ALLOWED_ORIGIN` boşsa API tüm kaynaklara açıktır; kimlik doğrulama
+`Authorization` başlığıyla yapıldığından (çerez değil) bu güvenlidir.
 
 ## 5. Yedekleme
 
@@ -96,9 +126,21 @@ npm run check:paid
 Bu betik `wrangler.toml`, `package.json` ve diğer yapılandırmalarda ücretli
 plana geçiş tetikleyen ayar olmadığını doğrular.
 
-## 7. Bilinen dış engel (kullanıcı işlemi gerekir)
+## 7. Üretim yayını için gereken kullanıcı işlemi
 
-Bu depodaki çalışma, GitHub'a **yazma** yetkisi olmayan bir token nedeniyle
-`mekayildiz/kul-ve-taht` deposuna gönderilememektedir. Ayrıntı ve çözüm
-adımları `docs/yedekleme-durumu.md` içindedir. Bu engel yayın adımlarını
-etkilemez; kod yerel olarak tam çalışır ve doğrulanmıştır.
+Kod, yapılandırma ve yerel (Miniflare) doğrulama tamdır. Gerçek üretim
+kaynaklarını (`wrangler d1 create`, `r2 bucket create`, `wrangler deploy`)
+oluşturmak için **Cloudflare hesabı yetkilendirmesi** gerekir; bu adım
+ücretsizdir ama hesap sahibinin onayını (`npx wrangler login`) ister:
+
+```bash
+npx wrangler login                     # tarayıcıda ücretsiz hesap onayı
+npx wrangler d1 create kul-ve-taht-db  # dönen database_id'yi wrangler.toml'a yaz
+npx wrangler r2 bucket create kul-ve-taht-backups
+npx wrangler r2 bucket create kul-ve-taht-assets
+npx wrangler secret put SESSION_SECRET --config functions/wrangler.toml
+npm run build -w @kvt/app && npx wrangler deploy --config functions/wrangler.toml
+```
+
+Hesap yetkilendirmesi olmadan da tüm sistemler Miniflare ile yerel olarak
+çalışır ve doğrulanır (bkz. Bölüm 1); ücretli hiçbir adım yoktur.

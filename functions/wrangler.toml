@@ -11,6 +11,15 @@ main = "src/index.ts"
 compatibility_date = "2026-10-31"
 compatibility_flags = ["nodejs_compat"]
 
+# --- Statik arayuz (SPA) - tek kaynakta arayuz + API (ucretsiz) ---
+# Arayuz dosyalari (app/dist) ayni Worker'dan sunulur; /api/* yollari
+# Worker'a duser. Boylece tarayicida kaynaklar arasi (CORS) sorun olmaz.
+# `npm run build -w @kvt/app` once calistirilmalidir.
+[assets]
+directory = "../app/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
 # --- D1 (SQLite) - yerel: .wrangler/state altinda emule edilir ---
 [[d1_databases]]
 binding = "DB"

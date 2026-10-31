@@ -7,7 +7,8 @@
  */
 
 import { Router, type RouteContext } from "./http/router";
-import { json, error, noContent } from "./http/response";
+import { json, error } from "./http/response";
+import { allowedOrigin, withCors, preflightResponse } from "./http/cors";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
 import { verifySessionToken } from "./auth/session";
 import { authorize } from "./auth/authorize";
@@ -174,6 +175,8 @@ export interface Env {
   SESSION_SECRET: string;
   OVERLOADED?: string;
   REQUESTS_REMAINING?: string;
+  /** CORS icin izinli kaynak; bos ise tum kaynaklar (bkz. http/cors.ts). */
+  ALLOWED_ORIGIN?: string;
 }
 
 type Ctx = RouteContext<Env>;
@@ -1149,21 +1152,25 @@ export default {
 
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const origin = allowedOrigin(env?.ALLOWED_ORIGIN);
+
+    // On kontrol (preflight) istekleri kota/kimlik gerektirmez; dogrudan yanitlanir.
+    if (request.method === "OPTIONS") return preflightResponse(origin);
+
     const isCritical = url.pathname.startsWith("/api/auth") || url.pathname.startsWith("/api/trade");
 
     // 0 TL korumasi: kota karari istek islenmeden once uygulanir.
     const outcome = decideQuota(readQuotaState(env), { critical: isCritical });
     const guarded = quotaResponse(outcome);
-    if (guarded) return guarded;
+    if (guarded) return withCors(guarded, origin);
 
     const handled = await router.handle(request, env, ctx);
     if (handled) {
       // Kota olcumu: gercek tuketimi say (E1.11). Basarisizlik oyunu bloklamaz.
       if (env?.DB) await recordUsage(env.DB, "requests").catch(() => undefined);
-      return handled;
+      return withCors(handled, origin);
     }
 
-    if (request.method === "OPTIONS") return noContent();
-    return error("not_found", "Kaynak bulunamadi.", 404);
+    return withCors(error("not_found", "Kaynak bulunamadi.", 404), origin);
   },
 };
