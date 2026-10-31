@@ -5,11 +5,11 @@
 | Öğe | Değer |
 |---|---|
 | Dal | `feat/kul-ve-taht-development` |
-| Commit sayısı | 24 |
-| HEAD | `f5c4c3f` |
+| Commit sayısı | 25 |
+| HEAD | `9729591` |
 | Çalışma ağacı | temiz |
 | Kalıcı bundle | `/workspace/backups/kul-ve-taht-feat-20261031.bundle` |
-| Bundle SHA-256 | `83786ce51c39014e83837d431191988f854be3e3732bf7d8073951cc23e6f2fd` |
+| Bundle SHA-256 | `ee991e45f146476f5a807d1120c649a855c47b964e891de3cc3b90d5a016f984` |
 | Bundle doğrulama | `git bundle verify` → tam geçmiş |
 | Test durumu | 369/369 geçti (43 dosya); lint 0 hata; build başarılı; Miniflare'de uçtan uca akış doğrulandı |
 
