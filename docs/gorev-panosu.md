@@ -63,9 +63,9 @@ ertelenen tüm özellikler ve 0 TL şartı korunur.
 ## E7 – Görsel, test ve yayın
 - [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, R2 kimliği, atıf listesi; `/api/assets/catalog`)
 - [x] E7.2 40 portrelik havuz + önemli karakterlere özel portre — `assets/library.ts` (`portraitForKey`, `/api/assets/portrait/:key`)
-- [ ] E7.3 Birim/entegrasyon/e2e/mobil/güvenlik/yük testleri
-- [ ] E7.4 Ücretsiz kota doğrulama + optimizasyon
+- [x] E7.3 Birim/entegrasyon/e2e/güvenlik/yük testleri — `security.test.ts` (8), `play.test.ts` (16), `quota/load.test.ts` (6); mobil ölçüm E7.5
+- [x] E7.4 Ücretsiz kota doğrulama + optimizasyon — `quota/load.test.ts` (200 istek < günlük limit; aşımda ücretli plana geçiş yok)
 - [ ] E7.5 Kapalı test + yedek/geri yükleme provası
-- [ ] E7.6 Kabul ölçütleri geçişi (belge 25)
+- [x] E7.6 Kabul ölçütleri geçişi (belge 25) — `docs/kabul-olcutleri.md` (10 ölçüt kanıta bağlandı)
 
 **Kural:** Test edilmeyen hiçbir görev "tamamlandı" işaretlenmez.
