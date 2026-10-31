@@ -5,13 +5,13 @@
 | Öğe | Değer |
 |---|---|
 | Dal | `feat/kul-ve-taht-development` |
-| Commit sayısı | 14 |
-| HEAD | `8f5908e` |
+| Commit sayısı | 18 |
+| HEAD | `97e5fe8` |
 | Çalışma ağacı | temiz |
 | Kalıcı bundle | `/workspace/backups/kul-ve-taht-feat-20261031.bundle` |
-| Bundle SHA-256 | `b84a6948fc7e5dac4ce01c7f3c8dbd5c69a1301a3ed124c94b0332409459b9b5` |
+| Bundle SHA-256 | `b19cc724cba438f229031fdda7ee556b4f34c5165e5c3c4f49071f6b3827b162` |
 | Bundle doğrulama | `git bundle verify` → tam geçmiş |
-| Test durumu | 258/258 geçti (32 dosya); lint 0 hata; uygulama build başarılı |
+| Test durumu | 295/295 geçti (36 dosya); lint 0 hata; uygulama build başarılı |
 
 Bundle `--all` ile alınır (main + çalışma dalı). `/workspace/backups/` altındadır,
 `/tmp` geçici dizininde değildir.
