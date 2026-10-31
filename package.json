@@ -9,7 +9,7 @@
     "functions"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.5"
   },
   "scripts": {
     "build": "npm run sync:assets && npm run build -w @kvt/app && npm run build -w @kvt/functions",

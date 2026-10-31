@@ -14,9 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `node:sqlite` (gercek SQLite motoru testleri icin) Node >= 22.5 gerektirir.
+      # Node 24 LTS ile CI, yerel gelistirme ortamiyla ayni motorda calisir.
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install

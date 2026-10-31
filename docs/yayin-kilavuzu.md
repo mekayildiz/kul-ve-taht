@@ -8,7 +8,7 @@ check:paid` bunu doğrular).
 ## 0. Ön koşullar
 
 - Cloudflare hesabı (ücretsiz katman yeterlidir).
-- Node.js >= 20.
+- Node.js >= 22.5 (testler gercek SQLite motoru `node:sqlite` kullanir).
 - `npx wrangler login` ile hesabın yetkilendirilmesi (ücretsiz).
 
 ## 1. Yerel doğrulama (hesap gerekmez)
