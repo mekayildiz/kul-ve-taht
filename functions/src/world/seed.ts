@@ -8,8 +8,9 @@
 
 import type { SqlDatabase } from "../db/client";
 import { execute } from "../db/client";
-import { KINGDOMS } from "./kingdoms";
+import { KINGDOMS, FREE_CITIES, NEUTRAL_ZONES } from "./kingdoms";
 import { SETTLEMENTS } from "./settlements";
+import { allSettlementProfiles } from "./settlement-profile";
 
 export interface SeedResult {
   kingdoms: number;
@@ -33,8 +34,12 @@ export async function seedWorld(db: SqlDatabase, nowMs: number = Date.now()): Pr
     kingdomCount += 1;
   }
 
+  // Nufus ve guvenlik, belge 20'de istenen yerlesim profilinden gelir.
+  const profiles = new Map(allSettlementProfiles().map((p) => [p.settlementId, p]));
+
   let settlementCount = 0;
   for (const settlement of SETTLEMENTS) {
+    const profile = profiles.get(settlement.id);
     await execute(
       db,
       `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output)
@@ -45,9 +50,45 @@ export async function seedWorld(db: SqlDatabase, nowMs: number = Date.now()): Pr
       settlement.kingdomId,
       settlement.x,
       settlement.y,
-      0,
-      50,
+      profile?.population ?? 0,
+      profile?.security ?? 50,
       settlement.primaryOutput,
+    );
+    settlementCount += 1;
+  }
+
+  // Bagimsiz sehirler ve tarafsiz bolgeler de yerlesim kaydina sahiptir (belge 20).
+  for (const city of FREE_CITIES) {
+    const profile = profiles.get(city.id);
+    await execute(
+      db,
+      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output)
+       VALUES (?,?,?,NULL,?,?,?,?,?)`,
+      city.id,
+      city.name,
+      "city",
+      city.x,
+      city.y,
+      profile?.population ?? 0,
+      profile?.security ?? 50,
+      profile?.economy.primaryProduction ?? "Ticaret",
+    );
+    settlementCount += 1;
+  }
+  for (const zone of NEUTRAL_ZONES) {
+    const profile = profiles.get(zone.id);
+    await execute(
+      db,
+      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output)
+       VALUES (?,?,?,NULL,?,?,?,?,?)`,
+      zone.id,
+      zone.name,
+      "town",
+      zone.x,
+      zone.y,
+      profile?.population ?? 0,
+      profile?.security ?? 50,
+      profile?.economy.primaryProduction ?? "Gecis ticareti",
     );
     settlementCount += 1;
   }

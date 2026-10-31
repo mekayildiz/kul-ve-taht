@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { verifyBackupIntegrity, restoreFromBackup, CRITICAL_TABLES } from "./restore";
+import { FREE_CITIES, NEUTRAL_ZONES } from "../world/kingdoms";
 
 interface RawDb {
   exec(sql: string): void;
@@ -81,8 +82,8 @@ INSERT INTO accounts (id, email, password_hash, role, locale, status, created_at
     const row = target.prepare("SELECT email FROM accounts WHERE id = 'a1'").get() as { email: string } | undefined;
     expect(row?.email).toBe("x@y.tr");
     const count = target.prepare("SELECT COUNT(*) AS c FROM settlements").get() as { c: number };
-    // Referans veri (0003) da geri yuklenir: 130 yerlesim.
-    expect(count.c).toBe(130);
+    // Referans veri (0003) da geri yuklenir: 130 krallik yerlesimi + bagimsiz/tarafsiz yerler.
+    expect(count.c).toBe(130 + FREE_CITIES.length + NEUTRAL_ZONES.length);
   });
 
   it("bozuk dump HICBIR sey uygulamaz (kismi geri yukleme yok)", async () => {

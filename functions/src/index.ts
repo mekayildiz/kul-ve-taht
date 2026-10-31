@@ -11,9 +11,9 @@ import { json, error, noContent } from "./http/response";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
 import { verifySessionToken } from "./auth/session";
 import { authorize } from "./auth/authorize";
-import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES } from "./world";
+import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES, allSettlementProfiles, settlementProfile } from "./world";
 import { advanceWorldTime, seasonFor } from "./time/world-clock";
-import { queryOne, execute, type SqlDatabase } from "./db/client";
+import { queryOne, queryAll, execute, type SqlDatabase } from "./db/client";
 import { registerAccount, loginAccount } from "./auth/service";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
@@ -49,6 +49,7 @@ import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
 import { MAGIC_PATHS, SPELLS, GUILDS, ACTIVITIES, TEMPLE_SERVICES } from "./magic/lore";
 import { UNDERWORLD_ACTIONS } from "./underworld/gangs";
+import { buildDigest, type Notification } from "./notify/notifications";
 import {
   ASSET_CATALOG,
   portraitPoolCatalog,
@@ -93,6 +94,51 @@ router.get("/api/world/places", () =>
   json({ freeCities: FREE_CITIES, neutralZones: NEUTRAL_ZONES }),
 );
 
+// --- Oyuncu bildirimleri (belge 19) ---
+
+/** Bildirim ozeti: esik uzeri olaylar tek tek, arka plan TEK satir. */
+router.get("/api/notifications", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const rows = await queryAll<{ id: string; kind: string; priority: number; summary: string; read: number; created_at: number }>(
+    env.DB,
+    "SELECT id, kind, priority, summary, read, created_at FROM player_notifications WHERE account_id = ? ORDER BY created_at DESC LIMIT 100",
+    session.accountId,
+  );
+  const list: Notification[] = rows.map((r) => ({
+    id: r.id,
+    kind: r.kind as Notification["kind"],
+    priority: r.priority as Notification["priority"],
+    summary: r.summary,
+    read: r.read === 1,
+    createdAtMs: r.created_at,
+  }));
+  return json(buildDigest(list));
+});
+
+/** Bildirimleri okundu isaretle (yalnizca sahibi). */
+router.post("/api/notifications/read", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const body = (await request.json().catch(() => null)) as { ids?: string[] } | null;
+  const ids = Array.isArray(body?.ids) ? body.ids.filter((i) => typeof i === "string") : [];
+  if (ids.length === 0) return error("invalid_body", "ids alani zorunludur.", 400);
+  for (const id of ids) {
+    await execute(env.DB, "UPDATE player_notifications SET read = 1 WHERE id = ? AND account_id = ?", id, session.accountId);
+  }
+  return json({ ok: true, marked: ids.length });
+});
+
+/** Yerlesim profili (belge 20): nufus, ekonomi, yonetim, guvenlik, ulasim... */
+router.get("/api/world/profile", ({ url }: Ctx) => {
+  const id = url.searchParams.get("id");
+  if (!id) return json({ profiles: allSettlementProfiles() });
+  const profile = settlementProfile(id);
+  if (!profile) return error("not_found", "Yerlesim bulunamadi.", 404);
+  return json(profile);
+});
+
+/** Dunya haritasi: tum yerlesim profilleri dahil (harita katmani). */
 router.get("/api/world/map", () => json(mapData()));
 
 router.get("/api/world/birthplaces", ({ url }: Ctx) => {

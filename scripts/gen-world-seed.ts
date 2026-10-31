@@ -11,8 +11,9 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { KINGDOMS } from "../functions/src/world/kingdoms";
+import { KINGDOMS, FREE_CITIES, NEUTRAL_ZONES } from "../functions/src/world/kingdoms";
 import { SETTLEMENTS } from "../functions/src/world/settlements";
+import { allSettlementProfiles } from "../functions/src/world/settlement-profile";
 
 function q(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
@@ -23,7 +24,7 @@ export function buildWorldSeedSql(): string {
     "-- 0003: Dunya referans verisi (kralliklar + yerlesimler)",
     "--",
     "-- UYARI: Bu dosya OTOMATIK uretilir. Elle duzenlemeyin.",
-    "-- Kaynak: functions/src/world/{kingdoms,settlements}.ts",
+    "-- Kaynak: functions/src/world/{kingdoms,settlements,settlement-profile}.ts",
     "-- Yeniden uret: npx vite-node scripts/gen-world-seed.ts",
     "--",
     "-- Idempotenttir: INSERT OR IGNORE mevcut oyuncu verisini ezmez.",
@@ -36,9 +37,30 @@ export function buildWorldSeedSql(): string {
     );
   }
   lines.push("");
+
+  // Nufus ve guvenlik, belge 20'de istenen yerlesim profilinden gelir.
+  const profiles = new Map(allSettlementProfiles().map((p) => [p.settlementId, p]));
   for (const s of SETTLEMENTS) {
+    const p = profiles.get(s.id);
+    const population = p?.population ?? 0;
+    const security = p?.security ?? 50;
     lines.push(
-      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output) VALUES (${q(s.id)}, ${q(s.name)}, ${q(s.kind)}, ${q(s.kingdomId)}, ${s.x}, ${s.y}, 0, 50, ${q(s.primaryOutput)});`,
+      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output) VALUES (${q(s.id)}, ${q(s.name)}, ${q(s.kind)}, ${q(s.kingdomId)}, ${s.x}, ${s.y}, ${population}, ${security}, ${q(s.primaryOutput)});`,
+    );
+  }
+
+  // Bagimsiz sehirler ve tarafsiz bolgeler de kendi kayitlarina sahiptir (belge 20).
+  lines.push("");
+  for (const c of FREE_CITIES) {
+    const p = profiles.get(c.id);
+    lines.push(
+      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output) VALUES (${q(c.id)}, ${q(c.name)}, 'city', NULL, ${c.x}, ${c.y}, ${p?.population ?? 0}, ${p?.security ?? 50}, ${q(p?.economy.primaryProduction ?? "Ticaret")});`,
+    );
+  }
+  for (const z of NEUTRAL_ZONES) {
+    const p = profiles.get(z.id);
+    lines.push(
+      `INSERT OR IGNORE INTO settlements (id, name, kind, kingdom_id, x, y, population, security, primary_output) VALUES (${q(z.id)}, ${q(z.name)}, 'town', NULL, ${z.x}, ${z.y}, ${p?.population ?? 0}, ${p?.security ?? 50}, ${q(p?.economy.primaryProduction ?? "Gecis ticareti")});`,
     );
   }
   lines.push("");

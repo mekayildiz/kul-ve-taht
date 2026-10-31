@@ -3,6 +3,7 @@ import { createTestDb } from "../test-support/sqlite-harness";
 import { queryOne } from "../db/client";
 import { registerAccount } from "../auth/service";
 import { seedWorld } from "../world/seed";
+import { FREE_CITIES, NEUTRAL_ZONES } from "../world/kingdoms";
 import { createCharacter, MAX_STARTING_EXPERTISE } from "./service";
 import { validateAttributes, emptyAttributes, STARTING_POINT_POOL } from "./attributes";
 import { applyPersonalityShift, neutralPersonality } from "./personality";
@@ -161,10 +162,12 @@ describe("dunya tohumlama", () => {
     const db = createTestDb();
     const first = await seedWorld(db);
     const second = await seedWorld(db);
-    expect(first.settlements).toBe(130);
-    expect(second.settlements).toBe(130);
+    // 130 krallik yerlesimi + bagimsiz sehirler + tarafsiz bolgeler.
+    const expected = 130 + FREE_CITIES.length + NEUTRAL_ZONES.length;
+    expect(first.settlements).toBe(expected);
+    expect(second.settlements).toBe(expected);
     const count = await queryOne<{ c: number }>(db, "SELECT COUNT(*) AS c FROM settlements");
-    expect(count?.c).toBe(130);
+    expect(count?.c).toBe(expected);
     const kingdoms = await queryOne<{ c: number }>(db, "SELECT COUNT(*) AS c FROM kingdoms");
     expect(kingdoms?.c).toBe(5);
   });

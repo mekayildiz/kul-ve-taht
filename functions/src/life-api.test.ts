@@ -145,4 +145,55 @@ describe("E8: yasam, buyu, sehir ve yeralti uclari", () => {
     });
     expect(res.status).toBe(401);
   });
+
+  it("yerlesim profili ucu 130 yerlesimin tamamini ve tek profil doner (belge 20)", async () => {
+    const all = await call("/api/world/profile", env);
+    const list = (await all.json()) as { profiles: { settlementId: string; population: number }[] };
+    expect(list.profiles.length).toBeGreaterThanOrEqual(130);
+
+    const single = await call("/api/world/profile?id=varkhenn-drahkmar", env);
+    const one = (await single.json()) as { settlementId: string; population: number; governance: string };
+    expect(single.status).toBe(200);
+    expect(one.settlementId).toBe("varkhenn-drahkmar");
+    expect(one.population).toBeGreaterThan(0);
+    expect(one.governance).toBe("royal_governor");
+
+    const missing = await call("/api/world/profile?id=yok-boyle-yer", env);
+    expect(missing.status).toBe(404);
+  });
+
+  it("dunya ozeti toplam nufusu bildirir", async () => {
+    const res = await call("/api/world/summary", env);
+    const body = (await res.json()) as { settlements: number; totalPopulation: number };
+    expect(body.settlements).toBe(130);
+    expect(body.totalPopulation).toBeGreaterThan(0);
+  });
+
+  it("bildirim ucu oturumsuz 401, oturumlu ozet doner (belge 19)", async () => {
+    const anon = await call("/api/notifications", env);
+    expect(anon.status).toBe(401);
+
+    const { token } = await setupPlayer(env);
+    const res = await call("/api/notifications", env, auth(token));
+    const body = (await res.json()) as { visible: unknown[]; unreadCount: number };
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.visible)).toBe(true);
+    expect(body.unreadCount).toBe(0);
+  });
+
+  it("bildirim okundu isaretleme kimlik dogrulamasi ister", async () => {
+    const anon = await call("/api/notifications/read", env, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ids: ["x"] }),
+    });
+    expect(anon.status).toBe(401);
+
+    const { token } = await setupPlayer(env);
+    const empty = await call("/api/notifications/read", env, auth(token, { ids: [] }));
+    expect(empty.status).toBe(400);
+
+    const ok = await call("/api/notifications/read", env, auth(token, { ids: ["bildirim-1"] }));
+    expect(ok.status).toBe(200);
+  });
 });
