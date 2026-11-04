@@ -4,6 +4,7 @@ import worker, { type Env } from "./index";
 import { createTestDb } from "./test-support/sqlite-harness";
 import { createSessionToken } from "./auth/session";
 import { registerAccount } from "./auth/service";
+import { adminSetAccountRole } from "./admin/roles";
 import { seedWorld } from "./world/seed";
 import { emptyAttributes } from "./character/attributes";
 
@@ -42,6 +43,17 @@ async function setupPlayer(env: Env) {
   });
   const { characterId } = (await readBody(create)) as { characterId: string };
   return { token, characterId, accountId: reg.accountId };
+}
+
+/** Gercek bir admin hesabi olusturur; rol DB'den tazelendigi icin sart. */
+async function setupAdmin(env: Env): Promise<string> {
+  const reg = await registerAccount(env.DB, { email: `adm${Date.now()}${Math.random()}@valedorn.tr`, password: "cok-guclu-parola-1" });
+  if (!reg.ok) throw new Error("kayit basarisiz");
+  await adminSetAccountRole(env.DB, reg.accountId, "admin");
+  return createSessionToken(
+    { accountId: reg.accountId, role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
+    env.SESSION_SECRET,
+  );
 }
 
 /** Yanit govdesini tipli okur (test kolayligi). */
@@ -555,10 +567,7 @@ describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
     const denied = await call("/api/admin/budget/run", env, auth(token, { kingdomId: "varkhenn" }));
     expect(denied.status).toBe(403);
 
-    const adminToken = await createSessionToken(
-      { accountId: "admin-1", role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
-      env.SESSION_SECRET,
-    );
+    const adminToken = await setupAdmin(env);
     const run = await call("/api/admin/budget/run", env, auth(adminToken, { kingdomId: "varkhenn" }));
     expect(run.status).toBe(200);
     expect((await readBody(run)).treasury).toBeGreaterThanOrEqual(0);
@@ -566,10 +575,7 @@ describe("Gorev ve acik artirma sistemleri (belge 12.4, 9.3)", () => {
 
   it("yolsuzluk denetimi ucu kayip geliri hazineye kazandirir ve audit_log yazar (belge 9.8, 21.1)", async () => {
     await setupPlayer(env);
-    const adminToken = await createSessionToken(
-      { accountId: "admin-1", role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
-      env.SESSION_SECRET,
-    );
+    const adminToken = await setupAdmin(env);
     const res = await call("/api/admin/corruption/audit", env, auth(adminToken, { kingdomId: "varkhenn", auditStrength: 1 }));
     expect(res.status).toBe(200);
     const body = await readBody(res);
@@ -696,7 +702,7 @@ describe("Karakter gorunumu kisilestirme (belge 20, 17.2)", () => {
 
   it("gorunum degisikligini sunucuda dogrular ve kalici kaydeder", async () => {
     const { token, characterId } = await setupPlayer(env);
-    const ok = await act(env, token, characterId, { action: "setAppearance", appearance: { faceShape: "oval", hairStyle: "orgu", outfit: "tacir", heightCm: 175 } });
+    const ok = await act(env, token, characterId, { action: "setAppearance", appearance: { faceShape: "oval", hairStyle: "orgu", heightCm: 175 } });
     expect(ok.status).toBe(200);
     const state = await readBody(await call(`/api/play/${characterId}/state`, env, auth(token)));
     expect(state.appearance.faceShape).toBe("oval");
@@ -713,7 +719,8 @@ describe("Karakter gorunumu kisilestirme (belge 20, 17.2)", () => {
   it("katalog gorunum seceneklerini doner (belge 20)", async () => {
     const catalog = await readBody(await call("/api/catalog", env));
     expect(catalog.appearance.faceShapes.length).toBeGreaterThan(0);
-    expect(catalog.appearance.outfits).toContain("yolcu");
+    expect(catalog.appearance.outfits).toContain("pacavra");
+    expect(catalog.appearance.outfits).toHaveLength(1);
   });
 });
 

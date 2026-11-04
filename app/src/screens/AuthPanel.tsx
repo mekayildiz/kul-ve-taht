@@ -5,7 +5,7 @@ import { ApiClient, ApiRequestError } from "../api/client";
 export interface AuthPanelProps {
   t: Dictionary;
   client: ApiClient;
-  onAuthenticated: (token: string, accountId: string) => void;
+  onAuthenticated: (token: string, accountId: string, role: "player" | "moderator" | "admin") => void;
 }
 
 export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.Element {
@@ -45,7 +45,7 @@ export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.E
       }
       const session = await client.login(email, password);
       const me = await client.me(session.token);
-      onAuthenticated(session.token, me.accountId);
+      onAuthenticated(session.token, me.accountId, me.role);
     } catch (error) {
       setMessage(describe(error));
     } finally {

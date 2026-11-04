@@ -10,7 +10,8 @@ import { Router, type RouteContext } from "./http/router";
 import { json, error } from "./http/response";
 import { allowedOrigin, withCors, preflightResponse } from "./http/cors";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
-import { verifySessionToken } from "./auth/session";
+import { verifySessionToken, type SessionPayload } from "./auth/session";
+import { constantTimeEqual } from "./auth/constant-time";
 import { authorize } from "./auth/authorize";
 import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES, allSettlementProfiles, settlementProfile } from "./world";
 import { advanceWorldTime, seasonFor } from "./time/world-clock";
@@ -140,6 +141,7 @@ import {
   allianceStatus,
 } from "./play/multiplayer-extras";
 import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
+import { adminAccounts, adminSetAccountRole, isAccountRole } from "./admin/roles";
 import { playerDirectory } from "./play/directory";
 import { loadPersonality } from "./play/personality";
 import { heirOf } from "./play/succession";
@@ -177,6 +179,12 @@ export interface Env {
   REQUESTS_REMAINING?: string;
   /** CORS icin izinli kaynak; bos ise tum kaynaklar (bkz. http/cors.ts). */
   ALLOWED_ORIGIN?: string;
+  /**
+   * Ilk yoneticiyi atamak icin tek seferlik jeton. Tanimli DEGILSE
+   * `/api/auth/bootstrap-admin` kapalidir (404). Kullandiktan sonra
+   * `wrangler secret delete BOOTSTRAP_ADMIN_TOKEN` ile kaldirin.
+   */
+  BOOTSTRAP_ADMIN_TOKEN?: string;
   /** Parola hash'ini 10 ms CPU sinirindan kurtaran Durable Object shard'lari. */
   PASSWORD_HASH_GATE?: HashGateNamespace;
 }
@@ -189,7 +197,21 @@ router.get("/api/health", () =>
   json({ status: "ok", service: "kul-ve-taht-functions", paidFeatures: false }),
 );
 
-router.get("/api/world/summary", () => json(worldSummary()));
+router.get("/api/world/summary", async ({ env }: Ctx) => {
+  if (!env?.DB) return json(worldSummary());
+  // Gercek sayilar D1'den okunur: krallik yerlesimleri (kingdom_id dolu)
+  // hedef 130'a karsilik gelir; bagimsiz sehirler/tarafsiz bolgeler ayridir.
+  const row = await queryOne<{ kingdom_settlements: number; free_cities: number; neutral_zones: number }>(
+    env.DB,
+    `SELECT
+       SUM(CASE WHEN kingdom_id IS NOT NULL THEN 1 ELSE 0 END) AS kingdom_settlements,
+       SUM(CASE WHEN kind = 'city' AND kingdom_id IS NULL THEN 1 ELSE 0 END) AS free_cities,
+       SUM(CASE WHEN kind <> 'city' AND kingdom_id IS NULL THEN 1 ELSE 0 END) AS neutral_zones
+     FROM settlements`,
+  );
+  const total = row?.kingdom_settlements;
+  return json(worldSummary(typeof total === "number" ? { settlements: total } : undefined));
+});
 
 router.get("/api/world/kingdoms", () => json({ kingdoms: KINGDOMS }));
 
@@ -339,6 +361,51 @@ router.post("/api/auth/register", async ({ request, env }: Ctx) => {
   return json({ accountId: result.accountId }, 201);
 });
 
+/**
+ * ILK yoneticiyi atar (tek seferlik bootstrap).
+ *
+ * Sorun: rol dagitimi yalnizca yonetici panelinden yapilir, ama hic yonetici
+ * yokken panel acilamaz. Cozum: `BOOTSTRAP_ADMIN_TOKEN` sirri tanimliysa ve
+ * istek `x-bootstrap-token` basligiyla AYNI degeri tasiyorsa, hedef hesap
+ * admin yapilir. Jeton yoksa uc 404 doner. Zaten bir admin varsa 409 doner;
+ * boylece jeton sizsa bile mevcut yonetimi ele gecirmek icin kullanilamaz.
+ */
+router.post("/api/auth/bootstrap-admin", async ({ request, env }: Ctx) => {
+  const configured = env?.BOOTSTRAP_ADMIN_TOKEN?.trim();
+  if (!configured) return error("not_found", "Bootstrap kapali.", 404);
+  const provided = request.headers.get("x-bootstrap-token")?.trim() ?? "";
+  const enc = new TextEncoder();
+  if (!provided || !constantTimeEqual(enc.encode(provided), enc.encode(configured))) {
+    return error("forbidden", "Gecersiz bootstrap jetonu.", 403);
+  }
+  const body = (await request.json().catch(() => null)) as { email?: string } | null;
+  if (!body?.email) return error("invalid_body", "email zorunludur.", 400);
+
+  const admins = await queryOne<{ n: number }>(env.DB, "SELECT COUNT(*) AS n FROM accounts WHERE role = 'admin'");
+  if ((admins?.n ?? 0) > 0) return error("already_initialized", "Zaten bir yonetici var.", 409);
+
+  const account = await queryOne<{ id: string }>(
+    env.DB,
+    "SELECT id FROM accounts WHERE email = ?",
+    body.email.trim().toLowerCase(),
+  );
+  if (!account) return error("not_found", "Hesap bulunamadi. Once kayit olun.", 404);
+
+  await execute(env.DB, "UPDATE accounts SET role = 'admin', updated_at = ? WHERE id = ?", Date.now(), account.id);
+  await execute(
+    env.DB,
+    "INSERT INTO audit_log (id, actor_id, action, target_type, target_id, detail, created_at) VALUES (?,?,?,?,?,?,?)",
+    crypto.randomUUID(),
+    account.id,
+    "bootstrap_admin",
+    "account",
+    account.id,
+    JSON.stringify({ via: "bootstrap_token" }),
+    Date.now(),
+  );
+  return json({ ok: true, accountId: account.id, role: "admin" });
+});
+
 router.post("/api/auth/login", async ({ request, env }: Ctx) => {
   const body = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
   if (!body?.email || !body.password) {
@@ -358,7 +425,7 @@ router.post("/api/auth/login", async ({ request, env }: Ctx) => {
     const status = result.error === "suspended" ? 403 : 401;
     return error(result.error, "Giris basarisiz.", status);
   }
-  return json({ token: result.token, expiresAt: result.payload.expiresAt });
+  return json({ token: result.token, expiresAt: result.payload.expiresAt, role: result.payload.role });
 });
 
 router.get("/api/me", async ({ request, env }: Ctx) => {
@@ -371,10 +438,30 @@ router.get("/api/me", async ({ request, env }: Ctx) => {
   return json({ accountId: session?.accountId, role: session?.role });
 });
 
+/**
+ * Uretim dunyasini bir kez tohumlar ve dunya saatini baslatir (idempotent).
+ *
+ * Migration'lar krallik/yerlesim referans verisini yukler ama NPC'ler, saray
+ * makamlari ve oyun saati yalnizca `seedWorld` ile gelir. Uretimde bu adim
+ * atlanirsa dunya "donuk" kalir (Gun 1, NPC yok). Istek yolunda bir kez
+ * calistirilir; sonraki cagrilar hizli bir COUNT kontrolu ile atlanir.
+ */
+async function ensureWorldInitialized(db: SqlDatabase): Promise<void> {
+  const npcCount = await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM npcs");
+  const clock = await queryOne<{ last_tick_real_ms: number }>(
+    db,
+    "SELECT last_tick_real_ms FROM world_clock WHERE id = 1",
+  );
+  const npcsReady = (npcCount?.n ?? 0) > 0;
+  const clockReady = (clock?.last_tick_real_ms ?? 0) > 0;
+  if (npcsReady && clockReady) return;
+  // seedWorld idempotenttir (INSERT OR IGNORE) ve oyun saatini bir kez baslatir.
+  await seedWorld(db).catch(() => undefined);
+}
+
 /** Krallik butcesini elle isletir (belge 9.7-9.9). Yalnizca yonetici. */
 router.post("/api/admin/budget/run", async ({ request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = await adminSession(request, env);
   if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const body = (await request.json().catch(() => null)) as { kingdomId?: string } | null;
   if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
@@ -389,8 +476,7 @@ router.post("/api/admin/budget/run", async ({ request, env }: Ctx) => {
  * sonucu audit_log'a yazilir (belge 21.1). Yalnizca yonetici.
  */
 router.post("/api/admin/corruption/audit", async ({ request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = await adminSession(request, env);
   if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const body = (await request.json().catch(() => null)) as { kingdomId?: string; auditStrength?: number; actualRevenue?: number } | null;
   if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
@@ -423,8 +509,7 @@ router.post("/api/admin/corruption/audit", async ({ request, env }: Ctx) => {
 
 /** Devlet piyasa mudahalesi: hazineden tahil surerek fiyati baskir (belge 9.4, 9.9). */
 router.post("/api/admin/market/intervene", async ({ request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = await adminSession(request, env);
   if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const body = (await request.json().catch(() => null)) as { kingdomId?: string; grainAmount?: number; unitCost?: number } | null;
   if (!body?.kingdomId) return error("invalid_body", "kingdomId zorunludur.", 400);
@@ -434,25 +519,24 @@ router.post("/api/admin/market/intervene", async ({ request, env }: Ctx) => {
 
 /** Yonetim panosu ozeti (belge 20). Yalnizca yonetici. */
 router.get("/api/admin/overview", async ({ request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
-  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  // Salt okunur: moderator ve admin gorebilir (admin:read). Rol DB'den tazelenir.
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   return json(await adminOverview(env.DB));
 });
 
 /** Kullanici/karakter yonetimi listesi (belge 20). Yalnizca yonetici. */
 router.get("/api/admin/characters", async ({ request, url, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
-  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  // Salt okunur: moderator ve admin gorebilir (admin:read). Rol DB'den tazelenir.
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
   return json({ characters: await adminCharacters(env.DB, Number.isFinite(limit) ? limit : 50) });
 });
 
 /** Karakter durumu degistirir (canli/olu) (belge 20). Yalnizca yonetici. */
 router.post("/api/admin/characters/:id/status", async ({ params, request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = await adminSession(request, env);
   if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const body = (await request.json().catch(() => null)) as { status?: string } | null;
   const status = body?.status === "dead" ? "dead" : body?.status === "alive" ? "alive" : null;
@@ -463,21 +547,42 @@ router.post("/api/admin/characters/:id/status", async ({ params, request, env }:
 
 /** Pazar/ekonomi izleme (belge 20). Yalnizca yonetici. */
 router.get("/api/admin/economy", async ({ request, url, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
-  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  // Salt okunur: moderator ve admin gorebilir (admin:read). Rol DB'den tazelenir.
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
   return json({ economy: await adminEconomy(env.DB, Number.isFinite(limit) ? limit : 50) });
 });
 
 router.post("/api/admin/seed-world", async ({ request, env }: Ctx) => {
   // Tohumlama idempotenttir; yalnizca yonetici oturumu ile calistirilir.
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = await adminSession(request, env);
   const decision = authorize({ session, action: "admin:any" });
   if (!decision.allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   const result = await seedWorld(env.DB);
   return json(result);
+});
+
+/** Hesap listesi ve rol dagilimi (belge 20). Yalnizca yonetici. */
+router.get("/api/admin/accounts", async ({ request, url, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const limit = Number.parseInt(url.searchParams.get("limit") ?? "100", 10);
+  return json({ accounts: await adminAccounts(env.DB, Number.isFinite(limit) ? limit : 100) });
+});
+
+/** Hesap rolu atar (oyuncu/moderator/admin) (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/accounts/:id/role", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { role?: string } | null;
+  if (!isAccountRole(body?.role)) return error("invalid_body", "role 'player', 'moderator' veya 'admin' olmalidir.", 400);
+  const result = await adminSetAccountRole(env.DB, params.id!, body.role, session?.accountId ?? null);
+  if (result.ok) return json({ ok: true, role: result.role });
+  if (result.reason === "not_found") return error("not_found", "Hesap bulunamadi.", 404);
+  if (result.reason === "last_admin")
+    return error("last_admin", "Son yoneticinin rolu dusurulemez; once baska bir yonetici atayin.", 409);
+  return error("invalid_body", "Gecersiz rol.", 400);
 });
 
 router.get("/api/characters", async ({ request, env }: Ctx) => {
@@ -515,6 +620,23 @@ router.post("/api/characters", async ({ request, env }: Ctx) => {
 async function readSession(request: Request, env: Env) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   return env?.SESSION_SECRET ? verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+}
+
+/**
+ * Yonetim uclari icin oturum cozer ve ROLU DB'den tazeler. Rol degisikligi
+ * veya hesabin askiya alinmasi bir sonraki istekte ANINDA etkili olur; aksi
+ * halde 12 saatlik belirtec eski rolu tasimaya devam ederdi (yetki sizmasi).
+ */
+async function adminSession(request: Request, env: Env) {
+  const session = await readSession(request, env);
+  if (!session) return null;
+  const row = await queryOne<{ role: SessionPayload["role"]; status: string }>(
+    env.DB,
+    "SELECT role, status FROM accounts WHERE id = ?",
+    session.accountId,
+  );
+  if (!row || row.status !== "active") return null;
+  return { ...session, role: row.role };
 }
 
 /**
@@ -1104,9 +1226,9 @@ router.get("/api/catalog", () =>
 );
 
 router.get("/api/admin/quota", async ({ request, env }: Ctx) => {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
-  const decision = authorize({ session, action: "admin:any" });
+  // Salt okunur: moderator ve admin gorebilir (admin:read). Rol DB'den tazelenir.
+  const session = await adminSession(request, env);
+  const decision = authorize({ session, action: "admin:read" });
   if (!decision.allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
   return json(await quotaReport(env.DB));
 });
@@ -1176,6 +1298,9 @@ export default {
     const outcome = decideQuota(readQuotaState(env), { critical: isCritical });
     const guarded = quotaResponse(outcome);
     if (guarded) return withCors(guarded, origin);
+
+    // Dunya bir kez tohumlanir ve saat baslatilir (idempotent; NPC/saray/saat).
+    if (env?.DB) await ensureWorldInitialized(env.DB).catch(() => undefined);
 
     const handled = await router.handle(request, env, ctx);
     if (handled) {

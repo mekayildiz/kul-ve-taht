@@ -18,12 +18,18 @@ export interface WorldSummary {
   totalPopulation: number;
 }
 
-export function worldSummary(): WorldSummary {
+/**
+ * Dunya ozeti. `counts.settlements` verilirse (D1'den okunan gercek sayi)
+ * o kullanilir; aksi halde sabit referans veriye dusulur (birim testleri).
+ * Krallik yerlesimleri sayilir; bagimsiz sehirler/tarafsiz bolgeler ayri
+ * alanlarda raporlanir.
+ */
+export function worldSummary(counts?: { settlements?: number }): WorldSummary {
   return {
     kingdoms: KINGDOMS.length,
     freeCities: FREE_CITIES.length,
     neutralZones: NEUTRAL_ZONES.length,
-    settlements: SETTLEMENTS.length,
+    settlements: counts?.settlements ?? SETTLEMENTS.length,
     settlementsTarget: TOTAL_SETTLEMENTS_TARGET,
     totalPopulation: totalWorldPopulation(),
   };

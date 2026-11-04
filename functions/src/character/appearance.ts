@@ -16,7 +16,12 @@ export const HAIR_COLORS = ["siyah", "kahve", "kumral", "sari", "kizil", "gri", 
 export const HAIR_STYLES = ["kisa", "orta", "uzun", "topuz", "orgu", "kel", "at_kuyrugu"] as const;
 export const BEARD_STYLES = ["yok", "sakal", "biyik", "keci", "tam"] as const;
 export const BUILDS = ["ince", "atletik", "kasli", "tombul", "kisa_boylu"] as const;
-export const OUTFITS = ["yolcu", "ciftci", "zanaatkar", "tacir", "asker", "soylu", "rahip", "sucu"] as const;
+/**
+ * Herkes ayni "pacavra" (yirtik bez) giysiyle baslar. Oyuncu bir meslege,
+ * soylu ya da asker sinifina ait baslamaz; giysi kazanimla/magazayla edinilir.
+ */
+export const DEFAULT_OUTFIT = "pacavra";
+export const OUTFITS = [DEFAULT_OUTFIT] as const;
 
 export interface AppearanceChoices {
   faceShape: string | null;

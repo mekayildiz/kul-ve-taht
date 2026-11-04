@@ -13,6 +13,7 @@ import { execute, queryOne } from "../db/client";
 import { type Attributes, validateAttributes, ATTRIBUTE_KEYS } from "./attributes";
 import { type Personality, neutralPersonality } from "./personality";
 import { type ExpertisePath, type Profession, EXPERTISE_PATHS, PROFESSIONS } from "./expertise";
+import { DEFAULT_OUTFIT } from "./appearance";
 
 export interface Appearance {
   faceShape?: string;
@@ -95,6 +96,9 @@ export async function createCharacter(
   );
   if (!settlement) return { ok: false, error: "invalid_birth_settlement" };
 
+  if (input.attributes === null || typeof input.attributes !== "object") {
+    return { ok: false, error: "invalid_attributes", problems: ["Nitelikler zorunludur"] };
+  }
   const attributeCheck = validateAttributes(input.attributes);
   if (!attributeCheck.valid) {
     return { ok: false, error: "invalid_attributes", problems: attributeCheck.problems };
@@ -192,7 +196,8 @@ export async function createCharacter(
     appearance.build ?? null,
     appearance.scars ?? null,
     appearance.tattoos ?? null,
-    appearance.outfit ?? null,
+    // Herkes standart "pacavra" giysiyle baslar (meslek/soylu/asker giysisi yok).
+    DEFAULT_OUTFIT,
   );
 
   const background = input.background ?? {};

@@ -41,7 +41,7 @@ describe("AuthPanel", () => {
     await userEvent.type(screen.getByLabelText(/Parola/), "cok-guclu-parola-1");
     await userEvent.click(within(form()).getByRole("button", { name: t.auth.submitLogin }));
 
-    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledWith("tok-1", "acc-9"));
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledWith("tok-1", "acc-9", "player"));
   });
 
   it("hatali giriste Turkce hata mesaji gosterir", async () => {
@@ -81,7 +81,7 @@ describe("AuthPanel", () => {
     await userEvent.type(screen.getByLabelText(/Parola/), "cok-guclu-parola-1");
     await userEvent.click(within(form()).getByRole("button", { name: t.auth.submitRegister }));
 
-    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledWith("tok-7", "acc-7"));
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledWith("tok-7", "acc-7", "player"));
     expect(calls).toEqual(["/api/auth/register", "/api/auth/login", "/api/me"]);
   });
 });

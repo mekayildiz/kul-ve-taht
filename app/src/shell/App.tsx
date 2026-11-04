@@ -19,19 +19,44 @@ const API_BASE_URL =
 export function App(): JSX.Element {
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [screen, setScreen] = useState<Screen>("title");
-  const [account, setAccount] = useState<{ token: string; accountId: string } | null>(null);
+  const [account, setAccount] = useState<{
+    token: string;
+    accountId: string;
+    role: "player" | "moderator" | "admin";
+  } | null>(null);
   const [character, setCharacter] = useState<CharacterDto | null>(null);
   const t = useMemo(() => getDictionary(locale), [locale]);
   const client = useMemo(() => new ApiClient({ baseUrl: API_BASE_URL }), []);
-
+  // Yonetim paneli moderator ve admin'e gorunur; yazma yalnizca admin'de.
+  const canManage = account?.role === "admin" || account?.role === "moderator";
 
   return (
     <div className="kvt-root">
       <header className="kvt-topbar">
-        <span className="kvt-brand">{t.appTitle}</span>
+        <button type="button" className="kvt-brand" onClick={() => setScreen("title")}>
+          {t.appTitle}
+        </button>
         <div className="kvt-topright">
           {account && <span className="kvt-account">{t.auth.loggedInAs}</span>}
           {account && (
+            <button
+              type="button"
+              className="kvt-navbtn"
+              onClick={() => setScreen("world")}
+            >
+              {t.nav.map}
+            </button>
+          )}
+          {account && (
+            <button
+              type="button"
+              className="kvt-navbtn"
+              onClick={() => setScreen(character ? "play" : "setup")}
+            >
+              {t.nav.character}
+            </button>
+          )}
+          {canManage && (
             <button type="button" className="kvt-adminbtn" onClick={() => setScreen("admin")}>
               {t.nav.admin}
             </button>
@@ -82,8 +107,8 @@ export function App(): JSX.Element {
           <AuthPanel
             t={t}
             client={client}
-            onAuthenticated={(token, accountId) => {
-              setAccount({ token, accountId });
+            onAuthenticated={(token, accountId, role) => {
+              setAccount({ token, accountId, role });
               setScreen("setup");
             }}
           />
@@ -107,17 +132,37 @@ export function App(): JSX.Element {
 
         {screen === "world" && <WorldOverview t={t} client={client} />}
 
-        {screen === "admin" && account && <AdminPanel t={t} client={client} token={account.token} />}
+        {screen === "admin" && account && canManage && (
+          <AdminPanel t={t} client={client} token={account.token} role={account.role} />
+        )}
+
+        {screen === "admin" && account && !canManage && (
+          <p className="kvt-error" role="alert">
+            {t.admin.moderatorOnly}
+          </p>
+        )}
       </main>
 
       <nav className="kvt-bottomnav" aria-label="Ana gezinme">
-        {([["map", "world"], ["character", "setup"], ["inventory", "play"], ["quests", "play"], ["chat", "world"]] as const).map(
-          ([key, target]) => (
-            <button key={key} type="button" className="kvt-navbtn" onClick={() => setScreen(target)}>
-              {t.nav[key]}
-            </button>
-          ),
-        )}
+        {(
+          [
+            ["map", "world"],
+            ["character", character ? "play" : "setup"],
+            ["inventory", "play"],
+            ["quests", "play"],
+            ["chat", "world"],
+          ] as const
+        ).map(([key, target]) => (
+          <button
+            key={key}
+            type="button"
+            className="kvt-navbtn"
+            disabled={!account}
+            onClick={() => setScreen(target)}
+          >
+            {t.nav[key]}
+          </button>
+        ))}
       </nav>
     </div>
   );

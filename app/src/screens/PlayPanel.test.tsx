@@ -21,6 +21,12 @@ function clientWith(handler: (path: string, init?: RequestInit) => Response): Ap
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
+/** Sekmeye gecer ve aktif oldugunu dogrular (kaydirma yerine bolumlu gezinme). */
+async function goto(label: string): Promise<void> {
+  await userEvent.click(screen.getByRole("button", { name: label }));
+  await waitFor(() => expect(screen.getByRole("button", { name: label }).getAttribute("aria-pressed")).toBe("true"));
+}
+
 const character: CharacterDto = {
   id: "ch-1",
   given_name: "Kael",
@@ -89,6 +95,7 @@ describe("PlayPanel", () => {
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
     expect(screen.getByText("100")).toBeTruthy();
     expect(screen.getByText("20")).toBeTruthy();
+    await goto(t.play.tabs.hayat);
     expect(screen.getAllByText(/Ekmek/).length).toBeGreaterThan(0);
   });
 
@@ -108,8 +115,10 @@ describe("PlayPanel", () => {
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     await userEvent.click(screen.getByRole("button", { name: /forest/ }));
     await waitFor(() => expect(called).toBe(true));
+    await goto(t.play.tabs.durum);
     await waitFor(() => expect(screen.getByText("35")).toBeTruthy());
   });
 
@@ -121,6 +130,7 @@ describe("PlayPanel", () => {
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     await userEvent.click(screen.getByRole("button", { name: t.play.rest }));
     await waitFor(() => expect(screen.getByText(t.play.errorNoGold)).toBeTruthy());
   });
@@ -133,6 +143,7 @@ describe("PlayPanel", () => {
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
     await waitFor(() => expect(screen.getByText(t.play.deadBanner)).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     expect(screen.getByRole("button", { name: t.play.rest }).hasAttribute("disabled")).toBe(true);
   });
 
@@ -155,6 +166,8 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     await waitFor(() => expect(screen.getByText("Buğday")).toBeTruthy());
     expect(screen.getByText("Geyik")).toBeTruthy();
     expect(screen.getByText("Element Büyücülüğü")).toBeTruthy();
@@ -186,6 +199,8 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     await waitFor(() => expect(screen.getByText("Buğday")).toBeTruthy());
     await userEvent.click(screen.getByRole("button", { name: t.play.plant }));
     await waitFor(() => expect(sent).not.toBeNull());
@@ -207,17 +222,21 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.guc);
     await waitFor(() => expect(screen.getByText(t.play.military)).toBeTruthy());
     expect(screen.getByText(/infantry/)).toBeTruthy();
-    expect(screen.getByText(t.play.economy, { exact: false })).toBeTruthy();
-    expect(screen.getByText(/business/)).toBeTruthy();
     expect(screen.getByText(t.play.justice)).toBeTruthy();
     expect(screen.getAllByText(t.play.combat).length).toBeGreaterThan(0);
     expect(screen.getByText(/Vergi Memuru/)).toBeTruthy();
     expect(screen.getByRole("button", { name: t.play.recruit })).toBeTruthy();
-    expect(screen.getByRole("button", { name: t.play.takeLoan })).toBeTruthy();
     expect(screen.getByRole("button", { name: t.play.fight })).toBeTruthy();
     expect(screen.getByRole("button", { name: t.play.seekOffice })).toBeTruthy();
+
+    await goto(t.play.tabs.ekonomi);
+    await waitFor(() => expect(screen.getAllByText(t.play.economy, { exact: false }).length).toBeGreaterThan(0));
+    expect(screen.getByText(/business/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.play.takeLoan })).toBeTruthy();
   });
 
   it("savaş aksiyonu sunucuya doğru gövdeyle gider (belge 20)", async () => {
@@ -235,6 +254,8 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.guc);
     await waitFor(() => expect(screen.getByText(t.play.battle)).toBeTruthy());
     await userEvent.click(screen.getByRole("button", { name: t.play.battle }));
     await waitFor(() => expect(sent).not.toBeNull());
@@ -253,6 +274,8 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
     await waitFor(() => expect(screen.getByText(/Elara Veyr/)).toBeTruthy());
     // evli karakter yeniden evlenemez
     expect(screen.getByRole("button", { name: t.play.marry }).hasAttribute("disabled")).toBe(true);
@@ -279,6 +302,8 @@ describe("PlayPanel", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
     await waitFor(() => expect(screen.getByText(/Selam/)).toBeTruthy());
     await userEvent.type(screen.getByLabelText(t.play.chat), "Merhaba");
     await userEvent.click(screen.getByRole("button", { name: t.play.sendMessage }));
@@ -317,6 +342,8 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
     await waitFor(() => expect(screen.getByText("Kayip Yerler")).toBeInTheDocument());
     expect(screen.getByText(/Ödülü Al/)).toBeInTheDocument();
     expect(screen.getByText(/En Yüksek Teklif: 12/)).toBeInTheDocument();
@@ -339,6 +366,8 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
       return json({}, 404);
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
     await waitFor(() => expect(screen.getByText("Takas teklifi geldi")).toBeTruthy());
     expect(screen.getByText("property_growth×2")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: `${t.play.markRead}: Takas teklifi geldi` }));
@@ -360,25 +389,41 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.siyaset);
     const select = screen.getByLabelText(t.play.target) as HTMLSelectElement;
     await userEvent.selectOptions(select, "ch-2");
     await userEvent.click(screen.getByRole("button", { name: t.play.offerTrade }));
     await waitFor(() => expect(sent).toContain("offerTrade"));
   });
 
-  it("portre ve esya ikonlarini gosterir (belge 17)", async () => {
+  it("dinamik avatar ve esya ikonlarini gosterir (belge 17)", async () => {
     const client = clientWith((path) => {
       if (path.endsWith("/state")) return json(stateResponse);
       return json({}, 404);
     });
     const { container } = render(<PlayPanel t={t} client={client} token="tok" character={character} />);
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
-    const portrait = container.querySelector("img.kvt-portrait") as HTMLImageElement;
-    expect(portrait).toBeTruthy();
-    expect(portrait.getAttribute("src")).toMatch(/^\/assets\/portraits\/pool-\d\d\.webp$/);
+    // Sabit portre yerine secimlere gore cizilen canli avatar (SVG).
+    const avatar = container.querySelector("svg.kvt-avatar-lg");
+    expect(avatar).toBeTruthy();
+    await goto(t.play.tabs.hayat);
     const icon = container.querySelector("img.kvt-itemicon") as HTMLImageElement;
     expect(icon).toBeTruthy();
     expect(icon.getAttribute("src")).toBe("/assets/icons/heart.webp");
+  });
+
+  it("kiyafet secimi yerine standart pacavra giysi gosterir (belge 20)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path === "/api/catalog") return json({ crops: [], livestock: [], animals: [], magicPaths: [], spells: [], guilds: [], activities: [], templeServices: [], underworldActions: [], appearance: { faceShapes: ["oval"], skinTones: [], eyeColors: [], hairColors: [], hairStyles: [], beardStyles: [], builds: [], outfits: ["pacavra"], heightMinCm: 120, heightMaxCm: 230 } });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
+    expect(screen.getByText(t.play.outfitRags)).toBeTruthy();
+    // Kiyafet secenekleri (soylu/asker vb.) artik sunulmaz.
+    expect(screen.queryByRole("button", { name: new RegExp(t.play.outfit) })).toBeNull();
   });
 
   it("görevi başlatma aksiyonu gönderir", async () => {
@@ -392,6 +437,8 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
       return json({ ok: true, state: playState() });
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
     await waitFor(() => expect(screen.getByText(/Görevi Başlat/)).toBeInTheDocument());
     await userEvent.click(screen.getByText(/Görevi Başlat/));
     await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "startQuest")).toBe(true));
@@ -408,6 +455,8 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
       return json({ ok: true, state: playState() });
     });
     render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.dunya);
     await waitFor(() => expect(screen.getByText("Teklif Ver")).toBeInTheDocument());
     await userEvent.click(screen.getByText("Teklif Ver"));
     await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "bidAuction")).toBe(true));

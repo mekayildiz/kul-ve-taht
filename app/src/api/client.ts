@@ -50,6 +50,7 @@ export interface WorldTimeDto {
 export interface SessionDto {
   token: string;
   expiresAt: number;
+  role: "player" | "moderator" | "admin";
 }
 export interface MeDto {
   accountId: string;
@@ -353,6 +354,17 @@ export interface AdminEconomyDto {
   supply: number;
   demand: number;
   price: number;
+}
+
+export type AccountRoleDto = "player" | "moderator" | "admin";
+
+export interface AdminAccountDto {
+  id: string;
+  email: string;
+  role: AccountRoleDto;
+  status: string;
+  createdAt: number;
+  characterCount: number;
 }
 
 export interface NotificationDto {
@@ -818,5 +830,32 @@ export class ApiClient {
   /** Pazar/ekonomi izleme (belge 20). */
   adminEconomy(token: string, limit = 50): Promise<{ economy: AdminEconomyDto[] }> {
     return this.request(`/api/admin/economy?limit=${limit}`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Dunyayi tohumlar (NPC, saray, saat). Idempotent; yalnizca yonetici. */
+  adminSeedWorld(token: string): Promise<{ kingdoms: number; settlements: number; npcs: number }> {
+    return this.request("/api/admin/seed-world", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** Kota raporu (0 TL denetimi, belge 20). */
+  adminQuota(token: string): Promise<Record<string, unknown>> {
+    return this.request("/api/admin/quota", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Hesap listesi ve rol dagilimi (belge 20). Yalnizca yonetici. */
+  adminAccounts(token: string, limit = 100): Promise<{ accounts: AdminAccountDto[] }> {
+    return this.request(`/api/admin/accounts?limit=${limit}`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Hesap rolu atar (oyuncu/moderator/admin) (belge 20). Yalnizca yonetici. */
+  adminSetAccountRole(token: string, accountId: string, role: AccountRoleDto): Promise<{ ok: boolean; role: AccountRoleDto }> {
+    return this.request(`/api/admin/accounts/${encodeURIComponent(accountId)}/role`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ role }),
+    });
   }
 }

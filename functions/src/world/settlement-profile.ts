@@ -20,7 +20,8 @@ export interface SettlementProfile {
   settlementId: string;
   name: string;
   kind: SettlementKind;
-  kingdomId: string;
+  /** Krallik kimligi; bagimsiz sehir/tarafsiz bolgede null (krallik yok). */
+  kingdomId: string | null;
   /** Siyasi baglilik: krallik, bagimsiz sehir veya tarafsiz bolge. */
   politicalAllegiance: "kingdom" | "free_city" | "neutral";
   population: number;
@@ -148,7 +149,7 @@ function profileForPlace(
     settlementId: place.id,
     name: place.name,
     kind: "city",
-    kingdomId: "",
+    kingdomId: null,
     politicalAllegiance: allegiance,
     population,
     economy: {

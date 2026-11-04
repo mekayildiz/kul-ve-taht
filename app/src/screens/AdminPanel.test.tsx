@@ -43,6 +43,13 @@ const characters = {
 
 const economy = { economy: [{ settlementId: "varkhenn-drahkmar", itemId: "wheat", supply: 120, demand: 90, price: 2 }] };
 
+const accounts = {
+  accounts: [
+    { id: "a1", email: "oyuncu@valedorn.tr", role: "player", status: "active", createdAt: 1, characterCount: 1 },
+    { id: "a2", email: "mod@valedorn.tr", role: "moderator", status: "active", createdAt: 2, characterCount: 0 },
+  ],
+};
+
 describe("AdminPanel (belge 20)", () => {
   it("ozet ve karakter listesini gosterir", async () => {
     const client = clientWith((path) => {
@@ -51,7 +58,7 @@ describe("AdminPanel (belge 20)", () => {
       if (path.startsWith("/api/admin/economy")) return json(economy);
       return json({}, 404);
     });
-    render(<AdminPanel t={t} client={client} token="tok" />);
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
     await waitFor(() => expect(screen.getByText(t.admin.adminTitle)).toBeTruthy());
     expect(screen.getByText("130")).toBeTruthy();
     expect(screen.getByText("Kael Veyr")).toBeTruthy();
@@ -70,7 +77,7 @@ describe("AdminPanel (belge 20)", () => {
       if (path.startsWith("/api/admin/economy")) return json(economy);
       return json({}, 404);
     });
-    render(<AdminPanel t={t} client={client} token="tok" />);
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
     await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
     await userEvent.click(screen.getByRole("button", { name: `${t.admin.markDead}: Kael Veyr` }));
     await waitFor(() => expect(sent).toHaveLength(1));
@@ -79,8 +86,46 @@ describe("AdminPanel (belge 20)", () => {
 
   it("yetkisiz oturumda uyari gosterir", async () => {
     const client = clientWith(() => json({ error: { code: "forbidden", message: "yok" } }, 403));
-    render(<AdminPanel t={t} client={client} token="tok" />);
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
     expect(screen.getByText(t.admin.adminOnly)).toBeTruthy();
+  });
+
+  it("yonetici hesap listesini ve rol kaydetmeyi gosterir", async () => {
+    const sent: unknown[] = [];
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/role")) {
+        sent.push({ path, body: JSON.parse(String(init?.body)) });
+        return json({ ok: true, role: "moderator" });
+      }
+      if (path.startsWith("/api/admin/overview")) return json(overview);
+      if (path.startsWith("/api/admin/characters")) return json(characters);
+      if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/accounts")) return json(accounts);
+      return json({}, 404);
+    });
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
+    await waitFor(() => expect(screen.getByText("oyuncu@valedorn.tr")).toBeTruthy());
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: `${t.admin.role}: oyuncu@valedorn.tr` }),
+      "moderator",
+    );
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect((sent[0] as { path: string }).path).toBe("/api/admin/accounts/a1/role");
+    expect((sent[0] as { body: { role: string } }).body.role).toBe("moderator");
+  });
+
+  it("moderator salt okunur: rol atama ve tohumlama gorunmez", async () => {
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/admin/overview")) return json(overview);
+      if (path.startsWith("/api/admin/characters")) return json(characters);
+      if (path.startsWith("/api/admin/economy")) return json(economy);
+      return json({}, 404);
+    });
+    render(<AdminPanel t={t} client={client} token="tok" role="moderator" />);
+    await waitFor(() => expect(screen.getByText(t.admin.roleReadOnly)).toBeTruthy());
+    expect(screen.queryByText(t.admin.accountList)).toBeNull();
+    expect(screen.queryByRole("button", { name: t.admin.seedWorld })).toBeNull();
+    expect(screen.queryByRole("button", { name: `${t.admin.markDead}: Kael Veyr` })).toBeNull();
   });
 });

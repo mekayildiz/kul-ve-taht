@@ -21,25 +21,16 @@ export type Action =
   | "trade:create"
   | "combat:resolve"
   | "property:transfer"
+  | "admin:read"
   | "admin:any";
 
+const PLAYER_ACTIONS: Action[] = ["profile:read", "profile:write", "trade:create", "combat:resolve", "property:transfer"];
+
 const ROLE_ACTIONS: Record<Role, ReadonlySet<Action>> = {
-  player: new Set<Action>(["profile:read", "profile:write", "trade:create", "combat:resolve", "property:transfer"]),
-  moderator: new Set<Action>([
-    "profile:read",
-    "profile:write",
-    "trade:create",
-    "combat:resolve",
-    "property:transfer",
-  ]),
-  admin: new Set<Action>([
-    "profile:read",
-    "profile:write",
-    "trade:create",
-    "combat:resolve",
-    "property:transfer",
-    "admin:any",
-  ]),
+  player: new Set<Action>(PLAYER_ACTIONS),
+  // Modarator yonetim panelini GORUNTULEYEBILIR (salt okunur); yazma yapamaz.
+  moderator: new Set<Action>([...PLAYER_ACTIONS, "admin:read"]),
+  admin: new Set<Action>([...PLAYER_ACTIONS, "admin:read", "admin:any"]),
 };
 
 export interface AuthzRequest {

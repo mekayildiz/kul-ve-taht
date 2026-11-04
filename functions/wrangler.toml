@@ -62,3 +62,8 @@ crons = ["0 * * * *"]
 # (git'e girmez) veya bu blogun bos kalmasi kullanilir.
 [vars]
 # SESSION_SECRET buraya YAZILMAZ: gizli deger depoya islenmez.
+#
+# CORS kilidi: arayuz ve API ayni Worker'dan sunuldugu icin tarayici kaynaklar
+# arasi istek yapmaz; bu yuzden varsayilan `*` birakilir. Ayri bir alan adindan
+# (ornek: Pages) sunulursa ALLOWED_ORIGIN'i tam kaynakla doldurun:
+# ALLOWED_ORIGIN = "https://oyun.example.com"

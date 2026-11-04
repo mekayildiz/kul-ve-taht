@@ -124,3 +124,37 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
 - Regresyon testleri: `auth/hash-gate.test.ts` (platform siniri + DO akisi),
   `auth-e2e.test.ts` (kayit→giris→oturum). Uretimde dogrulama: `wrangler tail`
   ile `outcome: ok`, istisna yok.
+
+## Rol yonetimi ve yonetim paneli (belge 20)
+
+- Roller `accounts.role` sutununda tutulur: `player` | `moderator` | `admin`
+  (CHECK kisiti). Rol **sunucu tarafinda** uygulanir; istemci rol otoritesi
+  degildir.
+- Yetki eslemesi `auth/authorize.ts`: `admin:read` (panel goruntuleme) hem
+  `moderator` hem `admin`'de; `admin:any` (yazma) yalnizca `admin`'de. Salt
+  okunur uclar (overview, characters listesi, economy, quota) `admin:read`
+  kullanir.
+- **Rol degisikligi aninda etkilidir**: yonetim uclari `adminSession()` ile
+  oturumu cozer ve rolu DB'den TAZELER. Aksi halde 12 saatlik belirtec eski
+  rolu tasir ve yetki sizmasi olusur. Bu yuzden testlerde admin belirteci
+  uretmeden ONCE `adminSetAccountRole` ile DB rolu yazilmalidir.
+- Rol servisi `admin/roles.ts`: `adminAccounts`, `adminSetAccountRole`,
+  `isAccountRole`. Her degisiklik `audit_log`'a yazilir. **Son adminin
+  dusurulmesi engellenir** (`last_admin`): aksi halde panel kilitlenir.
+- Uclar: `GET /api/admin/accounts`, `POST /api/admin/accounts/:id/role`
+  (yalnizca `admin:any`).
+- Arayuz: `nav.admin` dugmesi ve `AdminPanel` yalnizca `role` moderator/admin
+  ise gorunur; rol atama ve tohumlama kontrolleri yalnizca `admin`'de aciktir.
+
+### Ilk yoneticiyi atama (bootstrap)
+
+Hic yonetici yokken panel acilamaz. Tek seferlik cozum:
+
+1. `wrangler secret put BOOTSTRAP_ADMIN_TOKEN` (guclu, rastgele bir deger).
+2. Oyuna normal sekilde kayit olun.
+3. `curl -X POST <worker>/api/auth/bootstrap-admin -H 'content-type: application/json'
+   -H "x-bootstrap-token: <jeton>" -d '{"email":"siz@ornek.com"}'`
+4. Jeton tanimli degilse uc 404; zaten bir admin varsa 409 doner. Atama
+   sonrasi jetonu SILIN: `wrangler secret delete BOOTSTRAP_ADMIN_TOKEN`.
+
+Sonrasinda tum rol dagitimi yonetim panelinden yapilir.

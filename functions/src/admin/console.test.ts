@@ -7,6 +7,7 @@ import { registerAccount } from "../auth/service";
 import { seedWorld } from "../world/seed";
 import { emptyAttributes } from "../character/attributes";
 import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./console";
+import { adminSetAccountRole } from "./roles";
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return { DB: createTestDb(), SESSION_SECRET: "test-secret-degistir", ...overrides };
@@ -17,8 +18,11 @@ async function call(path: string, env: Env, init: RequestInit = {}): Promise<Res
 }
 
 async function setupPlayer(env: Env, role: "player" | "admin" = "player") {
-  const reg = await registerAccount(env.DB, { email: `a${Date.now()}${Math.random()}@valedorn.tr`, password: "cok-guclu-parola-1" });
+  const email = `a${Date.now()}${Math.random()}@valedorn.tr`;
+  const reg = await registerAccount(env.DB, { email, password: "cok-guclu-parola-1" });
   if (!reg.ok) throw new Error("kayit basarisiz");
+  // Rol DB'de tutulur ve her yonetim isteginde tazelenir (yetki sizmasi onlenir).
+  if (role !== "player") await adminSetAccountRole(env.DB, reg.accountId, role);
   await seedWorld(env.DB);
   const token = await createSessionToken(
     { accountId: reg.accountId, role, issuedAt: Date.now(), expiresAt: Date.now() + 60_000 },
@@ -30,7 +34,7 @@ async function setupPlayer(env: Env, role: "player" | "admin" = "player") {
     body: JSON.stringify({ givenName: "Kael", surname: "Veyr", birthSettlement: "varkhenn-drahkmar", attributes: emptyAttributes() }),
   });
   const { characterId } = (await create.json()) as { characterId: string };
-  return { token, characterId, accountId: reg.accountId };
+  return { token, characterId, accountId: reg.accountId, email };
 }
 
 describe("Yonetici konsolu (belge 20)", () => {

@@ -59,7 +59,8 @@ describe("Karakter gorunumu kisilestirme (belge 20)", () => {
   it("secenek listelerini eksiksiz sunar", () => {
     const options = appearanceOptions();
     expect(options.faceShapes.length).toBeGreaterThan(0);
-    expect(options.outfits).toContain("yolcu");
+    expect(options.outfits).toContain("pacavra");
+    expect(options.outfits).toHaveLength(1);
     expect(options.heightMinCm).toBe(HEIGHT_MIN_CM);
   });
 });
