@@ -152,6 +152,9 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
 - `accounts.protected = 1` olan hesap **banlanamaz, askiya alinamaz ve rolu
   dusurulemez** (`adminSetAccountStatus`/`adminSetAccountRole` → `protected`).
   Amac: kurucu/yönetici hesabi kilitlenmesin.
+- Ek kilit: **son aktif admin banlanamaz** (`last_admin`); aksi halde yonetici
+  kendi kendini kilitleyebilirdi (kendi banini kaldiramaz, cunku `adminSession`
+  banli hesabi aninda gecersiz kilar).
 - Bootstrap (`/api/auth/bootstrap-admin`) atadigi hesabi otomatik `protected=1`
   yapar.
 - Bayrak panelden DEGISTIRILEMEZ; yalnizca dogrudan D1 uzerinden kaldirilir:

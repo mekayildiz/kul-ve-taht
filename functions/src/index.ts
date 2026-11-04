@@ -598,6 +598,8 @@ router.post("/api/admin/accounts/:id/status", async ({ params, request, env }: C
   if (result.reason === "not_found") return error("not_found", "Hesap bulunamadi.", 404);
   if (result.reason === "protected")
     return error("protected", "Korumali (kurucu) hesap banlanamaz veya askiya alinamaz.", 409);
+  if (result.reason === "last_admin")
+    return error("last_admin", "Son yonetici banlanamaz; once baska bir yonetici atayin.", 409);
   return error("invalid_body", "Gecersiz durum.", 400);
 });
 

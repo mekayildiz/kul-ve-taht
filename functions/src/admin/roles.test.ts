@@ -115,6 +115,23 @@ describe("Korumali (kurucu) hesap (ban ve rol korumasi)", () => {
     expect(await adminSetAccountStatus(env.DB, target.accountId, "active", admin.accountId)).toMatchObject({ ok: true, status: "active" });
   });
 
+  it("SON aktif admin banlanamaz (yonetim kilitlenmesin)", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    const res = await adminSetAccountStatus(env.DB, admin.accountId, "banned", admin.accountId);
+    expect(res).toEqual({ ok: false, reason: "last_admin" });
+    const row = await env.DB.prepare("SELECT status FROM accounts WHERE id = ?").bind(admin.accountId).first<{ status: string }>();
+    expect(row?.status).toBe("active");
+  });
+
+  it("baska bir admin varken admin banlanabilir", async () => {
+    const env = makeEnv();
+    const admin1 = await account(env, "admin");
+    const admin2 = await account(env, "admin");
+    const res = await adminSetAccountStatus(env.DB, admin2.accountId, "banned", admin1.accountId);
+    expect(res).toMatchObject({ ok: true, status: "banned" });
+  });
+
   it("banli hesap giris yapamaz", async () => {
     const env = makeEnv();
     const target = await account(env, "player");

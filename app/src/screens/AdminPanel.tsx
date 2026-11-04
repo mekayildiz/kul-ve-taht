@@ -124,6 +124,8 @@ export function AdminPanel({ client, token, t, role }: AdminPanelProps): JSX.Ele
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "protected") {
         setError(t.admin.protectedAccount);
+      } else if (err instanceof ApiRequestError && err.code === "last_admin") {
+        setError(t.admin.lastAdmin);
       } else {
         setError(t.admin.adminOnly);
       }

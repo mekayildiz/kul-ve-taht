@@ -115,14 +115,15 @@ export function isAccountStatus(value: unknown): value is AccountStatus {
 
 export interface SetStatusResult {
   ok: boolean;
-  reason?: "not_found" | "invalid_status" | "protected";
+  reason?: "not_found" | "invalid_status" | "protected" | "last_admin";
   status?: AccountStatus;
 }
 
 /**
- * Hesap durumunu degistirir (aktif/askida/banli). Korumali hesap BANLANAMAZ
- * ve askiya alinamaz; boylece kurucu hesabi kilitlenemez. Durum degisikligi
- * `audit_log`'a yazilir.
+ * Hesap durumunu degistirir (aktif/askida/banli). Iki koruma vardir:
+ *  - Korumali hesap BANLANAMAZ ve askiya alinamaz (`protected`).
+ *  - Son admin banlanamaz (`last_admin`): aksi halde yonetim kilitlenir.
+ * Durum degisikligi `audit_log`'a yazilir.
  */
 export async function adminSetAccountStatus(
   db: SqlDatabase,
@@ -132,14 +133,19 @@ export async function adminSetAccountStatus(
   nowMs = Date.now(),
 ): Promise<SetStatusResult> {
   if (!isAccountStatus(status)) return { ok: false, reason: "invalid_status" };
-  const account = await queryOne<{ id: string; status: string; protected: number }>(
+  const account = await queryOne<{ id: string; status: string; role: AccountRole; protected: number }>(
     db,
-    "SELECT id, status, protected FROM accounts WHERE id = ?",
+    "SELECT id, status, role, protected FROM accounts WHERE id = ?",
     accountId,
   );
   if (!account) return { ok: false, reason: "not_found" };
   // Korumali hesap yalnizca aktif kalabilir; ban/askiya alma reddedilir.
   if (account.protected === 1 && status !== "active") return { ok: false, reason: "protected" };
+  // Son admini banlamak yonetimi kilitler; engelle.
+  if (account.role === "admin" && status !== "active") {
+    const admins = await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM accounts WHERE role = 'admin' AND status = 'active'");
+    if ((admins?.n ?? 0) <= 1) return { ok: false, reason: "last_admin" };
+  }
 
   await execute(db, "UPDATE accounts SET status = ?, updated_at = ? WHERE id = ?", status, nowMs, accountId);
   await execute(
