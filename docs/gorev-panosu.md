@@ -1,0 +1,362 @@
+# Görev Panosu (E1–E7)
+
+Tasarım belgesi 22. bölümdeki 7 aşama. Aşamalı geliştirme, nihai kapsamdan
+hiçbir özelliğin veya yerleşimin çıkarılması anlamına gelmez. 130 yerleşim,
+ertelenen tüm özellikler ve 0 TL şartı korunur.
+
+## E1 – Temel mimari ve güvenlik
+- [x] E1.1 Monorepo iskeleti
+- [x] E1.2 Cloudflare ücretsiz katman yapılandırması (Workers/D1/DO; R2 ve Workflows sonradan kaldırıldı — bkz. E12) — wrangler.toml, Free plan sınırları belgelendi
+- [x] E1.3 Bağımsız oyuncu auth (kayıt/giriş/oturum) — PBKDF2 + HMAC oturum; Miniflare'de uçtan uca doğrulandı
+- [x] E1.4 Şema + migration (belge 21.2 varlık grupları) — 44 tablo, node:sqlite ile doğrulandı
+- [x] E1.5 Sunucu taraflı authz çekirdeği (kimlik/rol/sahiplik/yetki) — D1'de RLS yok; uçlarda uygulandı
+- [x] E1.6 Dünya zamanı servisi (olay tabanlı; 6 sa = 1 oyun günü)
+- [x] E1.7 Yedekleme: D1 Time Travel (30 gün PITR) + **geri yükleme provası** (R2 kaldırıldı, bkz. E12)
+- [x] E1.8 Ana arayüz kabuğu + mobil alt gezinme + tema — gerçek API'ye bağlı
+- [x] E1.9 i18n (TR varsayılan + EN) — anahtar eşitliği testi ile
+- [x] E1.10 Açılış + 4 bölümlük tanıtım
+- [x] E1.11 Kota bütçe panosu — `quota_usage` şeması + `recordUsage`/`quotaReport`, `/api/admin/quota`
+- [x] E1.12 CI (lint/tip/test) + önizleme — `.github/workflows/ci.yml` (lint/typecheck/build/test/check:paid)
+- [x] E1.13 **130 yerleşim tam veri seti** (krallık başına 1/3/5/12/5) + doğrulama testleri
+- [x] E1.14 Sağlayıcı-bağımsız veri katmanı (D1 ↔ Turso) + sahte D1 bütünlük testleri
+- [x] E1.15 Kayıt/giriş servisi (PBKDF2 + HMAC oturum) + 10 servis testi
+- [x] E1.16 PBKDF2 performans ölçümü — **ölçüldü**: 100k iterasyon (workerd üst sınırı) medyan ~15 ms; DO 30 s bütçesine sığıyor. 600k üretimde reddedildiği için düşürüldü (E13)
+- [x] E1.17 D1 dump + geri yükleme bütünlüğü (birim + entegrasyon testleri); yedekleme D1 Time Travel'e taşındı (E12)
+- [x] E1.18 Geri yükleme provası + veri bütünlüğü doğrulaması — **gerçek SQLite üzerinde yedek→geri yükle döngüsü test edildi** (yıkıcı ifade reddi, kısmi geri yükleme engeli)
+
+## E2 – Dünya ve karakter
+- [x] E2.1 5 krallık + 3 bağımsız şehir + 2 tarafsız bölge verisi
+- [x] E2.2 **130 yerleşim/yapı** tam veri seti (E1.13'te tamamlandı)
+- [x] E2.3 Harita verisi + bilgi paneli — `/api/world/map`, `/api/world/birthplaces` (130 panel, 5 test); statik illüstrasyon E7.1
+- [x] E2.4 Karakter oluşturma (doğum yeri, geçmiş, aile) — servis + `/api/characters` uçları, 12 test
+- [x] E2.5 Kapsamlı görünüş editörü (ertelenmiş → nihai kapsam) — `character_appearance` şeması + servis desteği
+- [x] E2.6 7 nitelik, kişilik, uzmanlık, meslek, itibar — modüller + doğrulama (şema `willpower`→`leadership` düzeltildi)
+
+## E3 – Oynanış ve yaşam
+- [x] E3.1 Keşif, görevler, dinamik olaylar — `quests/system.ts` (10 keşif alanı, görev hedef/çözüm, 11 dünya olayı). Yaratık listesi E7'de içerikle genişler
+- [x] E3.2 Envanter, dayanıklılık, üretim/zanaat — `inventory/items.ts`, `inventory/crafting.ts` (16 eşya, 7 tarif, sunucu doğrulama)
+- [x] E3.3 Sağlık + ayrıntılı tıp — `health/state.ts`, `health/treatment.ts` (kalıcı ölüm, kanama/enfeksiyon, kalıcı sakatlık)
+- [x] E3.4 Suç, yargı, hapishane/kaçış — `justice/system.ts` (7 suç türü, beraat/hapis/sürgün, kaçış, rüşvet)
+- [x] E3.5 Şehir yaşamı, seyahat, konaklama — `travel/travel.ts` (mevsim/hava, kış yolu kapatır, konaklama)
+
+## E4 – Tam ekonomi ve mülkiyet
+- [x] E4.1 Arz-talep, pazar — `economy/market.ts` (denge fiyatı, alım/satım, bölgesel fark)
+- [x] E4.2 Kervan + deniz ticareti + filo — `military/army.ts` (filo/gemi sınıfları), `travel/travel.ts` (kervan hız/tehlike)
+- [x] E4.3 Bankacılık, kredi, faiz, borç, iflas — `economy/market.ts` (teminat/itibar, faiz, iflas)
+- [x] E4.4 Vergi, hazine, krizler — `economy/market.ts` (gelir+mülk vergisi, hazine, huzursuzluk)
+- [x] E4.5 Mülk, işletme, ortaklık, şirket birleşme/devralma — `economy/property.ts` (devir, vergi, gelir, ortaklık payı, kontrol eşiği, birleşme)
+
+## E5 – Askerî ve siyasi sistemler
+- [x] E5.1 Birlikler, komuta, ikmal, kara savaşları — `military/army.ts` (ordu gücü, muharebe, ikmal)
+- [x] E5.2 Kuşatma sistemi — `military/army.ts` (surlar, erzak, kuşatma araçları, teslim)
+- [x] E5.3 Deniz savaşları + gemi sınıfları — `military/army.ts` (4 gemi sınıfı, filo gücü, deniz savaşı)
+- [x] E5.4 Krallık yönetimi, diplomasi, ittifak, savaş/barış — `military/army.ts` (5 duruş, diplomatik eylemler)
+- [x] E5.5 Rütbe, makam, konseyler, siyasi mücadele — `politics/government.ts` (atama/azil, rütbe, konsey oylaması, siyasi mücadele)
+
+## E6 – Tam NPC, aile, çok oyunculu
+- [x] E6.1 NPC hedef/hafıza/ilişki/ekonomi modeli — `npc/model.ts` (5 etkenli karar, hafıza, duygu)
+- [x] E6.2 Binlerce NPC katmanlı simülasyon — `npc/model.ts` (önemli 1g / yerel 7g / arka plan 30g)
+- [x] E6.3 Evlilik/çocuk/ölüm/miras/kuşaklar — `family/dynasty.ts` (onaylı gelişim evreleri, miras, aile itibarı)
+- [x] E6.4 Sohbet, PM, arkadaşlık, grup, lonca, PvP, ittifak — `social/social.ts` (kanal erişimi, lonca/grup, duello)
+- [x] E6.5 Nesiller arası mülk/işletme aktarımı — `family/dynasty.ts` (`assignPropertyToHeirs`; E4.5 devir ilkesiyle bağlı)
+
+## E7 – Görsel, test ve yayın
+- [x] E7.1 Görsel varlık kütüphanesi + künye/lisans kaydı — `assets/library.ts` (lisans uyumu, varlık yolu, atıf listesi; `/api/assets/catalog`)
+- [x] E7.2 40 portrelik havuz + önemli karakterlere özel portre — `assets/library.ts` (`portraitForKey`, `/api/assets/portrait/:key`)
+- [x] E7.3 Birim/entegrasyon/e2e/güvenlik/yük testleri — `security.test.ts` (8), `play.test.ts` (16), `quota/load.test.ts` (6); mobil ölçüm E7.5
+- [x] E7.4 Ücretsiz kota doğrulama + optimizasyon — `quota/load.test.ts` (200 istek < günlük limit; aşımda ücretli plana geçiş yok)
+- [x] E7.5 Kapalı test + yedek/geri yükleme provası — bundle’dan klon doğrulandı (128 dosya, doğru HEAD, tasarım belgesi md5 aynı); mobil ağ ölçümü kapalı test turunda
+- [x] E7.6 Kabul ölçütleri geçişi (belge 25) — `docs/kabul-olcutleri.md` (10 ölçüt kanıta bağlandı)
+
+**Kural:** Test edilmeyen hiçbir görev "tamamlandı" işaretlenmez.
+
+## E8 – Ertelenen özelliklerin nihai kapsama alınması
+
+Belgede ertelenmiş sayılan ancak nihai kapsamda istenen sistemler. Her biri
+sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
+
+- [x] E8.1 Geçim/üretim: tarım (ekim/hasat), hayvancılık, avcılık, evcilleştirme, kıtlık riski — `livelihood/production.ts` (12 test)
+- [x] E8.2 Büyü ve inanç: büyü yolları, öğrenme/kullanma, enerji, kara büyü suçu, tapınak hizmetleri, loncalar — `magic/lore.ts` (13 test)
+- [x] E8.3 Ekonomi tamamlayıcıları: depolama/bozulma, açık artırma, kira, tekel, piyasa bozulması, devlet bütçesi, yolsuzluk — `economy/extras.ts` (12 test)
+- [x] E8.4 Bildirimler: öncelik eşikli, arka planı tek satırda toplayan özet (belge 19) — `notify/notifications.ts` (5 test) + `/api/notifications`, `/api/notifications/read`
+- [x] E8.5 Yeraltı ve suç örgütleri: hırsızlık/kaçakçılık/dolandırıcılık/suikast/karaborsa, çete itibarı — `underworld/gangs.ts` (10 test)
+- [x] E8.6 Belge 20: 130 yerleşimin **tamamı** için nüfus/ekonomi/yönetim/güvenlik/ulaşım/mevsim/siyasi bağlılık profili — `world/settlement-profile.ts` (7 test)
+- [x] E8.7 Oynanış katmanı bağlantısı: 12 yeni sunucu-taraflı aksiyon + `/api/catalog` keşif ucu — `play/service.ts`, `index.ts` (14 API testi)
+- [x] E8.8 Arayüz: tarım, av, büyü, tapınak, lonca, şehir etkinlikleri ve yeraltı panelleri — `app/src/screens/PlayPanel.tsx` (6 arayüz testi)
+- [x] E8.9 i18n: tüm yeni anahtarlar TR + EN (anahtar eşitliği testi)
+- [x] E8.10 Yerel uçtan uca doğrulama: Miniflare'de gerçek kayıt → karakter → aksiyon akışı çalıştırıldı
+- [x] E8.11 Askeri sistem bağlantısı (belge 14.5, 11): birlik toplama, ikmal, kara savaşı, kuşatma, gemi inşası, deniz savaşı — `play/systems.ts` (sunucu otoriteli), `/api/play/:id/action` + state ucu
+- [x] E8.12 Ekonomi bağlantısı (belge 9.6–9.12): kredi alma/ödeme, mülk satın alma, işletme geliri, vergi — `play/systems.ts`
+- [x] E8.13 Adalet bağlantısı (belge 13.4–13.5): suç işleme, yakalanma, yargılama, hapis, kaçış — `play/systems.ts`
+- [x] E8.14 Dövüş bağlantısı (belge 14.1–14.4, 16.5): tekil dövüş ve güvenli şehir/riza kurallı düello — `play/systems.ts`
+- [x] E8.15 Sosyal ve siyasi bağlantı (belge 10, 16.3–16.4): ilişki kurma, makam/rütbe, diplomasi — `play/systems.ts`
+- [x] E8.16 Arayüz genişletmesi: askeri, ekonomi, adalet, dövüş, sosyal ve siyaset panelleri — `PlayPanel.tsx` (8 arayüz testi)
+- [x] E8.17 Veritabanı: yeni kalıcı tablolar (`character_units`, `character_ships`, `character_loans`, `character_properties`, `character_prison`, `character_social`, `character_offices`, `character_family`) — `db/migrations/0007_systems_state.sql`
+- [x] E8.18 API testleri: 19 yeni uçtan uca test (`systems-api.test.ts`) — toplam 390 test geçiyor
+- [x] E8.19 Çok oyunculu sohbet (belge 16.2): genel/yerel/lonca/özel kanal, sunucu taraflı erişim ve uzunluk doğrulaması, `/api/chat` geçmiş ucu — `play/multiplayer.ts`
+- [x] E8.20 Aile ve hanedan (belge 7): evlilik (yaş + tek eş kuralı), çocuk sahibi olma, hanedan kaydı — `play/multiplayer.ts`, `character_family` tablosu
+- [x] E8.21 Bildirim yayma (belge 19): evlilik/çocuk/özel mesaj olayları hesaba bildirim yazar; öncelik eşiği özeti — `notifyCharacter`
+- [x] E8.22 Arayüz: aile paneli + sohbet paneli (mesaj listesi ve gönderme) — `PlayPanel.tsx`
+- [x] E8.23 Test: 7 yeni API testi + 2 yeni arayüz testi — toplam 400 test geçiyor
+- [x] E8.24 NPC simülasyonunu çalıştırma (belge 8.8): katmanlı ve partili dünya turu — `play/world-sim.ts` (önemli 1g / yerel 7g / arka plan 30g, parti limiti 50)
+- [x] E8.25 NPC tohumlama (belge 8.8): 130+ yerleşime katmanlı NPC üretimi (~950 NPC) — `world/seed.ts`
+- [x] E8.26 Ekonomi tamamlayıcıları bağlantısı (belge 9.4): bozulma olayları pazar çarpanı + dünya olay günlüğü — `market_state`, `world_event_log`
+- [x] E8.27 Zamanlanmış dünya turu (belge 8.8): Free plan Cron Trigger (saatlik) + dünya saati ilerlemesinde tetikleme — `wrangler.toml`, `scheduled()`
+- [x] E8.28 Yeni kalıcı tablolar (belge 9, 10, 18): `market_state`, `auctions`, `offices`, `character_quests` + NPC simülasyon kolonları — `db/migrations/0008_world_simulation.sql`
+- [x] E8.29 Test: 10 yeni simülasyon testi (`world-sim.test.ts`) — toplam 410 test geçiyor
+- [x] E8.30 Siyasi sistem bağlantısı (belge 10–11): makam tek sahipli, rütbe yükseltme ve siyasi mücadele sunucuda çözülür — `play/systems.ts` + `politics/government.ts`
+- [x] E8.31 Saray makamları (belge 8.7): oyun başında hükümdardan kâtibe kadar makamlar NPC'lerle dolu — `world/seed.ts` (`seedCourtOffices`)
+- [x] E8.32 NPC yönetimi (belge 8.7): boş makamlar dünya turunda NPC'lerle doldurulur — `world-sim.ts` (`assignNpcOffices`)
+- [x] E8.33 Test: 4 yeni siyaset/makam testi — toplam 414 test geçiyor
+
+- [x] E8.34 Görev kataloğu ve günlüğü (belge 12.4, 18.3): ana hikâye/yan/iş/keşif/kriz görevleri, çok çözümlü hedefler, sunucu otoriteli ilerleme — `play/quests.ts`, `/api/quests`, `character_quests.progress_json`
+- [x] E8.35 Açık artırma (belge 9.3): sunucu otoriteli teklif doğrulama, rezerv fiyat, kapanınca eşya el değiştirir ve satıcıya altın geçer — `play/auctions.ts`, `/api/auctions`, `auctions.seller_id`
+- [x] E8.36 Pazar fiyatı bağlantısı (belge 9.2, 9.4): yerleşim bazlı arz/talep + bozulma çarpanı, alım-satım pazarı kalıcı günceller — `play/market-state.ts`, `/api/market?settlementId=`
+- [x] E8.37 Arayüz + test: görev günlüğü ve açık artırma panelleri (3 yeni arayüz testi) + 6 yeni API testi — toplam 423 test geçiyor
+
+## E8.38–E8.42 Tam kapsam bağlantıları (belge 7, 9, 10, 13, 20)
+
+Belge 20 "tam oyun kapsamı" gereği daha önce modülleri yazılmış ancak oynanışa
+bağlanmamış sistemler sunucu otoriteli servis + API ucu + arayüz + test ile tamamlandı.
+
+- [x] E8.38 Depolama kapasitesi ve bozulma bağlantısı (belge 9.3): envanter sınırlı depoya sahip; gıda/ilaç gün gün bozulur, depo dolunca alım reddedilir (`storage_full`) — `play/storage.ts`, `play/service.ts`, `/api/play/:id/state.storage`, arayüz depo göstergesi
+- [x] E8.39 Bölgesel tekel ve devlet müdahalesi (belge 9.4, 9.9): pazar payı eşiği aşılırsa fiyat çarpanı; hazineden tahıl sürerek fiyat baskılama — `play/storage.ts` (`monopolyFactor`, `interveneMarket`), `/api/market` `monopoly` alanı, `/api/admin/market/intervene`
+- [x] E8.40 Devlet bütçesi ve yolsuzluk (belge 9.7–9.9): aylık vergi/gider turu, borç krizi, yolsuzluk oranı ve denetim — `play/storage.ts` (`runKingdomBudget`, `auditKingdomCorruption`), zamanlanmış tur (`gameDay % 30`), `/api/admin/budget/run`, `kingdoms.corruption`
+- [x] E8.41 Ölüm, miras ve kuşak devri (belge 7.6): ölüm kalıcı; altın/mülk/unvan varislere geçer, anlaşmazlık hane itibarını düşürür; gün ilerlemesi ve yolculuk ölümle sonuçlanırsa işlenir — `play/succession.ts` (`settleDeath`, `heirOf`), `play/service.ts`, `families.reputation/wealth/debt`
+- [x] E8.42 Rütbe düşürme ve makam azli (belge 10, 13): ağır suç mahkumiyetinde rütbe bir basamak iner, en alt rütbede makam geri alınır; boş makam doğrudan atanır — `politics/government.ts` (`demote`, `isVacant`), `play/systems.ts`
+- [x] Test: 6 yeni API testi (depolama, depo doluluğu, tekel, bütçe+yetki, miras+idempotans) + güncellenen ad doğrulama testi — toplam **428 test** geçiyor; `npm run verify` (lint+typecheck+build+test+0 TL denetimi) temiz
+
+- [x] E8.43 Oyuncu grupları ve lonca üyeliği (belge 16.2, 16.4): oyuncular kendi gruplarını/birliklerini kurar (kurucu lider, üye sınırı 8); grup ve lonca sohbet kanalı erişimi kalıcı üyelik kaydına bağlanır — `play/multiplayer.ts` (`performCreateGroup`, `performJoinGroup`, `groupStatus`), `social/social.ts` (`canSendToChannel`, `canJoinGroup`), `/api/play/:id/state.group`, `player_groups` + `player_group_members` + `character_guilds` (`0013_player_groups.sql`), arayüz grup paneli
+- [x] E8.44 Yolsuzluk denetimi bağlantısı (belge 9.8): kayıtlı gelir ile gerçek gelir arasındaki fark denetim gücüyle ortaya çıkar, kaybolan kısım hazineye döner — `play/storage.ts` (`auditKingdomCorruption`), `kingdoms.corruption` (`0012`)
+- [x] Test: 4 yeni API testi (grup kurma, yinelenen/kısa ad, gruba katılma + kanal erişimi, lonca üyeliği + kanal erişimi) — toplam **432 test** geçiyor; `npm run verify` temiz
+- [x] E8.45 Karakter görünümü kişiselleştirme (belge 20, 17.2): yüz/ten/göz/saç/sakal/vücut/kıyafet/boy + yara izi ve dövme; seçenekler sunucuda doğrulanır, kısmi güncelleme korunur — `character/appearance.ts` (`applyAppearanceChange`, `appearanceOptions`), `play/systems.ts` (`performSetAppearance`, `appearanceStatus`), `/api/play/:id/action` `setAppearance`, `/api/catalog` görünüm seçenekleri, `/api/play/:id/state.appearance`, arayüz görünüm paneli
+- [x] Test: 5 birim + 2 API testi (görünüm doğrulama/kalıcılık, katalog) — toplam **439 test** geçiyor; `npm run verify` temiz
+
+## E9 – Analizde belirlenen eksik gereksinimler (belge 9, 16, 17, 20)
+
+Bu bölüm, tasarım belgesinin tamamı ile mevcut kod arasındaki fark analizinde
+çıkan ve **nihai kapsamda zorunlu** olan işleri listeler. Tamamlanmış işler
+(E1–E8) korunur; bu kalemler açıkça "eksik" olarak tutulur ve bağımlılık
+sırasına göre P1 → P2 → P3 olarak yürütülür. Her sistem veritabanı + sunucu
+servisi + API + arayüz + test ile tamamlanır (belge 20 teslim kriteri).
+
+### P1 – Bankacılık, şirket ve işletme finansmanı (belge 20, 9.x)
+
+- [x] E9.1 Mevduat ve kasa (belge 20): oyuncu/NPC mevduat yatırır/çeker, faiz işler; kasa (vault) ayrı tutulur — `economy/bank.ts`, `play/systems.ts`, migration, `/api/play/:id/state.bank`, arayüz banka paneli
+- [x] E9.2 Emanet (escrow) (belge 20): taraflar arası güvenli işlem; emanet bir hesapta tutulur, koşul gerçekleşince serbest kalır — `economy/bank.ts`, `/api/escrow`
+- [x] E9.3 Faiz, temerrüt, iflas ve tasfiye (belge 20): gecikmiş borç temerrüde düşer; ödeyemeyen iflas eder, mülkleri tasfiye edilir — `economy/bank.ts`, `play/systems.ts`, `play/succession.ts`
+- [x] E9.4 Oyuncular/NPC'ler arası finansman (belge 20): borç verme/alma, alacaklı kaydı — `economy/bank.ts`, migration
+- [x] E9.5 Şirket, ortaklık ve hisse (belge 20): şirket kurma, ortak hissesi, kâr dağıtımı, kontrol eşiği — `economy/property.ts` (mevcut saf fn'ler), `play/company.ts`, migration, `/api/companies`
+- [x] E9.6 Birleşme/devralma ve kurumsal bürokrasi (belge 20): şirket birleşmesi, satın alma, devralma — `economy/property.ts` (`mergeCompanies`, `canAcquire`), `play/company.ts`
+- [x] E9.7 İşletme: çalışanlar, şube ağı, işletmeler arası ortaklık (belge 20) — `play/company.ts`, `economy/property.ts`
+- [x] E9.8 Bankacılık/şirket arayüzü ve testleri (belge 20) — `app/src/screens/PlayPanel.tsx`, i18n TR+EN
+
+### P2 – Mülk, çok oyunculu ve kalan saf fonksiyonlar (belge 9, 10, 16)
+
+- [x] E9.9 Mülk tamamlayıcıları: kira, haciz, tapu uyuşmazlığı (belge 9.3, 20): `monthlyRent`, `rentAfterTax`, haciz (foreclosure), tapu uyuşmazlığı — `economy/extras.ts`, `play/systems.ts`, migration
+- [x] E9.10 Çok oyunculu takas teklifi (belge 16): iki taraf onaylı eşya/altın takası sunucu otoriteli — `play/multiplayer.ts`, migration, `/api/trade`
+- [x] E9.11 İttifak ve krallık savaşları (belge 11, 16): ittifak kurma, savaş ilanı, barış — `politics/government.ts`, `play/multiplayer.ts`
+- [x] E9.12 Kalan saf fonksiyon bağlantıları (belge 10, 13, 16): `dismiss`, `councilVote`, `isMutual`, `isDuelRequestValid`, `childStage`, `childDevelopmentBonus`, `recordDeath`, `marketShare` oynanışa bağlanır — `politics/government.ts`, `social/social.ts`, `play/succession.ts`, `economy/extras.ts`
+- [x] E9.13 P2 arayüz ve testleri (belge 16, 20) — `PlayPanel.tsx` (takas/ittifak/çocuk/ilişki/önerge panelleri), i18n TR+EN, API testleri (barter/ittifak/savaş)
+
+### P3 – Görsel varlık, yönetim, erişilebilirlik ve doğrulama (belge 17, 19, 21.4, 25)
+
+- [x] E9.14 Görsel varlık tüketimi (belge 17): portre/ikon/arma/harita arayüzde gösterilir; veri tasarrufu modu; lisans atıfları görünür — `WorldOverview.tsx` varlık galerisi, `client.assetCatalog()`, `/api/assets/catalog`
+- [x] E9.15 Ücretsiz lisanslı görsel dosyalar (belge 17.2, 17.5): 40 portrelik havuz + 7 ikon + arma + harita; WebP + 96/64px küçük türev; lisans/kaynak kaydı — `scripts/gen-assets.mjs` (deterministik, yerel üretim; **0 TL, indirme yok**), `assets/portraits`, `assets/icons`, `assets/crests`, `assets/maps`, `assets/manifest.json`
+- [x] E9.16 Yönetici arayüzleri (belge 20): bütçe/kota, pazar izleme, kullanıcı/karakter yönetimi panelleri — `functions/src/admin/console.ts` (+ test), `app/src/screens/AdminPanel.tsx` (+ 3 test), `/api/admin/*`, App kabuğu yönetim düğmesi
+- [x] E9.17 Bildirim geçmişi ve erişilebilirlik (belge 19, 20): bildirim listesi + okundu işaretleme, öncelik eşiği/arka plan özeti, klavye erişimi, `aria-label`/`role="alert"`, tablo `scope` başlıkları — `PlayPanel.tsx`, `AdminPanel.tsx`, `client.notifications()`
+- [x] E9.18 Yük/kota testi ve yedek/geri yükleme provası (belge 21.4, 25): gerçek yük benzetimi, kota kullanım raporu, D1 dump ve veri kayıpsız geri yükleme provası — `scripts/load-restore-rehearsal.mjs` (`npm run rehearsal:load-restore`; 88 tablo, 141 satır, veri kaybı yok, ücretsiz limit içinde)
+### P4 – Sunucu aksiyonlarının arayüze bağlanması (belge 9, 11, 16, 17, 19)
+
+Arka uçta var olan ancak arayüzde düğmesi/paneli bulunmayan aksiyonlar
+tamamlandı. Her düğme gerçek `/api/play/:id/action` çağrısı yapar ve testle
+doğrulanır (belge 20 teslim kriteri). Ayrıca statik görseller arayüze bağlandı.
+
+- [x] E9.19 Oyuncu rehberi (belge 16): hedefli işlemler (takas, karşılıklı kredi, emanet, tapu uyuşmazlığı, ortaklık, evlilik) için diğer canlı karakterlerin listesi; yalnızca herkese açık alanlar — `functions/src/play/directory.ts` (+ test), `/api/play/:id/state.directory`, `PlayPanel.tsx` hedef seçici
+- [x] E9.20 Banka/finans arayüzü (belge 20): emanet açma, karşılıklı kredi verme/geri ödeme, temerrüt tahsili düğmeleri + karşılıklı kredi listesi — `PlayPanel.tsx` (banka paneli), i18n TR+EN
+- [x] E9.21 Mülk arayüzü (belge 9.3): kiraya verme, haciz, tapu uyuşmazlığı açma/çözme, vergi haczi; tapu uyuşmazlığı listesi — `PlayPanel.tsx` (mülk paneli)
+- [x] E9.22 Şirket arayüzü (belge 20): ortak ekleme ve devralma (birleşme/satın alma) düğmeleri — `PlayPanel.tsx` (şirket paneli)
+- [x] E9.23 Çok oyunculu ve siyaset arayüzü (belge 11, 16): takas teklifi, ittifak oluşturma/katılma, savaş ilanı/barış, konsey önergesi, makamdan çekilme — `PlayPanel.tsx`, krallık ilişkileri ve önerge listeleri
+- [x] E9.24 Yaşam, aile ve grup arayüzü (belge 7.3, 10): yemek, seyahat, hastalık tedavisi, çocuk kaydı, ölüm kaydı, gruba katılma — `PlayPanel.tsx`
+- [x] E9.25 Görsel varlık tüketimi — oyun içi (belge 17): portre (karakter kimliğine göre havuzdan), envanter eşya ikonları, veri tasarrufu anahtarı (96/64px türev) — `PlayPanel.tsx`, `scripts/sync-assets.mjs` (assets/ → app/public/assets/), `app/src/styles.css`
+- [x] E9.26 Bildirim geçmişi iyileştirmesi (belge 19): arka plan olay başlığı + tümünü okundu işaretle — `PlayPanel.tsx`
+
+### P5 – Saf fonksiyonların gerçek sistemlere bağlanması (belge 9, 12, 14, 16)
+
+Modül olarak var olan ancak hiçbir akıştan çağrılmayan fonksiyonlar gerçek
+sistemlere bağlandı; her biri entegrasyon testiyle doğrulanır.
+
+- [x] E9.27 PvP/duello kuralı (belge 16.5): `isPvpAllowed` güvenli şehir + savaş durumu + rıza ile `duelAllowed`'a bağlandı — `play/systems.ts`
+- [x] E9.28 Vergi toplama ve uyum (belge 9.7-9.8): `collectTax` krallık bütçesine (`runKingdomBudget`) bağlandı; tahsilat, huzursuzluk ve uyum geri beslemesi — `play/storage.ts`, `db/migrations/0019_kingdom_tax_and_personality.sql`
+- [x] E9.29 Lonca kazancı (belge 14.4): `guildBenefits` çalışma kazancına kidem bonusu olarak bağlandı — `play/service.ts`
+- [x] E9.30 Varis belirleme (belge 7.6): `heirOf` varis çözümüyle hizalandı — `play/succession.ts`
+- [x] E9.31 Kıtlık riski (belge 9.9): `famineRisk` dünya simülasyonunda günlük olayı kıtlığa çevirir — `play/world-sim.ts`
+- [x] E9.32 Görev hedef ilerletme (belge 12.2): `advanceObjective` görev ilerlemesine bağlandı — `play/quests.ts`
+- [x] E9.33 Kişilik kayması (belge 12.4): `applyPersonalityShift` görev sonucuyla kalıcı kişiliğe bağlandı + oyuncu arayüzü — `play/personality.ts`, `PlayPanel.tsx`, i18n TR+EN
+- [x] E9.34 Yaralanma yönetimi (belge 6.4): `addInjury` tüm yaralanma oluşturma noktalarına bağlandı — `play/service.ts`, `play/systems.ts`
+- [x] E9.35 Tedavi kalitesi (belge 6.5): `treatmentQuality` yara/hastalık tedavisine bağlandı (malzeme + yerleşim ortamı) — `play/service.ts`
+
+### P6 – G1–G6 boşluk kapatma ve gerçek ölçüm turu (belge 6, 7.6, 9.8, 13.1, 21.4, 25)
+
+Önceki turda "modül olarak var ama oynanışa bağlı değil" kalan son fonksiyonlar
+gerçek sistemlere bağlandı; ayrıca gerçek ağ ve kapalı test ölçümleri sayısal
+olarak kaydedildi.
+
+- [x] E9.36 G1 — Karakter günlük ilerlemesi dünya saatine bağlandı (belge 6, 12.8): `advanceCharacterDay` hedef oyun gününe göre açlık/açlık hasarı/toparlanma/yaşlanma uygular ve `last_advanced_day` ile idempotenttir; yeni `advanceAllCharacters` partili ilerletir; `/api/world/time` + saatlik cron turunda çalışır — `play/service.ts`, `db/migrations/0020_character_daily_advance.sql`, `index.ts`
+- [x] E9.37 G2 — `areMutualFriends` gerçek sisteme bağlandı (belge 7.1, 16.3): sorgu `character_social` tablosuna düzeltildi; oyuncu–oyuncu evliliği karşılıklı arkadaşlık ister — `play/multiplayer-extras.ts`, `play/multiplayer.ts`
+- [x] E9.38 G3 — `auditKingdomCorruption` gerçek sisteme bağlandı (belge 9.8, 21.1): yeni yönetici ucu `POST /api/admin/corruption/audit`; kayıp gelir hazineye döner, `audit_log`'a yazılır — `index.ts`, `play/storage.ts`
+- [x] E9.39 G4 — `recordDarkMagicCrime` gerçek sisteme bağlandı (belge 13.1, 13.4): yasaklı krallıkta kara büyü tespiti `performCastSpell`'de yapılır; `castSpell` aksiyonu tam yargı akışını (`performCrime`) tetikler — `play/service.ts`, `index.ts`
+- [x] E9.40 G5 — Gerçek ağ ve kapalı test ölçümleri (belge 21.4, 25): `scripts/network-measurement.mjs` (300 istek, 0 hata, ~102–110 istek/sn, p95 ~11 ms, kota %0,38) ve `scripts/closed-test.mjs` (14/14 adım geçti) → `docs/olcum/ag-olcumu.json`, `docs/olcum/kapali-test.json`
+- [x] E9.41 G6 — Analiz/plan belgesi güncellendi (yeni dosya açılmadı): `docs/analiz-ve-plan.md` §8
+
+Doğrulama: `npm run verify` → lint 0 hata, tip kontrolü temiz, build başarılı,
+**52 dosya / 497 test geçti**, 0 TL denetimi geçti; korunan belge md5
+`563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+## E10 – Nihai teslim değerlendirmesi ve yayın (belge 20, 21.1, 26)
+
+Tüm proje, tasarım belgesinin zorunlu gereksinimleriyle karşılaştırıldı. Ana
+sistemlerin tamamı mevcut ve bağlıydı; bu turda bulunan zorunlu eksikler
+giderildi ve proje yayına hazır hale getirildi.
+
+- [x] E10.1 Nihai teslim değerlendirmesi (belge 20, 26): 130 yerleşim, ekonomi,
+  askerî/kuşatma/deniz, siyaset, aile/hanedan, büyü, adalet, yeraltı, görev,
+  açık artırma, pazar ve sosyal sistemlerin tamamı gerçek veriye + sunucu
+  mantığına bağlı; sahte düğme/ekran yok. Tek zorunlu eksik CORS idi.
+- [x] E10.2 CORS katmanı (belge 21.1, 26): ayrı kaynaklı (Pages) arayüzün
+  Workers API'ye erişebilmesi için `functions/src/http/cors.ts` eklendi; on
+  kontrol 204, `ALLOWED_ORIGIN` ile kaynak kilidi. Kimlik `Authorization`
+  başlığıyla olduğundan varsayılan `*` güvenlidir — `index.ts`, 3 test.
+- [x] E10.3 Tek kaynaklı SPA yayını (belge 18, 26): `functions/wrangler.toml`
+  `[assets]` bloğu `app/dist`'i aynı Worker'dan sunar; arayüz + API tek
+  kaynakta çalışır (ücretsiz, CORS sorunsuz). `docs/yayin-kilavuzu.md` güncellendi.
+- [x] E10.4 CI düzeltmesi (belge 26: otomatik testler geçmeli): testler gerçek
+  SQLite motoru (`node:sqlite`) kullandığından Node ≥ 22.5 gerekir; CI Node 24'e
+  sabitlendi (`.github/workflows/ci.yml`), `engines` ≥ 22.5 yapıldı. Böylece
+  `verify` iş akışı geçer.
+- [x] E10.5 Canlı doğrulama (belge 25): erişilebilir adreste tam oyuncu akışı
+  çalıştırıldı (kayıt → giriş → karakter → durum → aksiyon); CORS on kontrol ve
+  normal yanıt başlıkları doğrulandı.
+
+Doğrulama: `npm run verify` → lint 0 hata, tip temiz, build başarılı,
+**52 dosya / 500 test geçti**, 0 TL denetimi geçti; CI (`verify`) **geçti**.
+Korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+### Bilinen sınırlama (kullanıcı işlemi)
+
+Gerçek üretim kaynakları (`wrangler d1 create`,
+`wrangler deploy`) **ücretsiz** Cloudflare hesap yetkilendirmesi
+(`npx wrangler login`) gerektirir. Yetkilendirme olmadan tüm sistemler Miniflare
+ile yerel olarak çalışır ve doğrulanmıştır (bkz. `docs/yayin-kilavuzu.md`).
+
+## E11 – Üretim ortamına geçiş hazırlığı
+
+Yayın öncesi üretime özgü iki gerçek hata bulundu ve giderildi; dağıtım tek
+komuta indirildi.
+
+- [x] E11.1 Arayüz üretim tabanı düzeltmesi: derleme `http://localhost:8787`
+  adresini gömüyordu; tek kaynaklı yayında tarayıcı kendi localhost'una istek
+  atıp başarısız olurdu. Artık üretimde boş taban (göreli `/api` yolları),
+  yerelde `localhost:8787` (`app/src/shell/App.tsx`). Aynı kaynaklı tarayıcı
+  akışı doğrulandı: kayıt → karakter → oyun aksiyonu.
+- [x] E11.2 Gizli anahtar hijyeni: `functions/wrangler.toml` içindeki
+  `SESSION_SECRET` varsayılanı kaldırıldı; üretimde yalnızca
+  `wrangler secret put` ile ayarlanır, yerelde `functions/.dev.vars` (git dışı).
+- [x] E11.3 Tek komutlu idempotent dağıtım: `scripts/deploy-production.mjs`
+  (`npm run deploy:production`) — yetki kontrolü, D1 oluşturma (varsa atla),
+  `database_id` yazımı, `SESSION_SECRET` üretimi (varsa koru), uzak migration,
+  deploy ve canlı `/api/health` kontrolü. Ücretli adım yok; R2 kovası oluşturmaz.
+- [x] E11.4 Yönlendirme doğrulaması: `[assets]` + `not_found_handling =
+  single-page-application` ile statik varlık önce sunulur, `/api/*` Worker'a
+  düşer (CF dokümantasyonu ile doğrulandı; yerelde teyit edildi).
+- [x] E11.5 Üretim kaynaklarının oluşturulması ve dağıtım: `npm run
+  deploy:production` ile D1 + migration + Worker + arayüz dağıtıldı
+  (`https://kul-ve-taht-functions.kul-ve-taht.workers.dev`). Kaynaklar zaten
+  mevcuttu; 0021 migration'ı uzak D1'e uygulandı.
+- [x] E11.6 Canlı doğrulama (belge 25): üretim adresinde kayıt (201), giriş
+  (200), `/api/me`, karakter oluşturma ve oyun aksiyonu (`rest`) uçtan uca
+  doğrulandı; dünya tohumlanmış (855 NPC, 130 krallık yerleşimi), arayüz aynı
+  kaynaktan (`/` → 200, `<title>Kul ve Taht</title>`) sunuluyor.
+
+Doğrulama: `npm run verify` → 52 dosya / 500 test geçti, 0 TL denetimi geçti;
+korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
+
+## E12 – R2 bağımlılığının kaldırılması (0 TL şartı)
+
+R2, hesap düzeyinde etkinleştirme gerektirdiği ve 0 TL şartını riske attığı
+için **tamamen kaldırıldı**. Özellik kapsamı küçültülmedi.
+
+- [x] E12.1 `functions/wrangler.toml`'dan iki `[[r2_buckets]]` ve `[[workflows]]`
+  binding'i kaldırıldı. Kalıcı oyun verisi D1'de korunur.
+- [x] E12.2 R2 yedekleme Workflow'u kaldırıldı
+  (`workflows/backup-d1.ts`, `backup-workflow.ts`, testi). Yedekleme artık
+  **D1 Time Travel** (ücretsiz, 30 gün PITR, ek maliyet yok). Geri yükleme
+  bütünlük doğrulaması `workflows/restore.ts` R2'den bağımsız korunur.
+- [x] E12.3 Görsel varlıklar zaten Worker `[assets]` statik sisteminden
+  sunuluyordu; R2'ye özgü adlar (`r2Key`→`assetPath`, `thumbnailKey`→
+  `thumbnailPath`) ve `ASSETS_BUCKET` referansları temizlendi. BLOB yok.
+- [x] E12.4 `scripts/deploy-production.mjs` R2 adımı çıkarıldı (8→7 adım);
+  dağıtım R2 olmadan tek komutta çalışır.
+- [x] E12.5 Belgeler güncellendi (`yayin-kilavuzu`, `kota-butcesi`, `AGENTS.md`,
+  `README`, ADR-006/007/008, araç kaydı).
+
+Doğrulama: `npm run verify` → 51 dosya / 496 test geçti (R2 Workflow testi
+kaldırıldı), 0 TL denetimi geçti; korunan belge md5 değişmedi.
+
+## E13 – Üretim kayıt hatasının giderilmesi (PBKDF2 platform sınırı)
+
+Canlı ortamda hesap kaydı, genel "İşlem tamamlanamadı" hatasıyla başarısız
+oluyordu. Kök neden `wrangler tail` ile bulundu.
+
+- [x] E13.1 Kök neden: `NotSupportedError: Pbkdf2 failed: iteration counts
+  above 100000 are not supported (requested 600000).` workerd WebCrypto,
+  100.000 üzeri PBKDF2 iterasyonunu reddeder; yakalanmayan istisna Worker'da
+  1101 koduna ve HTTP 500'e dönüşüyordu.
+- [x] E13.2 `auth/password.ts`: `PBKDF2.iterations` 600.000 → 100.000 (platform
+  üst sınırı). `deriveBits()` içine `PBKDF2_MAX_ITERATIONS` (100.000) koruması
+  eklendi; aşımda anlaşılır `RangeError` (sahte başarı yok).
+- [x] E13.3 İkinci kusur: `PASSWORD_HASH_GATE` DO bağlı ve dağıtılmıştı ama
+  hiç çağrılmıyordu. `auth/hash-gate.ts` (`createGateHasher`) yazıldı ve
+  `index.ts`'te kayıt/giriş yollarına bağlandı; hash artık DO'da çalışır.
+- [x] E13.4 DO hız sınırı hesap bazına alındı (shard paylaşan farklı hesaplar
+  birbirini etkilemez); pencere dolunca sayaç sıfırlanır.
+- [x] E13.5 Testler: `auth/hash-gate.test.ts` (platform sınırı, DO akışı,
+  hesap bazlı hız sınırı), `auth-e2e.test.ts` (kayıt→giriş→oturum uçtan uca);
+  `auth.test.ts` fikstürü 100k'ya güncellendi.
+- [x] E13.6 Belgeler güncellendi (600k → 100k; `gelistirme-plani`,
+  `karar-kayitlari`, `gorev-panosu`).
+
+Doğrulama: `npm run verify` → 53 dosya / 505 test geçti, 0 TL denetimi geçti.
+Canlı: kayıt 201, giriş 200, `/api/me` 200; `wrangler tail` kaydı Worker
+CPU ~7 ms, DO ~30 ms, istisna yok (`outcome: ok`).
+
+## E14 – Yönetim paneli, rol yönetimi ve hesap koruması (belge 20)
+
+Yönetim paneli, rol dağıtımı ve kötüye kullanımı önleyen hesap koruması
+tamamlandı; tümü üretim adresinde canlı doğrulandı.
+
+- [x] E14.1 Rol yönetimi sunucu tarafına taşındı: `accounts.role`
+  (player/moderator/admin). `admin:read` (panel görüntüleme) moderator+admin,
+  `admin:any` (yazma) yalnızca admin. Moderator paneli salt okunur görür.
+- [x] E14.2 Rol değişikliği anında etkili: yönetim uçları `adminSession` ile
+  rolü DB'den tazeler; 12 saatlik belirteç eski rolü taşıyamaz (yetki sızması
+  giderildi).
+- [x] E14.3 Panelden rol atama: `GET /api/admin/accounts`,
+  `POST /api/admin/accounts/:id/role`. Son adminin düşürülmesi engellenir
+  (`last_admin`); her değişiklik `audit_log`'a yazılır.
+- [x] E14.4 İlk yönetici (bootstrap): tek seferlik
+  `POST /api/auth/bootstrap-admin`, `BOOTSTRAP_ADMIN_TOKEN` ile korunur; atanan
+  hesap otomatik `protected` olur; kullanımdan sonra jeton silinir.
+- [x] E14.5 Hesap durumu (ban/unban): `POST /api/admin/accounts/:id/status`
+  (aktif/askıda/banlı). Banlı hesap giriş yapamaz (403).
+- [x] E14.6 Kurucu hesap koruması: `accounts.protected = 1` olan hesap
+  banlanamaz, askıya alınamaz ve rolü düşürülemez (`protected`). Son aktif admin
+  de banlanamaz (`last_admin`): aksi halde yönetici kendini kilitleyebilirdi.
+- [x] E14.7 Arayüz: panel yalnızca moderator/admin'e görünür; rol atama, ban ve
+  tohumlama kontrolleri yalnızca admin'de açıktır; korumalı hesapta kontroller
+  kilitlidir. i18n tr/en.
+
+Doğrulama: `npm run verify` → 54 dosya / 529 test geçti, 0 TL denetimi geçti.
+Canlı: `meka.yildiz@gmail.com` admin + `protected=1`; korumalı hesaba ban/rol
+düşürme → 409 `protected`; banlı hesap girişi → 403; panel rol listesi
+`protected` bayrağını gösteriyor.

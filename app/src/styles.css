@@ -1,0 +1,465 @@
+/* Kul ve Taht - temel tema (tasarim belgesi 18.1 renk paleti) */
+:root {
+  --kvt-stone: #1b1713;
+  --kvt-stone-light: #2a241d;
+  --kvt-brown: #4a3b2a;
+  --kvt-gold: #c9a227;
+  --kvt-bordo: #5a1f2b;
+  --kvt-parchment: #e8dcc4;
+  --kvt-text: #f0e6d2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--kvt-stone);
+  color: var(--kvt-text);
+  font-family: Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.kvt-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: 64px;
+}
+
+.kvt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--kvt-stone-light);
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-brand {
+  color: var(--kvt-gold);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+
+.kvt-lang {
+  background: var(--kvt-brown);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 15px;
+  min-width: 48px;
+}
+
+.kvt-main {
+  flex: 1;
+  padding: 20px 16px;
+}
+
+.kvt-title h1 {
+  font-size: 32px;
+  color: var(--kvt-gold);
+  margin: 24px 0 8px;
+}
+
+.kvt-slogan {
+  color: var(--kvt-parchment);
+  font-style: italic;
+  margin-bottom: 28px;
+}
+
+.kvt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.kvt-actions button,
+.kvt-intro button {
+  background: var(--kvt-bordo);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 17px;
+  font-family: inherit;
+  min-height: 52px;
+}
+
+.kvt-actions button:disabled {
+  opacity: 0.45;
+}
+
+.kvt-intro ol {
+  padding-left: 22px;
+  line-height: 2;
+}
+
+.kvt-closing {
+  color: var(--kvt-parchment);
+  font-style: italic;
+  margin: 18px 0;
+}
+
+.kvt-bottomnav {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--kvt-stone-light);
+  border-top: 1px solid var(--kvt-brown);
+}
+
+.kvt-navbtn {
+  background: transparent;
+  color: var(--kvt-text);
+  border: 0;
+  padding: 16px 4px;
+  font-size: 13px;
+  font-family: inherit;
+  min-height: 56px;
+}
+
+.kvt-navbtn:disabled {
+  opacity: 0.5;
+}
+
+/* Bildirim gecmisi (belge 19): oncelik esigi uzeri tek tek, arka plan tek satir. */
+.kvt-notifications ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.kvt-notifications li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-notif-unread {
+  font-weight: 600;
+}
+
+.kvt-notif-read {
+  opacity: 0.7;
+}
+
+.kvt-notif-bg {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.kvt-badge {
+  color: var(--kvt-gold, #c9a227);
+}
+
+/* Gorsel varlik galerisi (belge 17.4) ve veri tasarrufu modu (17.5). */
+.kvt-assets-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kvt-assetlist {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.kvt-asset {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--kvt-brown);
+  border-radius: 4px;
+}
+
+.kvt-assetfile {
+  font-size: 11px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.kvt-attributions {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Yonetim konsolu (belge 20). */
+.kvt-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.kvt-admin th,
+.kvt-admin td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-admin caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+
+/* Portre, esya ikonlari ve veri tasarrufu (belge 17). */
+.kvt-portrait-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kvt-portrait {
+  border: 2px solid var(--kvt-brown);
+  border-radius: 8px;
+  background: #1b1512;
+}
+
+.kvt-datasaver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.kvt-itemicon {
+  vertical-align: middle;
+  margin-right: 6px;
+  border-radius: 4px;
+}
+
+/* Hedef secici, karsilikli krediler, uyusmazlik ve onerge listeleri (belge 9, 11, 16). */
+.kvt-target {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.kvt-peerloans li,
+.kvt-disputes li,
+.kvt-motions li,
+.kvt-relations-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kvt-notifications button {
+  margin-top: 6px;
+}
+
+.kvt-diseases li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kvt-personality ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px 12px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+
+.kvt-personality li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.kvt-personality progress {
+  flex: 1;
+}
+
+.kvt-heir {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+/* Oynanis basligi ve kategori sekmeleri: uzun sayfa yerine bolumlu gezinme. */
+.kvt-playhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.kvt-playhead h2 {
+  margin: 0;
+}
+
+.kvt-avatar-lg {
+  border: 2px solid var(--kvt-brown);
+  border-radius: 10px;
+  background: #1b1512;
+  flex-shrink: 0;
+}
+
+.kvt-where {
+  color: var(--kvt-parchment);
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.kvt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 14px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--kvt-stone);
+  padding: 6px 0;
+}
+
+.kvt-tab {
+  background: var(--kvt-stone-light);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-brown);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  min-height: 40px;
+}
+
+.kvt-tab-active {
+  background: var(--kvt-bordo);
+  border-color: var(--kvt-gold);
+  color: var(--kvt-text);
+  font-weight: 600;
+}
+
+/* Bildirim balonlari: alt-ortada, sabit; oyuncuyu rahatsiz etmez, kaydirma yok. */
+.kvt-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 40;
+  width: min(92vw, 420px);
+  pointer-events: none;
+}
+
+.kvt-toast {
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 1px solid var(--kvt-gold);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  animation: kvt-toast-in 0.18s ease-out;
+}
+
+.kvt-toast-ok {
+  background: #2f4a3a;
+  color: var(--kvt-text);
+}
+
+.kvt-toast-error {
+  background: var(--kvt-bordo);
+  color: var(--kvt-text);
+}
+
+@keyframes kvt-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gorunum duzenleyici: canli avatar + secim alanlari. */
+.kvt-apperance-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.kvt-apperance-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.kvt-apperance-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.kvt-outfit-note {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 4px 0 0;
+}
+
+.kvt-admin-actions {
+  margin: 16px 0;
+}
+
+.kvt-admin-actions button {
+  background: var(--kvt-bordo);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  margin-right: 8px;
+  min-height: 44px;
+}
+
+.kvt-admin-accounts select {
+  background: var(--kvt-panel);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  min-height: 36px;
+}
+
+.kvt-protected {
+  color: var(--kvt-gold);
+  font-weight: 700;
+  margin-left: 6px;
+}

@@ -1,0 +1,48 @@
+{
+  "name": "kul-ve-taht",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Kul ve Taht - metin tabanli, kalici ortak dunyali ortacag-fantezi RPG/strateji (0 TL butce)",
+  "workspaces": [
+    "app",
+    "functions"
+  ],
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "build": "npm run sync:assets && npm run build -w @kvt/app && npm run build -w @kvt/functions",
+    "typecheck": "npm run typecheck -w @kvt/app && npm run typecheck -w @kvt/functions",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check:paid": "node scripts/check-no-paid-config.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run build && npm run test && npm run check:paid",
+    "gen:world": "vite-node scripts/gen-world-seed.ts",
+    "gen:assets": "node scripts/gen-assets.mjs",
+    "rehearsal:load-restore": "node scripts/load-restore-rehearsal.mjs",
+    "measure:network": "node scripts/network-measurement.mjs",
+    "test:closed": "node scripts/closed-test.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply kul-ve-taht-db --local --config functions/wrangler.toml",
+    "db:migrate:remote": "wrangler d1 migrations apply kul-ve-taht-db --remote --config functions/wrangler.toml",
+    "deploy:api": "wrangler deploy --config functions/wrangler.toml",
+    "deploy:production": "node scripts/deploy-production.mjs",
+    "deploy:web": "npm run build -w @kvt/app && wrangler pages deploy app/dist --project-name kul-ve-taht",
+    "dev:api": "wrangler dev --local --config functions/wrangler.toml",
+    "sync:assets": "node scripts/sync-assets.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22.20.5",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.12.0",
+    "vitest": "^2.1.4"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true,
+    "esbuild@0.17.19": true,
+    "workerd@1.20250718.0": true,
+    "sharp@0.33.5": true
+  }
+}

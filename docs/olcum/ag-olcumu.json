@@ -1,0 +1,102 @@
+{
+  "base": "http://127.0.0.1:12000",
+  "startedAt": "2026-10-31T15:59:57.296Z",
+  "endpoints": {
+    "register": {
+      "status": 201,
+      "ms": 135.446,
+      "bytes": 52
+    },
+    "health": {
+      "status": 200,
+      "ms": 11.789,
+      "bytes": 70
+    },
+    "worldSummary": {
+      "status": 200,
+      "ms": 17.051,
+      "bytes": 113
+    },
+    "worldSettlements": {
+      "status": 200,
+      "ms": 12.652,
+      "bytes": 18289
+    },
+    "worldTime": {
+      "status": 200,
+      "ms": 13.743,
+      "bytes": 61
+    },
+    "assetsCatalog": {
+      "status": 200,
+      "ms": 11.638,
+      "bytes": 8428
+    }
+  },
+  "load": {
+    "requests": 300,
+    "errors": 0,
+    "wallMs": 3212.069,
+    "rps": 93.398,
+    "totalBytes": 2016825,
+    "latencyMs": {
+      "n": 300,
+      "min": 8.474,
+      "max": 37.083,
+      "mean": 10.685,
+      "p50": 10.202,
+      "p95": 14.323
+    }
+  },
+  "quota": {
+    "day": "2026-10-31",
+    "rows": [
+      {
+        "metric": "requests",
+        "used": 1067,
+        "limit": 100000,
+        "percentUsed": 1.1,
+        "state": "ok"
+      },
+      {
+        "metric": "d1_reads",
+        "used": 0,
+        "limit": 5000000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "d1_writes",
+        "used": 0,
+        "limit": 100000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "do_requests",
+        "used": 0,
+        "limit": 100000,
+        "percentUsed": 0,
+        "state": "ok"
+      },
+      {
+        "metric": "workflow_steps",
+        "used": 0,
+        "limit": 3000,
+        "percentUsed": 0,
+        "state": "ok"
+      }
+    ],
+    "requestsUsed": 1067,
+    "requestsLimit": 100000,
+    "requestsPct": 1.067,
+    "withinFreeTier": true
+  },
+  "limits": {
+    "requests": 100000,
+    "d1_reads": 5000000,
+    "d1_writes": 100000
+  },
+  "withinFreeTier": true,
+  "finishedAt": "2026-10-31T16:00:00.726Z"
+}
