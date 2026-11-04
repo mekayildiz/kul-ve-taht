@@ -269,10 +269,14 @@ komuta indirildi.
 - [x] E11.4 Yönlendirme doğrulaması: `[assets]` + `not_found_handling =
   single-page-application` ile statik varlık önce sunulur, `/api/*` Worker'a
   düşer (CF dokümantasyonu ile doğrulandı; yerelde teyit edildi).
-- [ ] E11.5 Üretim kaynaklarının oluşturulması ve dağıtım (kullanıcı yetkisi
-  bekliyor): `npx wrangler login` sonrası `npm run deploy:production`.
-- [ ] E11.6 Canlı doğrulama (belge 25): kayıt, giriş, karakter, oyun aksiyonu,
-  kalıcılık ve çok oyunculu bağlantıların üretim adresinde teyidi.
+- [x] E11.5 Üretim kaynaklarının oluşturulması ve dağıtım: `npm run
+  deploy:production` ile D1 + migration + Worker + arayüz dağıtıldı
+  (`https://kul-ve-taht-functions.kul-ve-taht.workers.dev`). Kaynaklar zaten
+  mevcuttu; 0021 migration'ı uzak D1'e uygulandı.
+- [x] E11.6 Canlı doğrulama (belge 25): üretim adresinde kayıt (201), giriş
+  (200), `/api/me`, karakter oluşturma ve oyun aksiyonu (`rest`) uçtan uca
+  doğrulandı; dünya tohumlanmış (855 NPC, 130 krallık yerleşimi), arayüz aynı
+  kaynaktan (`/` → 200, `<title>Kul ve Taht</title>`) sunuluyor.
 
 Doğrulama: `npm run verify` → 52 dosya / 500 test geçti, 0 TL denetimi geçti;
 korunan belge md5 `563e0708d1fdc3c833c92437586dacd2` değişmedi.
@@ -325,3 +329,34 @@ oluyordu. Kök neden `wrangler tail` ile bulundu.
 Doğrulama: `npm run verify` → 53 dosya / 505 test geçti, 0 TL denetimi geçti.
 Canlı: kayıt 201, giriş 200, `/api/me` 200; `wrangler tail` kaydı Worker
 CPU ~7 ms, DO ~30 ms, istisna yok (`outcome: ok`).
+
+## E14 – Yönetim paneli, rol yönetimi ve hesap koruması (belge 20)
+
+Yönetim paneli, rol dağıtımı ve kötüye kullanımı önleyen hesap koruması
+tamamlandı; tümü üretim adresinde canlı doğrulandı.
+
+- [x] E14.1 Rol yönetimi sunucu tarafına taşındı: `accounts.role`
+  (player/moderator/admin). `admin:read` (panel görüntüleme) moderator+admin,
+  `admin:any` (yazma) yalnızca admin. Moderator paneli salt okunur görür.
+- [x] E14.2 Rol değişikliği anında etkili: yönetim uçları `adminSession` ile
+  rolü DB'den tazeler; 12 saatlik belirteç eski rolü taşıyamaz (yetki sızması
+  giderildi).
+- [x] E14.3 Panelden rol atama: `GET /api/admin/accounts`,
+  `POST /api/admin/accounts/:id/role`. Son adminin düşürülmesi engellenir
+  (`last_admin`); her değişiklik `audit_log`'a yazılır.
+- [x] E14.4 İlk yönetici (bootstrap): tek seferlik
+  `POST /api/auth/bootstrap-admin`, `BOOTSTRAP_ADMIN_TOKEN` ile korunur; atanan
+  hesap otomatik `protected` olur; kullanımdan sonra jeton silinir.
+- [x] E14.5 Hesap durumu (ban/unban): `POST /api/admin/accounts/:id/status`
+  (aktif/askıda/banlı). Banlı hesap giriş yapamaz (403).
+- [x] E14.6 Kurucu hesap koruması: `accounts.protected = 1` olan hesap
+  banlanamaz, askıya alınamaz ve rolü düşürülemez (`protected`). Son aktif admin
+  de banlanamaz (`last_admin`): aksi halde yönetici kendini kilitleyebilirdi.
+- [x] E14.7 Arayüz: panel yalnızca moderator/admin'e görünür; rol atama, ban ve
+  tohumlama kontrolleri yalnızca admin'de açıktır; korumalı hesapta kontroller
+  kilitlidir. i18n tr/en.
+
+Doğrulama: `npm run verify` → 54 dosya / 529 test geçti, 0 TL denetimi geçti.
+Canlı: `meka.yildiz@gmail.com` admin + `protected=1`; korumalı hesaba ban/rol
+düşürme → 409 `protected`; banlı hesap girişi → 403; panel rol listesi
+`protected` bayrağını gösteriyor.
