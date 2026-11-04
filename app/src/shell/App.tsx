@@ -6,8 +6,9 @@ import { WorldOverview } from "../screens/WorldOverview";
 import { CharacterSetup } from "../screens/CharacterSetup";
 import { PlayPanel } from "../screens/PlayPanel";
 import { AdminPanel } from "../screens/AdminPanel";
+import { SecurityPanel } from "../screens/SecurityPanel";
 
-type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world" | "admin";
+type Screen = "title" | "intro" | "auth" | "setup" | "play" | "world" | "admin" | "security";
 
 // Uretimde arayuz ve API ayni Worker'dan sunulur; varsayilan olarak ayni
 // kaynak kullanilir (bos taban = goreli yol). Yerelde API ayri porttadir.
@@ -54,6 +55,11 @@ export function App(): JSX.Element {
               onClick={() => setScreen(character ? "play" : "setup")}
             >
               {t.nav.character}
+            </button>
+          )}
+          {account && (
+            <button type="button" className="kvt-navbtn" onClick={() => setScreen("security")}>
+              {t.admin.security}
             </button>
           )}
           {canManage && (
@@ -131,6 +137,8 @@ export function App(): JSX.Element {
         )}
 
         {screen === "world" && <WorldOverview t={t} client={client} />}
+
+        {screen === "security" && account && <SecurityPanel t={t} client={client} token={account.token} />}
 
         {screen === "admin" && account && canManage && (
           <AdminPanel t={t} client={client} token={account.token} role={account.role} />

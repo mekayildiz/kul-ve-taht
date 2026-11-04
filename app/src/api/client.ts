@@ -359,6 +359,41 @@ export interface AdminEconomyDto {
 export type AccountRoleDto = "player" | "moderator" | "admin";
 export type AccountStatusDto = "active" | "suspended" | "banned";
 
+export interface AdminItemDto {
+  id: string;
+  name: string;
+  category: string;
+  baseValue: number;
+}
+
+export interface AdminAuditDto {
+  id: string;
+  actorId: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  detail: string | null;
+  createdAt: number;
+}
+
+export interface AdminAttributesDto {
+  strength: number;
+  agility: number;
+  endurance: number;
+  intellect: number;
+  charisma: number;
+  perception: number;
+  leadership: number;
+}
+
+export interface AccountSessionDto {
+  id: string;
+  issuedAt: number;
+  expiresAt: number;
+  userAgent: string | null;
+  current: boolean;
+}
+
 export interface AdminAccountDto {
   id: string;
   email: string;
@@ -868,6 +903,123 @@ export class ApiClient {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
+    });
+  }
+
+  /** Esya katalogu (belge 20). Yonetici/moderator. */
+  adminItems(token: string): Promise<{ items: AdminItemDto[] }> {
+    return this.request("/api/admin/items", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Son denetim kayitlari (belge 20). Yonetici/moderator. */
+  adminAudit(token: string, limit = 100): Promise<{ entries: AdminAuditDto[] }> {
+    return this.request(`/api/admin/audit?limit=${limit}`, { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Karakterin nitelikleri (belge 20). Yonetici/moderator. */
+  adminAttributes(token: string, characterId: string): Promise<{ attributes: AdminAttributesDto }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/attributes`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** Karaktere para ekler/cikarir (delta) (belge 20). Yalnizca yonetici. */
+  adminGrantGold(token: string, characterId: string, delta: number): Promise<{ ok: boolean; gold: number }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/gold`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ delta }),
+    });
+  }
+
+  /** Karaktere esya verir/alir (belge 20). Yalnizca yonetici. */
+  adminGrantItem(
+    token: string,
+    characterId: string,
+    itemId: string,
+    quantity: number,
+    mode: "grant" | "revoke" = "grant",
+  ): Promise<{ ok: boolean; quantity: number }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/items`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itemId, quantity, mode }),
+    });
+  }
+
+  /** Karakterin bir niteligini ayarlar (1..20) (belge 20). Yalnizca yonetici. */
+  adminSetAttribute(
+    token: string,
+    characterId: string,
+    attribute: string,
+    value: number,
+  ): Promise<{ ok: boolean; value: number }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/attributes`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ attribute, value }),
+    });
+  }
+
+  /** Karakterin canli durumunu duzeltir (belge 20). Yalnizca yonetici. */
+  adminAdjustVitals(
+    token: string,
+    characterId: string,
+    changes: { health?: number; energy?: number; reputation?: number; hunger?: number; fatigue?: number },
+  ): Promise<{ ok: boolean }> {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}/vitals`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(changes),
+    });
+  }
+
+  /** Aktif oturumlari listeler (belge 21.1). */
+  accountSessions(token: string): Promise<{ sessions: AccountSessionDto[] }> {
+    return this.request("/api/account/sessions", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** Bir oturumu iptal eder. */
+  revokeSession(token: string, sessionId: string): Promise<{ ok: boolean }> {
+    return this.request(`/api/account/sessions/${encodeURIComponent(sessionId)}/revoke`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** Mevcut oturum haric tum oturumlari iptal eder. */
+  revokeOtherSessions(token: string): Promise<{ ok: boolean; revoked: number }> {
+    return this.request("/api/account/sessions/revoke-others", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** 2FA durumu. */
+  twoFactorStatus(token: string): Promise<{ enabled: boolean }> {
+    return this.request("/api/account/2fa", { headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** 2FA kurulumunu baslatir. */
+  twoFactorSetup(token: string): Promise<{ secret: string; uri: string }> {
+    return this.request("/api/account/2fa/setup", { method: "POST", headers: { authorization: `Bearer ${token}` } });
+  }
+
+  /** 2FA kurulumunu dogrular ve kurtarma kodlarini doner. */
+  twoFactorConfirm(token: string, code: string): Promise<{ ok: boolean; recoveryCodes: string[] }> {
+    return this.request("/api/account/2fa/confirm", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  /** 2FA'yi kapatir. */
+  twoFactorDisable(token: string, code: string): Promise<{ ok: boolean }> {
+    return this.request("/api/account/2fa/disable", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
     });
   }
 }

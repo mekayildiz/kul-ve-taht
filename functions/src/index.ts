@@ -10,7 +10,15 @@ import { Router, type RouteContext } from "./http/router";
 import { json, error } from "./http/response";
 import { allowedOrigin, withCors, preflightResponse } from "./http/cors";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
-import { verifySessionToken, type SessionPayload } from "./auth/session";
+import { verifySessionToken, sessionTokenHash, type SessionPayload } from "./auth/session";
+import {
+  listSessions,
+  revokeSession,
+  revokeOtherSessions,
+  startTotpSetup,
+  confirmTotpSetup,
+  disableTotp,
+} from "./auth/security";
 import { constantTimeEqual } from "./auth/constant-time";
 import { authorize } from "./auth/authorize";
 import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES, allSettlementProfiles, settlementProfile } from "./world";
@@ -140,8 +148,16 @@ import {
   performJoinAlliance,
   allianceStatus,
 } from "./play/multiplayer-extras";
-import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
+import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy, adminItemCatalog, adminAuditLog } from "./admin/console";
 import { adminAccounts, adminSetAccountRole, adminSetAccountStatus, isAccountRole, isAccountStatus } from "./admin/roles";
+import {
+  adminGrantGold,
+  adminGrantItem,
+  adminRevokeItem,
+  adminGetAttributes,
+  adminSetAttribute,
+  adminAdjustVitals,
+} from "./admin/grants";
 import { playerDirectory } from "./play/directory";
 import { loadPersonality } from "./play/personality";
 import { heirOf } from "./play/succession";
@@ -407,7 +423,9 @@ router.post("/api/auth/bootstrap-admin", async ({ request, env }: Ctx) => {
 });
 
 router.post("/api/auth/login", async ({ request, env }: Ctx) => {
-  const body = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
+  const body = (await request.json().catch(() => null)) as
+    | { email?: string; password?: string; totpCode?: string; recoveryCode?: string }
+    | null;
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
   }
@@ -415,17 +433,94 @@ router.post("/api/auth/login", async ({ request, env }: Ctx) => {
     return error("server_misconfigured", "Oturum sirri yapilandirilmamis.", 500);
   }
   const hasher = createGateHasher(env.PASSWORD_HASH_GATE, body.email.trim().toLowerCase());
+  const userAgent = request.headers.get("user-agent");
   const result = await loginAccount(
     env.DB,
-    { email: body.email, password: body.password },
+    {
+      email: body.email,
+      password: body.password,
+      ...(body.totpCode ? { totpCode: body.totpCode } : {}),
+      ...(body.recoveryCode ? { recoveryCode: body.recoveryCode } : {}),
+      ...(userAgent ? { userAgent } : {}),
+    },
     env.SESSION_SECRET,
     hasher,
   );
   if (!result.ok) {
+    if (result.error === "totp_required") return error("totp_required", "Iki adimli dogrulama kodu gerekli.", 401);
+    if (result.error === "invalid_totp") return error("invalid_totp", "Dogrulama kodu gecersiz.", 401);
     const status = result.error === "suspended" ? 403 : 401;
     return error(result.error, "Giris basarisiz.", status);
   }
   return json({ token: result.token, expiresAt: result.payload.expiresAt, role: result.payload.role });
+});
+
+/**
+ * Aktif oturumlari listeler (belge 21.1). Kullanici kendi oturumlarini gorur;
+ * belirtecin kendisi degil, ozeti karsilastirilir.
+ */
+router.get("/api/account/sessions", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  return json({ sessions: await listSessions(env.DB, session.accountId, token) });
+});
+
+/** Tek bir oturumu iptal eder (sahiplik dogrulanir). */
+router.post("/api/account/sessions/:id/revoke", async ({ params, request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const ok = await revokeSession(env.DB, session.accountId, params.id!);
+  return ok ? json({ ok: true }) : error("not_found", "Oturum bulunamadi.", 404);
+});
+
+/** Mevcut oturum haric tum oturumlari iptal eder. */
+router.post("/api/account/sessions/revoke-others", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const count = await revokeOtherSessions(env.DB, session.accountId, token);
+  return json({ ok: true, revoked: count });
+});
+
+/** Iki adimli dogrulama durumu. */
+router.get("/api/account/2fa", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const row = await queryOne<{ totp_enabled: number }>(env.DB, "SELECT totp_enabled FROM accounts WHERE id = ?", session.accountId);
+  return json({ enabled: row?.totp_enabled === 1 });
+});
+
+/** 2FA kurulumunu baslatir: sir + otpauth URI doner. */
+router.post("/api/account/2fa/setup", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session || !env.SESSION_SECRET) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const row = await queryOne<{ email: string }>(env.DB, "SELECT email FROM accounts WHERE id = ?", session.accountId);
+  const result = await startTotpSetup(env.DB, session.accountId, row?.email ?? "hesap", env.SESSION_SECRET);
+  if (!result.ok) return error(result.error, "2FA kurulumu baslatilamadi.", 409);
+  return json({ secret: result.secret, uri: result.uri });
+});
+
+/** 2FA kurulumunu dogrular, acar ve kurtarma kodlarini doner. */
+router.post("/api/account/2fa/confirm", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session || !env.SESSION_SECRET) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const body = (await request.json().catch(() => null)) as { code?: string } | null;
+  if (!body?.code) return error("invalid_body", "code zorunludur.", 400);
+  const result = await confirmTotpSetup(env.DB, session.accountId, body.code, env.SESSION_SECRET);
+  if (!result.ok) return error(result.error, "Dogrulama kodu gecersiz.", 400);
+  return json({ ok: true, recoveryCodes: result.recoveryCodes });
+});
+
+/** 2FA'yi kapatir (mevcut kod gerekir). */
+router.post("/api/account/2fa/disable", async ({ request, env }: Ctx) => {
+  const session = await readSession(request, env);
+  if (!session || !env.SESSION_SECRET) return error("unauthorized", "Gecerli oturum yok.", 401);
+  const body = (await request.json().catch(() => null)) as { code?: string } | null;
+  if (!body?.code) return error("invalid_body", "code zorunludur.", 400);
+  const result = await disableTotp(env.DB, session.accountId, body.code, env.SESSION_SECRET);
+  if (!result.ok) return error(result.error, "2FA kapatilamadi.", 400);
+  return json({ ok: true });
 });
 
 router.get("/api/me", async ({ request, env }: Ctx) => {
@@ -545,6 +640,95 @@ router.post("/api/admin/characters/:id/status", async ({ params, request, env }:
   return result.ok ? json({ ok: true }) : error("not_found", "Karakter bulunamadi.", 404);
 });
 
+/** Panel icin esya katalogu (belge 20). Yonetici/moderator gorebilir. */
+router.get("/api/admin/items", async ({ request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  return json({ items: adminItemCatalog() });
+});
+
+/** Son denetim kayitlari (belge 20). Yonetici/moderator gorebilir. */
+router.get("/api/admin/audit", async ({ request, url, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const limit = Number.parseInt(url.searchParams.get("limit") ?? "100", 10);
+  return json({ entries: await adminAuditLog(env.DB, Number.isFinite(limit) ? limit : 100) });
+});
+
+/** Karakterin niteliklerini doner (belge 20). Yonetici/panel icin. */
+router.get("/api/admin/characters/:id/attributes", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:read" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const attributes = await adminGetAttributes(env.DB, params.id!);
+  if (!attributes) return error("not_found", "Karakter bulunamadi.", 404);
+  return json({ attributes });
+});
+
+/** Karaktere para ekler/cikarir (delta) (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/characters/:id/gold", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { delta?: number } | null;
+  const result = await adminGrantGold(env.DB, params.id!, Number(body?.delta), session?.accountId ?? null);
+  if (result.ok) return json({ ok: true, gold: result.value });
+  if (result.error === "not_found") return error("not_found", "Karakter bulunamadi.", 404);
+  return error("invalid_amount", "Gecersiz miktar.", 400);
+});
+
+/** Karaktere esya verir/alir (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/characters/:id/items", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { itemId?: string; quantity?: number; mode?: string } | null;
+  const quantity = Number(body?.quantity ?? 1);
+  const fn = body?.mode === "revoke" ? adminRevokeItem : adminGrantItem;
+  const result = await fn(env.DB, params.id!, String(body?.itemId ?? ""), quantity, session?.accountId ?? null);
+  if (result.ok) return json({ ok: true, quantity: result.value });
+  if (result.error === "not_found") return error("not_found", "Karakter bulunamadi.", 404);
+  if (result.error === "invalid_item") return error("invalid_item", "Bilinmeyen esya.", 400);
+  return error("invalid_amount", "Gecersiz miktar.", 400);
+});
+
+/** Karakterin bir niteligini ayarlar (1..20) (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/characters/:id/attributes", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { attribute?: string; value?: number } | null;
+  const result = await adminSetAttribute(
+    env.DB,
+    params.id!,
+    String(body?.attribute ?? ""),
+    Number(body?.value),
+    session?.accountId ?? null,
+  );
+  if (result.ok) return json({ ok: true, value: result.value });
+  if (result.error === "not_found") return error("not_found", "Karakter bulunamadi.", 404);
+  if (result.error === "invalid_attribute") return error("invalid_attribute", "Bilinmeyen nitelik.", 400);
+  return error("invalid_amount", "Gecersiz deger.", 400);
+});
+
+/** Karakterin canli durumunu (saglik/enerji/itibar) duzeltir (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/characters/:id/vitals", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  const pick = (k: string): number | undefined => (typeof body?.[k] === "number" ? (body[k] as number) : undefined);
+  const changes: { health?: number; energy?: number; reputation?: number; hunger?: number; fatigue?: number } = {};
+  const h = pick("health");
+  if (h !== undefined) changes.health = h;
+  const e = pick("energy");
+  if (e !== undefined) changes.energy = e;
+  const r = pick("reputation");
+  if (r !== undefined) changes.reputation = r;
+  const hu = pick("hunger");
+  if (hu !== undefined) changes.hunger = hu;
+  const f = pick("fatigue");
+  if (f !== undefined) changes.fatigue = f;
+  const result = await adminAdjustVitals(env.DB, params.id!, changes, session?.accountId ?? null);
+  if (result.ok) return json({ ok: true });
+  return error("not_found", "Karakter bulunamadi.", 404);
+});
+
 /** Pazar/ekonomi izleme (belge 20). Yalnizca yonetici. */
 router.get("/api/admin/economy", async ({ request, url, env }: Ctx) => {
   // Salt okunur: moderator ve admin gorebilir (admin:read). Rol DB'den tazelenir.
@@ -634,10 +818,21 @@ router.post("/api/characters", async ({ request, env }: Ctx) => {
   return json({ characterId: result.characterId }, 201);
 });
 
-/** Oturumu cozer; gecersizse null. */
+/** Oturumu cozer; gecersiz veya IPTAL EDILMISSE null. */
 async function readSession(request: Request, env: Env) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  return env?.SESSION_SECRET ? verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  const session = env?.SESSION_SECRET ? await verifySessionToken(token, env.SESSION_SECRET, Date.now()) : null;
+  if (!session) return null;
+  // Iptal edilen oturumlar aninda gecersiz olur (kullanici "cikis" isteyebilir).
+  if (token) {
+    const row = await queryOne<{ revoked_at: number | null }>(
+      env.DB,
+      "SELECT revoked_at FROM sessions WHERE token_hash = ? ORDER BY issued_at DESC LIMIT 1",
+      await sessionTokenHash(token),
+    );
+    if (row && row.revoked_at !== null) return null;
+  }
+  return session;
 }
 
 /**

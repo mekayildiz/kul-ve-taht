@@ -66,3 +66,13 @@ export async function verifySessionToken(token: string, secret: string, nowMs: n
 }
 
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 saat
+
+/**
+ * Oturum belirtecinin sunucu tarafi kimligi: imza kisminin SHA-256 ozeti.
+ * Ham belirtec/Imza D1'de SAKLANMAZ; sizinti halinde oturum ele gecirilemez.
+ */
+export async function sessionTokenHash(token: string): Promise<string> {
+  const signature = token.split(".")[1] ?? "";
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(signature)));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
+}

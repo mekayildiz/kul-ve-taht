@@ -10,6 +10,7 @@
 import type { SqlDatabase } from "../db/client";
 import { execute, queryAll, queryOne } from "../db/client";
 import { marketQuote } from "../play/service";
+import { ITEMS } from "../inventory/items";
 
 export interface AdminOverview {
   accounts: number;
@@ -137,5 +138,55 @@ export async function adminEconomy(db: SqlDatabase, limit = 50): Promise<AdminEc
     supply: r.supply,
     demand: r.demand,
     price: marketQuote(r.item_id)?.base ?? 0,
+  }));
+}
+
+export interface AdminItemOption {
+  id: string;
+  name: string;
+  category: string;
+  baseValue: number;
+}
+
+/** Panel icin esya katalogu (belge 20). Yalnizca yonetici. */
+export function adminItemCatalog(): AdminItemOption[] {
+  return ITEMS.map((i) => ({ id: i.id, name: i.name, category: i.category, baseValue: i.baseValue }));
+}
+
+export interface AdminAuditRow {
+  id: string;
+  actorId: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  detail: string | null;
+  createdAt: number;
+}
+
+/** Son denetim kayitlari (belge 20). Yalnizca yonetici. */
+export async function adminAuditLog(db: SqlDatabase, limit = 100): Promise<AdminAuditRow[]> {
+  const safeLimit = Math.max(1, Math.min(500, Math.floor(limit)));
+  const rows = await queryAll<{
+    id: string;
+    actor_id: string | null;
+    action: string;
+    target_type: string | null;
+    target_id: string | null;
+    detail: string | null;
+    created_at: number;
+  }>(
+    db,
+    `SELECT id, actor_id, action, target_type, target_id, detail, created_at
+     FROM audit_log ORDER BY created_at DESC LIMIT ?`,
+    safeLimit,
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    actorId: r.actor_id,
+    action: r.action,
+    targetType: r.target_type,
+    targetId: r.target_id,
+    detail: r.detail,
+    createdAt: r.created_at,
   }));
 }
