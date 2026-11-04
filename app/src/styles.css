@@ -447,3 +447,19 @@ body {
   margin-right: 8px;
   min-height: 44px;
 }
+
+.kvt-admin-accounts select {
+  background: var(--kvt-panel);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  min-height: 36px;
+}
+
+.kvt-protected {
+  color: var(--kvt-gold);
+  font-weight: 700;
+  margin-left: 6px;
+}

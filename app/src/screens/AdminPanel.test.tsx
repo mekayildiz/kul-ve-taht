@@ -45,8 +45,9 @@ const economy = { economy: [{ settlementId: "varkhenn-drahkmar", itemId: "wheat"
 
 const accounts = {
   accounts: [
-    { id: "a1", email: "oyuncu@valedorn.tr", role: "player", status: "active", createdAt: 1, characterCount: 1 },
-    { id: "a2", email: "mod@valedorn.tr", role: "moderator", status: "active", createdAt: 2, characterCount: 0 },
+    { id: "a1", email: "oyuncu@valedorn.tr", role: "player", status: "active", protected: false, createdAt: 1, characterCount: 1 },
+    { id: "a2", email: "mod@valedorn.tr", role: "moderator", status: "active", protected: false, createdAt: 2, characterCount: 0 },
+    { id: "a3", email: "kurucu@valedorn.tr", role: "admin", status: "active", protected: true, createdAt: 0, characterCount: 1 },
   ],
 };
 
@@ -127,5 +128,40 @@ describe("AdminPanel (belge 20)", () => {
     expect(screen.queryByText(t.admin.accountList)).toBeNull();
     expect(screen.queryByRole("button", { name: t.admin.seedWorld })).toBeNull();
     expect(screen.queryByRole("button", { name: `${t.admin.markDead}: Kael Veyr` })).toBeNull();
+  });
+
+  it("hesabi banlar ve ban kaldirir", async () => {
+    const sent: { path: string; body: { status: string } }[] = [];
+    const client = clientWith((path, init) => {
+      if (path.endsWith("/status") && path.includes("/accounts/")) {
+        sent.push({ path, body: JSON.parse(String(init?.body)) });
+        return json({ ok: true, status: "banned" });
+      }
+      if (path.startsWith("/api/admin/overview")) return json(overview);
+      if (path.startsWith("/api/admin/characters")) return json(characters);
+      if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/accounts")) return json(accounts);
+      return json({}, 404);
+    });
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
+    await waitFor(() => expect(screen.getByText("oyuncu@valedorn.tr")).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: `${t.admin.ban}: oyuncu@valedorn.tr` }));
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]!.path).toBe("/api/admin/accounts/a1/status");
+    expect(sent[0]!.body.status).toBe("banned");
+  });
+
+  it("korumali (kurucu) hesapta rol ve ban kontrolleri kilitli", async () => {
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/admin/overview")) return json(overview);
+      if (path.startsWith("/api/admin/characters")) return json(characters);
+      if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/accounts")) return json(accounts);
+      return json({}, 404);
+    });
+    render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
+    await waitFor(() => expect(screen.getByText("kurucu@valedorn.tr")).toBeTruthy());
+    expect(screen.getByRole("combobox", { name: `${t.admin.role}: kurucu@valedorn.tr` })).toBeDisabled();
+    expect(screen.getByRole("button", { name: `${t.admin.ban}: kurucu@valedorn.tr` })).toBeDisabled();
   });
 });

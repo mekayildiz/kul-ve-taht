@@ -358,6 +358,16 @@ export const tr = {
     roleSaved: "Rol güncellendi.",
     roleReadOnly: "Rol atama yalnızca yöneticilere açıktır.",
     lastAdmin: "Son yöneticinin rolü düşürülemez.",
+    status: "Durum",
+    ban: "Banla",
+    unban: "Banı Kaldır",
+    statusSaved: "Hesap durumu güncellendi.",
+    protectedAccount: "Korumalı (kurucu) hesap: banlanamaz ve rolü düşürülemez.",
+    statuses: {
+      active: "Aktif",
+      suspended: "Askıda",
+      banned: "Banlı",
+    },
     you: "siz",
   },
 };

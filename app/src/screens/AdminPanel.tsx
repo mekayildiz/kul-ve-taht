@@ -15,6 +15,7 @@ import {
   ApiClient,
   ApiRequestError,
   type AccountRoleDto,
+  type AccountStatusDto,
   type AdminAccountDto,
   type AdminCharacterDto,
   type AdminEconomyDto,
@@ -105,6 +106,24 @@ export function AdminPanel({ client, token, t, role }: AdminPanelProps): JSX.Ele
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "last_admin") {
         setError(t.admin.lastAdmin);
+      } else if (err instanceof ApiRequestError && err.code === "protected") {
+        setError(t.admin.protectedAccount);
+      } else {
+        setError(t.admin.adminOnly);
+      }
+    }
+  }
+
+  async function changeStatus(account: AdminAccountDto, next: AccountStatusDto): Promise<void> {
+    setMessage(null);
+    setError(null);
+    try {
+      await client.adminSetAccountStatus(token, account.id, next);
+      setMessage(t.admin.statusSaved);
+      await load();
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.code === "protected") {
+        setError(t.admin.protectedAccount);
       } else {
         setError(t.admin.adminOnly);
       }
@@ -191,31 +210,44 @@ export function AdminPanel({ client, token, t, role }: AdminPanelProps): JSX.Ele
               <tr>
                 <th scope="col">{t.admin.email}</th>
                 <th scope="col">{t.admin.role}</th>
+                <th scope="col">{t.admin.status}</th>
                 <th scope="col" />
               </tr>
             </thead>
             <tbody>
               {state.accounts.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.email}</td>
+                  <td>
+                    {a.email}
+                    {a.protected && <span className="kvt-protected" title={t.admin.protectedAccount}> ★</span>}
+                  </td>
                   <td>
                     <select
                       aria-label={`${t.admin.role}: ${a.email}`}
                       value={a.role}
                       onChange={(e) => void changeRole(a, e.target.value as AccountRoleDto)}
-                      disabled={busy}
+                      disabled={busy || a.protected}
                     >
                       <option value="player">{t.admin.roles.player}</option>
                       <option value="moderator">{t.admin.roles.moderator}</option>
                       <option value="admin">{t.admin.roles.admin}</option>
                     </select>
                   </td>
+                  <td>{t.admin.statuses[a.status]}</td>
                   <td>
+                    <button
+                      type="button"
+                      aria-label={`${a.status === "banned" ? t.admin.unban : t.admin.ban}: ${a.email}`}
+                      onClick={() => void changeStatus(a, a.status === "banned" ? "active" : "banned")}
+                      disabled={busy || a.protected}
+                    >
+                      {a.status === "banned" ? t.admin.unban : t.admin.ban}
+                    </button>
                     <button
                       type="button"
                       aria-label={`${t.admin.changeRole}: ${a.email}`}
                       onClick={() => void changeRole(a, a.role)}
-                      disabled={busy}
+                      disabled={busy || a.protected}
                     >
                       {t.admin.changeRole}
                     </button>

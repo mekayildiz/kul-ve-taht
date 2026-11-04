@@ -360,6 +360,16 @@ export const en: typeof tr = {
     roleSaved: "Role updated.",
     roleReadOnly: "Role assignment is restricted to administrators.",
     lastAdmin: "The last administrator's role cannot be demoted.",
+    status: "Status",
+    ban: "Ban",
+    unban: "Unban",
+    statusSaved: "Account status updated.",
+    protectedAccount: "Protected (founder) account: cannot be banned or demoted.",
+    statuses: {
+      active: "Active",
+      suspended: "Suspended",
+      banned: "Banned",
+    },
     you: "you",
   },
 };

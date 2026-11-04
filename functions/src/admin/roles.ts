@@ -22,6 +22,8 @@ export interface AdminAccountRow {
   email: string;
   role: AccountRole;
   status: string;
+  /** Kurucu/yonetici hesabi: ban ve rol dusurme engelli. */
+  protected: boolean;
   createdAt: number;
   characterCount: number;
 }
@@ -34,11 +36,12 @@ export async function adminAccounts(db: SqlDatabase, limit = 100): Promise<Admin
     email: string;
     role: AccountRole;
     status: string;
+    protected: number;
     created_at: number;
     character_count: number;
   }>(
     db,
-    `SELECT a.id, a.email, a.role, a.status, a.created_at,
+    `SELECT a.id, a.email, a.role, a.status, a.protected, a.created_at,
             (SELECT COUNT(*) FROM characters c WHERE c.account_id = a.id) AS character_count
      FROM accounts a ORDER BY a.created_at DESC LIMIT ?`,
     safeLimit,
@@ -48,6 +51,7 @@ export async function adminAccounts(db: SqlDatabase, limit = 100): Promise<Admin
     email: r.email,
     role: r.role,
     status: r.status,
+    protected: r.protected === 1,
     createdAt: r.created_at,
     characterCount: r.character_count,
   }));
@@ -55,13 +59,15 @@ export async function adminAccounts(db: SqlDatabase, limit = 100): Promise<Admin
 
 export interface SetRoleResult {
   ok: boolean;
-  reason?: "not_found" | "invalid_role" | "last_admin";
+  reason?: "not_found" | "invalid_role" | "last_admin" | "protected";
   role?: AccountRole;
 }
 
 /**
- * Hesap rolunu degistirir. Son adminin dusurulmesi ENGELLENIR: aksi halde
- * yonetim paneli kilitli kalir ve kimse rol dagitamaz.
+ * Hesap rolunu degistirir. Iki koruma vardir:
+ *  - Korumali (kurucu) hesabin rolu DEGISTIRILEMEZ (`protected`).
+ *  - Son adminin dusurulmesi ENGELLENIR (`last_admin`): aksi halde yonetim
+ *    paneli kilitli kalir ve kimse rol dagitamaz.
  */
 export async function adminSetAccountRole(
   db: SqlDatabase,
@@ -71,12 +77,13 @@ export async function adminSetAccountRole(
   nowMs = Date.now(),
 ): Promise<SetRoleResult> {
   if (!isAccountRole(role)) return { ok: false, reason: "invalid_role" };
-  const account = await queryOne<{ id: string; role: AccountRole }>(
+  const account = await queryOne<{ id: string; role: AccountRole; protected: number }>(
     db,
-    "SELECT id, role FROM accounts WHERE id = ?",
+    "SELECT id, role, protected FROM accounts WHERE id = ?",
     accountId,
   );
   if (!account) return { ok: false, reason: "not_found" };
+  if (account.protected === 1) return { ok: false, reason: "protected" };
 
   if (account.role === "admin" && role !== "admin") {
     const admins = await queryOne<{ n: number }>(db, "SELECT COUNT(*) AS n FROM accounts WHERE role = 'admin'");
@@ -96,4 +103,55 @@ export async function adminSetAccountRole(
     nowMs,
   );
   return { ok: true, role };
+}
+
+export type AccountStatus = "active" | "suspended" | "banned";
+
+export const ACCOUNT_STATUSES: readonly AccountStatus[] = ["active", "suspended", "banned"];
+
+export function isAccountStatus(value: unknown): value is AccountStatus {
+  return typeof value === "string" && (ACCOUNT_STATUSES as readonly string[]).includes(value);
+}
+
+export interface SetStatusResult {
+  ok: boolean;
+  reason?: "not_found" | "invalid_status" | "protected";
+  status?: AccountStatus;
+}
+
+/**
+ * Hesap durumunu degistirir (aktif/askida/banli). Korumali hesap BANLANAMAZ
+ * ve askiya alinamaz; boylece kurucu hesabi kilitlenemez. Durum degisikligi
+ * `audit_log`'a yazilir.
+ */
+export async function adminSetAccountStatus(
+  db: SqlDatabase,
+  accountId: string,
+  status: AccountStatus,
+  actorAccountId: string | null = null,
+  nowMs = Date.now(),
+): Promise<SetStatusResult> {
+  if (!isAccountStatus(status)) return { ok: false, reason: "invalid_status" };
+  const account = await queryOne<{ id: string; status: string; protected: number }>(
+    db,
+    "SELECT id, status, protected FROM accounts WHERE id = ?",
+    accountId,
+  );
+  if (!account) return { ok: false, reason: "not_found" };
+  // Korumali hesap yalnizca aktif kalabilir; ban/askiya alma reddedilir.
+  if (account.protected === 1 && status !== "active") return { ok: false, reason: "protected" };
+
+  await execute(db, "UPDATE accounts SET status = ?, updated_at = ? WHERE id = ?", status, nowMs, accountId);
+  await execute(
+    db,
+    "INSERT INTO audit_log (id, actor_id, action, target_type, target_id, detail, created_at) VALUES (?,?,?,?,?,?,?)",
+    crypto.randomUUID(),
+    actorAccountId,
+    "account_status_change",
+    "account",
+    accountId,
+    JSON.stringify({ from: account.status, to: status }),
+    nowMs,
+  );
+  return { ok: true, status };
 }

@@ -141,7 +141,7 @@ import {
   allianceStatus,
 } from "./play/multiplayer-extras";
 import { adminOverview, adminCharacters, adminSetCharacterStatus, adminEconomy } from "./admin/console";
-import { adminAccounts, adminSetAccountRole, isAccountRole } from "./admin/roles";
+import { adminAccounts, adminSetAccountRole, adminSetAccountStatus, isAccountRole, isAccountStatus } from "./admin/roles";
 import { playerDirectory } from "./play/directory";
 import { loadPersonality } from "./play/personality";
 import { heirOf } from "./play/succession";
@@ -391,7 +391,7 @@ router.post("/api/auth/bootstrap-admin", async ({ request, env }: Ctx) => {
   );
   if (!account) return error("not_found", "Hesap bulunamadi. Once kayit olun.", 404);
 
-  await execute(env.DB, "UPDATE accounts SET role = 'admin', updated_at = ? WHERE id = ?", Date.now(), account.id);
+  await execute(env.DB, "UPDATE accounts SET role = 'admin', protected = 1, updated_at = ? WHERE id = ?", Date.now(), account.id);
   await execute(
     env.DB,
     "INSERT INTO audit_log (id, actor_id, action, target_type, target_id, detail, created_at) VALUES (?,?,?,?,?,?,?)",
@@ -580,9 +580,25 @@ router.post("/api/admin/accounts/:id/role", async ({ params, request, env }: Ctx
   const result = await adminSetAccountRole(env.DB, params.id!, body.role, session?.accountId ?? null);
   if (result.ok) return json({ ok: true, role: result.role });
   if (result.reason === "not_found") return error("not_found", "Hesap bulunamadi.", 404);
+  if (result.reason === "protected")
+    return error("protected", "Korumali (kurucu) hesabin rolu degistirilemez.", 409);
   if (result.reason === "last_admin")
     return error("last_admin", "Son yoneticinin rolu dusurulemez; once baska bir yonetici atayin.", 409);
   return error("invalid_body", "Gecersiz rol.", 400);
+});
+
+/** Hesap durumunu degistirir (aktif/askida/banli) (belge 20). Yalnizca yonetici. */
+router.post("/api/admin/accounts/:id/status", async ({ params, request, env }: Ctx) => {
+  const session = await adminSession(request, env);
+  if (!authorize({ session, action: "admin:any" }).allowed) return error("forbidden", "Yonetici yetkisi gerekli.", 403);
+  const body = (await request.json().catch(() => null)) as { status?: string } | null;
+  if (!isAccountStatus(body?.status)) return error("invalid_body", "status 'active', 'suspended' veya 'banned' olmalidir.", 400);
+  const result = await adminSetAccountStatus(env.DB, params.id!, body.status, session?.accountId ?? null);
+  if (result.ok) return json({ ok: true, status: result.status });
+  if (result.reason === "not_found") return error("not_found", "Hesap bulunamadi.", 404);
+  if (result.reason === "protected")
+    return error("protected", "Korumali (kurucu) hesap banlanamaz veya askiya alinamaz.", 409);
+  return error("invalid_body", "Gecersiz durum.", 400);
 });
 
 router.get("/api/characters", async ({ request, env }: Ctx) => {

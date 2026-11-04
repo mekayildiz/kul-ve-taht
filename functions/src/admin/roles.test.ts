@@ -4,7 +4,7 @@ import worker, { type Env } from "../index";
 import { createTestDb } from "../test-support/sqlite-harness";
 import { createSessionToken } from "../auth/session";
 import { registerAccount } from "../auth/service";
-import { adminAccounts, adminSetAccountRole } from "./roles";
+import { adminAccounts, adminSetAccountRole, adminSetAccountStatus } from "./roles";
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return { DB: createTestDb(), SESSION_SECRET: "test-secret-degistir", ...overrides };
@@ -62,6 +62,69 @@ describe("Rol yonetimi (belge 20)", () => {
     const target = await account(env, "player");
     const res = await adminSetAccountRole(env.DB, target.accountId, "patron" as any);
     expect(res).toEqual({ ok: false, reason: "invalid_role" });
+  });
+});
+
+describe("Korumali (kurucu) hesap (ban ve rol korumasi)", () => {
+  /** Korumali hesap olusturur (bootstrap akisinin yaptigi gibi). */
+  async function protect(env: Env, accountId: string, role: "admin" = "admin") {
+    await env.DB.prepare("UPDATE accounts SET role = ?, protected = 1 WHERE id = ?").bind(role, accountId).run();
+  }
+
+  it("korumali hesabin rolu dusurulemez", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    await protect(env, admin.accountId);
+    const res = await adminSetAccountRole(env.DB, admin.accountId, "player", admin.accountId);
+    expect(res).toEqual({ ok: false, reason: "protected" });
+    const row = await env.DB.prepare("SELECT role FROM accounts WHERE id = ?").bind(admin.accountId).first<{ role: string }>();
+    expect(row?.role).toBe("admin");
+  });
+
+  it("korumali hesap BANLANAMAZ", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    await protect(env, admin.accountId);
+    const res = await adminSetAccountStatus(env.DB, admin.accountId, "banned", admin.accountId);
+    expect(res).toEqual({ ok: false, reason: "protected" });
+    const row = await env.DB.prepare("SELECT status FROM accounts WHERE id = ?").bind(admin.accountId).first<{ status: string }>();
+    expect(row?.status).toBe("active");
+  });
+
+  it("korumali hesap ASKIYA da alinamaz", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    await protect(env, admin.accountId);
+    expect(await adminSetAccountStatus(env.DB, admin.accountId, "suspended")).toEqual({ ok: false, reason: "protected" });
+  });
+
+  it("korumali hesap aktif tutulabilir (idempotent)", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    await protect(env, admin.accountId);
+    expect(await adminSetAccountStatus(env.DB, admin.accountId, "active")).toMatchObject({ ok: true, status: "active" });
+  });
+
+  it("korumasiz hesap banlanabilir ve geri alinabilir", async () => {
+    const env = makeEnv();
+    const admin = await account(env, "admin");
+    const target = await account(env, "player");
+    expect(await adminSetAccountStatus(env.DB, target.accountId, "banned", admin.accountId)).toMatchObject({ ok: true, status: "banned" });
+    const banned = await env.DB.prepare("SELECT status FROM accounts WHERE id = ?").bind(target.accountId).first<{ status: string }>();
+    expect(banned?.status).toBe("banned");
+    expect(await adminSetAccountStatus(env.DB, target.accountId, "active", admin.accountId)).toMatchObject({ ok: true, status: "active" });
+  });
+
+  it("banli hesap giris yapamaz", async () => {
+    const env = makeEnv();
+    const target = await account(env, "player");
+    await adminSetAccountStatus(env.DB, target.accountId, "banned");
+    const res = await call("/api/auth/login", env, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: target.email, password: "cok-guclu-parola-1" }),
+    });
+    expect(res.status).toBe(403);
   });
 });
 

@@ -141,10 +141,23 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
 - Rol servisi `admin/roles.ts`: `adminAccounts`, `adminSetAccountRole`,
   `isAccountRole`. Her degisiklik `audit_log`'a yazilir. **Son adminin
   dusurulmesi engellenir** (`last_admin`): aksi halde panel kilitlenir.
-- Uclar: `GET /api/admin/accounts`, `POST /api/admin/accounts/:id/role`
-  (yalnizca `admin:any`).
+- Uclar: `GET /api/admin/accounts`, `POST /api/admin/accounts/:id/role`,
+  `POST /api/admin/accounts/:id/status` (yalnizca `admin:any`).
 - Arayuz: `nav.admin` dugmesi ve `AdminPanel` yalnizca `role` moderator/admin
-  ise gorunur; rol atama ve tohumlama kontrolleri yalnizca `admin`'de aciktir.
+  ise gorunur; rol atama, ban/unban ve tohumlama kontrolleri yalnizca `admin`'de
+  aciktir.
+
+### Korumali (kurucu) hesap
+
+- `accounts.protected = 1` olan hesap **banlanamaz, askiya alinamaz ve rolu
+  dusurulemez** (`adminSetAccountStatus`/`adminSetAccountRole` → `protected`).
+  Amac: kurucu/yönetici hesabi kilitlenmesin.
+- Bootstrap (`/api/auth/bootstrap-admin`) atadigi hesabi otomatik `protected=1`
+  yapar.
+- Bayrak panelden DEGISTIRILEMEZ; yalnizca dogrudan D1 uzerinden kaldirilir:
+  `UPDATE accounts SET protected = 0 WHERE email = '...'`.
+- Ban etkisi: `auth/service.ts` giris akisinda `status !== 'active'` ise giris
+  403 ile reddedilir.
 
 ### Ilk yoneticiyi atama (bootstrap)
 

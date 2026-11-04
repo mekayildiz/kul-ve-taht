@@ -357,12 +357,15 @@ export interface AdminEconomyDto {
 }
 
 export type AccountRoleDto = "player" | "moderator" | "admin";
+export type AccountStatusDto = "active" | "suspended" | "banned";
 
 export interface AdminAccountDto {
   id: string;
   email: string;
   role: AccountRoleDto;
-  status: string;
+  status: AccountStatusDto;
+  /** Kurucu/yonetici hesabi: ban ve rol dusurme engelli. */
+  protected: boolean;
   createdAt: number;
   characterCount: number;
 }
@@ -856,6 +859,15 @@ export class ApiClient {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify({ role }),
+    });
+  }
+
+  /** Hesap durumunu degistirir (aktif/askida/banli) (belge 20). Yalnizca yonetici. */
+  adminSetAccountStatus(token: string, accountId: string, status: AccountStatusDto): Promise<{ ok: boolean; status: AccountStatusDto }> {
+    return this.request(`/api/admin/accounts/${encodeURIComponent(accountId)}/status`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status }),
     });
   }
 }
