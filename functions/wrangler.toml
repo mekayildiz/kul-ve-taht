@@ -60,8 +60,14 @@ crons = ["0 * * * *"]
 # Uretimde SESSION_SECRET YALNIZCA `wrangler secret put SESSION_SECRET` ile
 # ayarlanir; buraya yazilan deger uretime GITMEZ. Yerelde `functions/.dev.vars`
 # (git'e girmez) veya bu blogun bos kalmasi kullanilir.
+#
+# Opsiyonel gizli anahtarlar (0 TL, tanimli DEGILSE ozellik kapali kalir):
+#   TURNSTILE_SECRET  -> bot korumasi (Cloudflare Turnstile, sinirsiz)
+#   BREVO_API_KEY     -> e-posta gonderimi (gunde 300, alan adi gerekmez)
+# Kurulum: docs/guvenlik-ve-eposta-kurulumu.md
 [vars]
 # SESSION_SECRET buraya YAZILMAZ: gizli deger depoya islenmez.
+# MAIL_SENDER = "oyun@ornek.tr"  # Brevo dogrulanmis gonderici (opsiyonel)
 #
 # CORS kilidi: arayuz ve API ayni Worker'dan sunuldugu icin tarayici kaynaklar
 # arasi istek yapmaz; bu yuzden varsayilan `*` birakilir. Ayri bir alan adindan

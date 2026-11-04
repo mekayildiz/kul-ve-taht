@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Dictionary } from "../i18n";
 import { ApiClient, ApiRequestError } from "../api/client";
+import { TurnstileWidget } from "./TurnstileWidget";
 
 export interface AuthPanelProps {
   t: Dictionary;
@@ -12,6 +13,7 @@ export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.E
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -41,9 +43,9 @@ export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.E
     setMessage(null);
     try {
       if (mode === "register") {
-        await client.register(email, password);
+        await client.register(email, password, "tr", turnstileToken || undefined);
       }
-      const session = await client.login(email, password);
+      const session = await client.login(email, password, turnstileToken || undefined);
       const me = await client.me(session.token);
       onAuthenticated(session.token, me.accountId, me.role);
     } catch (error) {
@@ -86,6 +88,7 @@ export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.E
           />
           {mode === "register" && <small>{t.auth.passwordHint}</small>}
         </label>
+        <TurnstileWidget onToken={setTurnstileToken} />
         <button type="submit" disabled={busy}>
           {mode === "login" ? t.auth.submitLogin : t.auth.submitRegister}
         </button>

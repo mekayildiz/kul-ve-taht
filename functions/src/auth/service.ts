@@ -13,7 +13,7 @@
 import { type SqlDatabase } from "../db/client";
 import { queryOne, execute } from "../db/client";
 import { hashPassword, verifyPassword, serializeHash, parseHash, type PasswordHash } from "./password";
-import { createSessionToken, SESSION_TTL_MS, type SessionPayload } from "./session";
+import { createSessionToken, SESSION_TTL_MS, sessionTokenHash, type SessionPayload } from "./session";
 
 export interface Hasher {
   hash(password: string): Promise<PasswordHash>;
@@ -35,7 +35,7 @@ export type RegisterResult =
 
 export type LoginResult =
   | { ok: true; token: string; payload: SessionPayload }
-  | { ok: false; error: "invalid_credentials" | "suspended" };
+  | { ok: false; error: "invalid_credentials" | "suspended" | "totp_required" | "invalid_totp" };
 
 export interface RegisterInput {
   email: string;
@@ -77,6 +77,12 @@ export async function registerAccount(
 export interface LoginInput {
   email: string;
   password: string;
+  /** TOTP kodu (2FA aciksa zorunlu). */
+  totpCode?: string;
+  /** Kurtarma kodu (2FA kodu yerine). */
+  recoveryCode?: string;
+  /** Oturum listesinde gosterilir (cihaz tanima). */
+  userAgent?: string;
 }
 
 export async function loginAccount(
@@ -92,7 +98,8 @@ export async function loginAccount(
     password_hash: string;
     role: "player" | "moderator" | "admin";
     status: string;
-  }>(db, "SELECT id, password_hash, role, status FROM accounts WHERE email = ?", email);
+    totp_enabled: number;
+  }>(db, "SELECT id, password_hash, role, status, totp_enabled FROM accounts WHERE email = ?", email);
 
   // Kullanici yoksa da hash dogrulama maliyeti benzer olsun diye sabit yanit.
   if (!account) return { ok: false, error: "invalid_credentials" };
@@ -104,6 +111,21 @@ export async function loginAccount(
   if (!valid) return { ok: false, error: "invalid_credentials" };
   if (account.status !== "active") return { ok: false, error: "suspended" };
 
+  // Iki adimli dogrulama (TOTP) aciksa ikinci faktor zorunludur.
+  if (account.totp_enabled === 1) {
+    const { resolveTotpSecret, consumeRecoveryCode } = await import("./security");
+    const { verifyTotp } = await import("./totp");
+    const totpSecret = await resolveTotpSecret(db, account.id, secret);
+    let secondFactorOk = false;
+    if (input.recoveryCode) {
+      secondFactorOk = await consumeRecoveryCode(db, account.id, input.recoveryCode, nowMs);
+    } else if (input.totpCode && totpSecret) {
+      secondFactorOk = await verifyTotp(totpSecret, input.totpCode, nowMs);
+    }
+    if (!input.totpCode && !input.recoveryCode) return { ok: false, error: "totp_required" };
+    if (!secondFactorOk) return { ok: false, error: "invalid_totp" };
+  }
+
   const payload: SessionPayload = {
     accountId: account.id,
     role: account.role,
@@ -112,16 +134,17 @@ export async function loginAccount(
   };
   const token = await createSessionToken(payload, secret);
 
-  // Sunucu tarafi oturum kaydi (iptal edilebilirlik icin).
+  // Sunucu tarafi oturum kaydi (iptal edilebilirlik icin). Ham belirtec
+  // saklanmaz; yalnizca imzanin SHA-256 ozeti tutulur.
   await execute(
     db,
-    "INSERT INTO sessions (id, account_id, token_hash, issued_at, expires_at) VALUES (?,?,?,?,?)",
+    "INSERT INTO sessions (id, account_id, token_hash, issued_at, expires_at, user_agent) VALUES (?,?,?,?,?,?)",
     crypto.randomUUID(),
     account.id,
-    // Belirtecin tamami saklanmaz; yalnizca imza kismi referans olarak tutulur.
-    token.split(".")[1] ?? "",
+    await sessionTokenHash(token),
     payload.issuedAt,
     payload.expiresAt,
+    input.userAgent?.slice(0, 200) ?? null,
   );
 
   return { ok: true, token, payload };

@@ -174,3 +174,44 @@ Hic yonetici yokken panel acilamaz. Tek seferlik cozum:
    sonrasi jetonu SILIN: `wrangler secret delete BOOTSTRAP_ADMIN_TOKEN`.
 
 Sonrasinda tum rol dagitimi yonetim panelinden yapilir.
+
+### Uye islemleri (yonetim panelinden)
+
+`AdminPanel` icinde `AdminGrants` bolumu (yalnizca `admin`):
+
+- **Para**: `POST /api/admin/characters/:id/gold` ile `{delta}` (± ). Deger
+  sunucuda kirpilir; altin negatife dusmez.
+- **Esya**: `POST /api/admin/characters/:id/items` `{itemId, quantity}` ver/al
+  (negatif adet = al). Gecersiz esya reddedilir.
+- **Nitelik**: `POST /api/admin/characters/:id/attributes` `{attribute, value}`.
+  Yedi nitelik 1..20 araligina kirpilir.
+- **Canli durum**: saglik/enerji/itibar duzeltmesi.
+- Her islem `audit_log`'a yazilir; panel son kayitlari gosterir
+  (`GET /api/admin/audit`).
+
+### Hesap guvenligi (2FA + oturumlar)
+
+`SecurityPanel` ekrani (hesap menusunde):
+
+- **TOTP 2FA**: `POST /api/account/2fa/setup` sirri (AES-GCM ile sifreli
+  saklanir) ve `otpauth://` baglantisini dondurur; `confirm` ile etkinlesir.
+  Giris akisi `totpCode` veya tek kullanimlik `recoveryCode` kabul eder.
+- **Oturumlar**: `GET /api/account/sessions`; tek oturum
+  `POST /api/account/sessions/:id/revoke`, digerleri `revoke-others`.
+  `readSession` iptal edilmis (revoked) oturumu reddeder.
+- Oturum belirtecinin yalnizca SHA-256 ozeti saklanir.
+
+### Bot korumasi ve e-posta (0 TL, opsiyonel)
+
+- **Turnstile**: `TURNSTILE_SECRET` tanimliysa kayit/giris `turnstileToken`
+  ister; degilse koruma kapalidir. Istemci widget'i yalnizca
+  `VITE_TURNSTILE_SITE_KEY` varsa cizilir.
+- **Brevo e-posta**: `BREVO_API_KEY` + `MAIL_SENDER` tanimliysa
+  `functions/src/mail/brevo.ts` ile gonderim yapilir; yoksa no-op.
+- Kurulum ayrintilari: `docs/guvenlik-ve-eposta-kurulumu.md`.
+
+### Ucretsiz alan adi
+
+Araştırma ve secenekler: `docs/ucretsiz-alan-adi-arastirmasi.md`. Ozet:
+gercek `.com` ucretsiz alinamaz; 0 TL icin mevcut `*.pages.dev` adresi veya
+DigitalPlat FreeDomain (`*.dpdns.org`) alt alan adi kullanilabilir.

@@ -22,6 +22,7 @@ import {
   type AdminOverviewDto,
 } from "../api/client";
 import type { Dictionary } from "../i18n";
+import { AdminGrants } from "./AdminGrants";
 
 export interface AdminPanelProps {
   client: ApiClient;
@@ -308,6 +309,10 @@ export function AdminPanel({ client, token, t, role }: AdminPanelProps): JSX.Ele
           ))}
         </tbody>
       </table>
+
+      {isAdmin && state.characters.length > 0 && (
+        <AdminGrants client={client} token={token} t={t} characters={state.characters} />
+      )}
 
       <h3>{t.admin.economyList}</h3>
       <table className="kvt-admin-economy">

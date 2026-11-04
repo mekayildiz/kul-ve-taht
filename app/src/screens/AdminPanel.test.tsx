@@ -57,12 +57,14 @@ describe("AdminPanel (belge 20)", () => {
       if (path.startsWith("/api/admin/overview")) return json(overview);
       if (path.startsWith("/api/admin/characters")) return json(characters);
       if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/items")) return json({ items: [] });
+      if (path.startsWith("/api/admin/audit")) return json({ entries: [] });
       return json({}, 404);
     });
     render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
     await waitFor(() => expect(screen.getByText(t.admin.adminTitle)).toBeTruthy());
     expect(screen.getByText("130")).toBeTruthy();
-    expect(screen.getByText("Kael Veyr")).toBeTruthy();
+    expect(screen.getAllByText("Kael Veyr").length).toBeGreaterThan(0);
     expect(screen.getByText("wheat")).toBeTruthy();
   });
 
@@ -76,10 +78,12 @@ describe("AdminPanel (belge 20)", () => {
       if (path.startsWith("/api/admin/overview")) return json(overview);
       if (path.startsWith("/api/admin/characters")) return json(characters);
       if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/items")) return json({ items: [] });
+      if (path.startsWith("/api/admin/audit")) return json({ entries: [] });
       return json({}, 404);
     });
     render(<AdminPanel t={t} client={client} token="tok" role="admin" />);
-    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("Kael Veyr").length).toBeGreaterThan(0));
     await userEvent.click(screen.getByRole("button", { name: `${t.admin.markDead}: Kael Veyr` }));
     await waitFor(() => expect(sent).toHaveLength(1));
     expect((sent[0] as { status: string }).status).toBe("dead");
@@ -121,6 +125,8 @@ describe("AdminPanel (belge 20)", () => {
       if (path.startsWith("/api/admin/overview")) return json(overview);
       if (path.startsWith("/api/admin/characters")) return json(characters);
       if (path.startsWith("/api/admin/economy")) return json(economy);
+      if (path.startsWith("/api/admin/items")) return json({ items: [] });
+      if (path.startsWith("/api/admin/audit")) return json({ entries: [] });
       return json({}, 404);
     });
     render(<AdminPanel t={t} client={client} token="tok" role="moderator" />);
