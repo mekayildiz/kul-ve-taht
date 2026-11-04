@@ -738,17 +738,22 @@ export class ApiClient {
     return this.request(`/api/world/birthplaces?id=${encodeURIComponent(settlementId)}`);
   }
 
-  register(email: string, password: string, locale: "tr" | "en" = "tr"): Promise<{ accountId: string }> {
+  register(
+    email: string,
+    password: string,
+    locale: "tr" | "en" = "tr",
+    turnstileToken?: string,
+  ): Promise<{ accountId: string }> {
     return this.request("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password, locale }),
+      body: JSON.stringify({ email, password, locale, ...(turnstileToken ? { turnstileToken } : {}) }),
     });
   }
 
-  login(email: string, password: string): Promise<SessionDto> {
+  login(email: string, password: string, turnstileToken?: string): Promise<SessionDto> {
     return this.request("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...(turnstileToken ? { turnstileToken } : {}) }),
     });
   }
 

@@ -20,6 +20,7 @@ import {
   disableTotp,
 } from "./auth/security";
 import { constantTimeEqual } from "./auth/constant-time";
+import { verifyTurnstile } from "./auth/turnstile";
 import { authorize } from "./auth/authorize";
 import { worldSummary, SETTLEMENTS, KINGDOMS, FREE_CITIES, NEUTRAL_ZONES, allSettlementProfiles, settlementProfile } from "./world";
 import { advanceWorldTime, seasonFor } from "./time/world-clock";
@@ -203,6 +204,19 @@ export interface Env {
   BOOTSTRAP_ADMIN_TOKEN?: string;
   /** Parola hash'ini 10 ms CPU sinirindan kurtaran Durable Object shard'lari. */
   PASSWORD_HASH_GATE?: HashGateNamespace;
+  /**
+   * Cloudflare Turnstile gizli anahtari (0 TL bot korumasi). Tanimli DEGILSE
+   * koruma kapalidir. Ayarlama: `wrangler secret put TURNSTILE_SECRET`.
+   */
+  TURNSTILE_SECRET?: string;
+  /**
+   * Brevo (Sendinblue) API anahtari (0 TL e-posta: gunde 300, alan adi
+   * dogrulamasi gerekmez). Tanimli DEGILSE e-posta gonderimi atlanir.
+   * Ayarlama: `wrangler secret put BREVO_API_KEY`.
+   */
+  BREVO_API_KEY?: string;
+  /** Brevo'da dogrulanmis gonderici adresi (ornek: oyun@ornek.tr). */
+  MAIL_SENDER?: string;
 }
 
 type Ctx = RouteContext<Env>;
@@ -355,10 +369,18 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
 
 router.post("/api/auth/register", async ({ request, env }: Ctx) => {
   const body = (await request.json().catch(() => null)) as
-    | { email?: string; password?: string; locale?: "tr" | "en" }
+    | { email?: string; password?: string; locale?: "tr" | "en"; turnstileToken?: string }
     | null;
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
+  }
+  const captcha = await verifyTurnstile(
+    env.TURNSTILE_SECRET,
+    body.turnstileToken,
+    request.headers.get("cf-connecting-ip") ?? undefined,
+  );
+  if (!captcha.ok) {
+    return error("captcha_failed", "Bot dogrulamasi basarisiz.", 403);
   }
   const hasher = createGateHasher(env.PASSWORD_HASH_GATE, body.email.trim().toLowerCase());
   const result = await registerAccount(
@@ -424,10 +446,18 @@ router.post("/api/auth/bootstrap-admin", async ({ request, env }: Ctx) => {
 
 router.post("/api/auth/login", async ({ request, env }: Ctx) => {
   const body = (await request.json().catch(() => null)) as
-    | { email?: string; password?: string; totpCode?: string; recoveryCode?: string }
+    | { email?: string; password?: string; totpCode?: string; recoveryCode?: string; turnstileToken?: string }
     | null;
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
+  }
+  const captcha = await verifyTurnstile(
+    env.TURNSTILE_SECRET,
+    body.turnstileToken,
+    request.headers.get("cf-connecting-ip") ?? undefined,
+  );
+  if (!captcha.ok) {
+    return error("captcha_failed", "Bot dogrulamasi basarisiz.", 403);
   }
   if (!env.SESSION_SECRET) {
     return error("server_misconfigured", "Oturum sirri yapilandirilmamis.", 500);
