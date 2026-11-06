@@ -9,6 +9,7 @@
 import { Router, type RouteContext } from "./http/router";
 import { json, error } from "./http/response";
 import { allowedOrigin, withCors, preflightResponse } from "./http/cors";
+import { httpsRedirect, withSecurity } from "./http/security";
 import { decideQuota, quotaResponse, type QuotaState } from "./quota/guard";
 import { verifySessionToken, sessionTokenHash, type SessionPayload } from "./auth/session";
 import {
@@ -1532,15 +1533,20 @@ export default {
     const url = new URL(request.url);
     const origin = allowedOrigin(env?.ALLOWED_ORIGIN);
 
+    // Duz HTTP isteklerini HTTPS'e yonlendir (kalici). Yerelde https oldugu
+    // icin tetiklenmez; uretimde Cloudflare x-forwarded-proto set eder.
+    const redirect = httpsRedirect(request);
+    if (redirect) return redirect;
+
     // On kontrol (preflight) istekleri kota/kimlik gerektirmez; dogrudan yanitlanir.
-    if (request.method === "OPTIONS") return preflightResponse(origin);
+    if (request.method === "OPTIONS") return withSecurity(preflightResponse(origin));
 
     const isCritical = url.pathname.startsWith("/api/auth") || url.pathname.startsWith("/api/trade");
 
     // 0 TL korumasi: kota karari istek islenmeden once uygulanir.
     const outcome = decideQuota(readQuotaState(env), { critical: isCritical });
     const guarded = quotaResponse(outcome);
-    if (guarded) return withCors(guarded, origin);
+    if (guarded) return withSecurity(withCors(guarded, origin));
 
     // Dunya bir kez tohumlanir ve saat baslatilir (idempotent; NPC/saray/saat).
     if (env?.DB) await ensureWorldInitialized(env.DB).catch(() => undefined);
@@ -1549,9 +1555,9 @@ export default {
     if (handled) {
       // Kota olcumu: gercek tuketimi say (E1.11). Basarisizlik oyunu bloklamaz.
       if (env?.DB) await recordUsage(env.DB, "requests").catch(() => undefined);
-      return withCors(handled, origin);
+      return withSecurity(withCors(handled, origin));
     }
 
-    return withCors(error("not_found", "Kaynak bulunamadi.", 404), origin);
+    return withSecurity(withCors(error("not_found", "Kaynak bulunamadi.", 404), origin));
   },
 };
