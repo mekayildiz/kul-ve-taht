@@ -74,6 +74,22 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
   D1/DO'yu hesap gerekmeden emüle eder. Yedekleme D1 Time Travel (ücretsiz, 30
   gün); ayrı Workflow veya R2 binding'i yoktur.
 
+## Güvenlik başlıkları ve HTTPS (belge 21.1)
+
+- **Statik varlıklar Worker betiğinden ÖNCE sunulur**, bu yüzden güvenlik
+  başlıkları **iki yerde** tanımlıdır: `functions/src/http/security.ts` (Worker
+  yanıtları: `/api/*`, 404, ön kontrol) ve `app/public/_headers` (HTML/JS/CSS).
+  Değerler **aynı** olmalı; birini değiştirince diğerini de güncelle.
+- `withSecurity()` tüm Worker yanıtlarına HSTS, CSP, X-Frame-Options,
+  Referrer-Policy, Permissions-Policy, COOP/CORP ekler. `httpsRedirect()` düz
+  HTTP'yi (`x-forwarded-proto: http`) 301 ile HTTPS'e taşır; panel ayarı
+  (Always Use HTTPS) gerekmez.
+- CSP'de **betik inline'a kapalı** (`script-src 'self'
+  https://challenges.cloudflare.com`); stil için `'unsafe-inline'` açıktır
+  (React). Turnstile kaynağı `script-src`/`connect-src`/`frame-src`'te açıktır.
+- Ayrıntı ve doğrulama: `docs/guvenlik-basliklari.md`. Test:
+  `functions/src/http/security.test.ts`.
+
 ## Dunya simulasyonu (belge 8/9/19)
 
 - Katmanli NPC simulasyonu `functions/src/play/world-sim.ts` icindedir ve
