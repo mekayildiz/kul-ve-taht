@@ -63,14 +63,16 @@ export function withSecurity(response: Response): Response {
 }
 
 /**
- * Duz HTTP istegini HTTPS'e yonlendirir (kalici, 301). Cloudflare
- * `x-forwarded-proto` basligini set eder; yerel testte istek zaten https
- * oldugu icin yonlendirme tetiklenmez.
+ * Duz HTTP istegini HTTPS'e yonlendirir (kalici, 301).
+ *
+ * Yalnizca Cloudflare'in acikca `x-forwarded-proto: http` dedigi durumda
+ * tetiklenir. Bu baslik yoksa (yerel `wrangler dev`, dogrudan test) hicbir sey
+ * yapilmaz; boylece yerel gelistirme HTTP uzerinden calismaya devam eder.
  */
 export function httpsRedirect(request: Request): Response | null {
+  const proto = request.headers.get("x-forwarded-proto");
+  if (proto?.toLowerCase() !== "http") return null;
   const url = new URL(request.url);
-  const proto = (request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")).toLowerCase();
-  if (proto !== "http") return null;
   url.protocol = "https:";
   return new Response(null, { status: 301, headers: { location: url.toString() } });
 }

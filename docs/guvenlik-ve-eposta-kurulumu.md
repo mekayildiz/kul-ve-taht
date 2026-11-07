@@ -53,9 +53,39 @@ doğurabilir.
 
 | Özellik | Durum | Maliyet |
 |---|---|---|
-| Turnstile bot koruması | Hazır, anahtar girilince etkin | 0 TL, sınırsız |
-| Brevo e-posta | Hazır, anahtar girilince etkin | 0 TL, 300/gün |
+| Turnstile bot koruması | Hazır; **panelden site eklenip** anahtarlar girilince etkin | 0 TL, sınırsız |
+| Brevo e-posta | Hazır; **hesap açılıp** anahtarlar girilince etkin | 0 TL, 300/gün |
 | TOTP 2FA + kurtarma kodları | Etkin (anahtar gerekmez) | 0 TL |
 | Oturum yönetimi | Etkin | 0 TL |
 
 Hiçbiri ücretli plana geçiş tetiklemez (`npm run check:paid` ile doğrulanır).
+
+### Turnstile ve Brevo neden panel/signup gerektirir?
+
+Bu iki servis **hesap sahipliği** ister (Cloudflare hesabı / Brevo hesabı).
+Widget ve API anahtarı o hesapta üretilir; bu yüzden otomatik oluşturulamaz
+(API salt-okuma token'ı ile 401 `Authentication error` döner). Kod yolu her
+ikisi için de tamamlanmıştır; **yalnızca anahtar eklenmesi** yeterlidir.
+
+### Kapatma (kill switch)
+
+- `wrangler secret delete TURNSTILE_SECRET` → bot koruması kapanır.
+- `wrangler secret delete BREVO_API_KEY` → e-posta sessizce atlanır.
+
+### Kapalı uçtan uca test
+
+Gerçek HTTP akışını (kayıt → karakter → oynanış → yönetim) yerelde ölçer:
+
+```bash
+# 1) Yerel D1'i hazırla (tek sefer):
+npm run db:migrate:local
+# 2) functions/.dev.vars içine (git'e girmez):
+#    SESSION_SECRET=yerel-gelistirme-anahtari-uretimde-degistirilir
+#    BOOTSTRAP_ADMIN_TOKEN=kapali-yerel-bootstrap
+# 3) Sunucu + test:
+npm run dev:api &
+npm run test:closed
+```
+
+Beklenen: **17/17 adım geçer**; `docs/olcum/kapali-test.json` raporu yazılır.
+

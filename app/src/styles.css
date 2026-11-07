@@ -1,12 +1,33 @@
-/* Kul ve Taht - temel tema (tasarim belgesi 18.1 renk paleti) */
+/* Kul ve Taht — tema (tasarım belgesi 18.1 renk paleti).
+ *
+ * Tek stil dosyası. Mobil öncelikli; dokunma hedefleri >= 44px.
+ * Harici font/görsel yok (0 TL + CSP dostu): sistem serif yığını kullanılır.
+ */
+
 :root {
+  /* Renk paleti (belge 18.1) */
   --kvt-stone: #1b1713;
   --kvt-stone-light: #2a241d;
+  --kvt-stone-raised: #332c23;
   --kvt-brown: #4a3b2a;
+  --kvt-brown-soft: #5c4a34;
   --kvt-gold: #c9a227;
+  --kvt-gold-soft: #e0c25c;
   --kvt-bordo: #5a1f2b;
+  --kvt-bordo-light: #7a2c3b;
   --kvt-parchment: #e8dcc4;
   --kvt-text: #f0e6d2;
+  --kvt-muted: #b8a888;
+  --kvt-ok: #2f4a3a;
+  --kvt-panel: #241f19;
+
+  /* Ölçek ve ritim */
+  --kvt-radius: 10px;
+  --kvt-radius-sm: 6px;
+  --kvt-gap: 14px;
+  --kvt-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --kvt-border: 1px solid var(--kvt-brown);
+  --kvt-font: Georgia, "Iowan Old Style", "Times New Roman", serif;
 }
 
 * {
@@ -21,59 +42,122 @@ body,
 }
 
 body {
-  background: var(--kvt-stone);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(201, 162, 39, 0.08), transparent 60%),
+    var(--kvt-stone);
   color: var(--kvt-text);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--kvt-font);
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+h1,
+h2,
+h3 {
+  color: var(--kvt-gold);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 0 0 12px;
+}
+
+h3 {
+  font-size: 1.15rem;
+  margin: 18px 0 8px;
+}
+
+a {
+  color: var(--kvt-gold-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--kvt-gold);
+  outline-offset: 2px;
+}
+
+/* --- Yerleşim --- */
 .kvt-root {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  padding-bottom: 64px;
+  padding-bottom: 72px;
 }
 
 .kvt-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--kvt-stone-light);
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, var(--kvt-stone-light), var(--kvt-panel));
   border-bottom: 1px solid var(--kvt-brown);
 }
 
 .kvt-brand {
   color: var(--kvt-gold);
   font-size: 18px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
 }
 
-.kvt-lang {
-  background: var(--kvt-brown);
-  color: var(--kvt-text);
-  border: 1px solid var(--kvt-gold);
-  border-radius: 6px;
-  padding: 8px 14px;
-  font-size: 15px;
-  min-width: 48px;
+.kvt-topright {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.kvt-account {
+  color: var(--kvt-muted);
+  font-size: 13px;
 }
 
 .kvt-main {
   flex: 1;
-  padding: 20px 16px;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+}
+
+/* --- Başlık ekranı (hero) --- */
+.kvt-title {
+  text-align: center;
+  padding: 28px 8px 8px;
+}
+
+.kvt-crest {
+  width: 92px;
+  height: 92px;
+  margin: 8px auto 4px;
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
 }
 
 .kvt-title h1 {
-  font-size: 32px;
-  color: var(--kvt-gold);
-  margin: 24px 0 8px;
+  font-size: clamp(2rem, 8vw, 3rem);
+  margin: 12px 0 6px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .kvt-slogan {
   color: var(--kvt-parchment);
   font-style: italic;
-  margin-bottom: 28px;
+  margin: 0 auto 26px;
+  max-width: 34ch;
 }
 
 .kvt-actions {
@@ -81,27 +165,51 @@ body {
   flex-direction: column;
   gap: 12px;
   max-width: 420px;
+  margin: 0 auto;
 }
 
 .kvt-actions button,
 .kvt-intro button {
-  background: var(--kvt-bordo);
+  background: linear-gradient(180deg, var(--kvt-bordo-light), var(--kvt-bordo));
   color: var(--kvt-text);
   border: 1px solid var(--kvt-gold);
-  border-radius: 8px;
+  border-radius: var(--kvt-radius);
   padding: 16px;
   font-size: 17px;
   font-family: inherit;
   min-height: 52px;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease;
 }
 
-.kvt-actions button:disabled {
+.kvt-actions button:hover,
+.kvt-intro button:hover {
+  filter: brightness(1.08);
+}
+
+.kvt-actions button:active,
+.kvt-intro button:active {
+  transform: translateY(1px);
+}
+
+.kvt-actions button:disabled,
+.kvt-intro button:disabled {
   opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kvt-intro {
+  max-width: 640px;
+  margin: 0 auto;
 }
 
 .kvt-intro ol {
   padding-left: 22px;
   line-height: 2;
+}
+
+.kvt-intro li::marker {
+  color: var(--kvt-gold);
 }
 
 .kvt-closing {
@@ -110,12 +218,14 @@ body {
   margin: 18px 0;
 }
 
+/* --- Alt gezinme --- */
 .kvt-bottomnav {
   position: fixed;
   inset: auto 0 0 0;
+  z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  background: var(--kvt-stone-light);
+  background: linear-gradient(180deg, var(--kvt-panel), var(--kvt-stone-light));
   border-top: 1px solid var(--kvt-brown);
 }
 
@@ -123,23 +233,425 @@ body {
   background: transparent;
   color: var(--kvt-text);
   border: 0;
-  padding: 16px 4px;
+  padding: 14px 4px;
   font-size: 13px;
   font-family: inherit;
   min-height: 56px;
+  cursor: pointer;
+}
+
+.kvt-navbtn:hover:not(:disabled) {
+  color: var(--kvt-gold-soft);
 }
 
 .kvt-navbtn:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* Bildirim gecmisi (belge 19): oncelik esigi uzeri tek tek, arka plan tek satir. */
-.kvt-notifications ul {
+.kvt-adminbtn {
+  background: var(--kvt-brown);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius-sm);
+  padding: 8px 12px;
+  min-height: 40px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.kvt-lang {
+  background: var(--kvt-brown);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius-sm);
+  padding: 8px 14px;
+  font-size: 15px;
+  min-width: 48px;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+/* --- Butonlar (genel) --- */
+.kvt-main button:not(.kvt-navbtn):not(.kvt-tab):not(.kvt-brand):not(.kvt-lang):not(.kvt-adminbtn) {
+  background: linear-gradient(180deg, var(--kvt-bordo-light), var(--kvt-bordo));
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius-sm);
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.kvt-main button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.kvt-main button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Formlar --- */
+.kvt-main label,
+.kvt-auth label,
+.kvt-setup label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.95rem;
+  color: var(--kvt-muted);
+  margin-bottom: 12px;
+}
+
+.kvt-main input:not([type="checkbox"]):not([type="radio"]),
+.kvt-main select,
+.kvt-main textarea {
+  background: var(--kvt-stone);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-brown-soft);
+  border-radius: var(--kvt-radius-sm);
+  padding: 11px 12px;
+  font-family: inherit;
+  font-size: 16px; /* iOS zoom önler */
+  min-height: 44px;
+  width: 100%;
+}
+
+.kvt-main input:focus,
+.kvt-main select:focus,
+.kvt-main textarea:focus {
+  border-color: var(--kvt-gold);
+  outline: none;
+}
+
+.kvt-main input[type="checkbox"],
+.kvt-main input[type="radio"] {
+  accent-color: var(--kvt-gold);
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Panel / kart --- */
+.kvt-panel {
+  background: var(--kvt-panel);
+  border: var(--kvt-border);
+  border-radius: var(--kvt-radius);
+  padding: 16px;
+  margin-bottom: var(--kvt-gap);
+  box-shadow: var(--kvt-shadow);
+}
+
+.kvt-auth,
+.kvt-setup,
+.kvt-play,
+.kvt-world,
+.kvt-admin,
+.kvt-account-security {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.kvt-auth form,
+.kvt-setup form {
+  background: var(--kvt-panel);
+  border: var(--kvt-border);
+  border-radius: var(--kvt-radius);
+  padding: 18px;
+  box-shadow: var(--kvt-shadow);
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.kvt-authtabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.kvt-authtabs button[aria-pressed="true"] {
+  background: linear-gradient(180deg, var(--kvt-bordo-light), var(--kvt-bordo));
+  border-color: var(--kvt-gold);
+  font-weight: 600;
+}
+
+/* --- İstatistik kutuları --- */
+.kvt-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: var(--kvt-gap);
+}
+
+.kvt-stats > div {
+  background: var(--kvt-panel);
+  border: var(--kvt-border);
+  border-radius: var(--kvt-radius);
+  padding: 14px;
+  text-align: center;
+}
+
+.kvt-stats strong {
+  display: block;
+  font-size: 1.6rem;
+  color: var(--kvt-gold);
+}
+
+.kvt-stats span {
+  font-size: 0.85rem;
+  color: var(--kvt-muted);
+}
+
+.kvt-clock,
+.kvt-where {
+  color: var(--kvt-parchment);
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.kvt-count,
+.kvt-hint {
+  color: var(--kvt-muted);
+  font-size: 0.9rem;
+}
+
+/* --- Sekmeler --- */
+.kvt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 14px;
+  position: sticky;
+  top: 56px;
+  z-index: 5;
+  background: var(--kvt-stone);
+  padding: 8px 0;
+}
+
+.kvt-tab {
+  background: var(--kvt-stone-light);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-brown);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.kvt-tab:hover {
+  border-color: var(--kvt-gold);
+}
+
+.kvt-tab-active {
+  background: linear-gradient(180deg, var(--kvt-bordo-light), var(--kvt-bordo));
+  border-color: var(--kvt-gold);
+  color: var(--kvt-text);
+  font-weight: 600;
+}
+
+/* --- Listeler --- */
+.kvt-settlementlist,
+.kvt-assetlist,
+.kvt-inventory ul,
+.kvt-market ul,
+.kvt-recipes ul,
+.kvt-quests ul,
+.kvt-auctions ul,
+.kvt-notifications ul,
+.kvt-relations-list,
+.kvt-peerloans,
+.kvt-disputes,
+.kvt-motions,
+.kvt-diseases,
+.kvt-chat ul,
+.kvt-units ul,
+.kvt-ships ul,
+.kvt-properties ul,
+.kvt-companies ul,
+.kvt-rentals ul,
+.kvt-trades ul,
+.kvt-group ul,
+.kvt-alliance ul,
+.kvt-diplomacy ul,
+.kvt-farm ul,
+.kvt-hunt ul,
+.kvt-magic ul,
+.kvt-guild ul,
+.kvt-temple ul,
+.kvt-activities ul,
+.kvt-underworld ul,
+.kvt-social ul {
   list-style: none;
   padding: 0;
   margin: 0 0 8px;
 }
 
+.kvt-settlementlist li,
+.kvt-inventory li,
+.kvt-market li,
+.kvt-recipes li,
+.kvt-quests li,
+.kvt-auctions li,
+.kvt-relations-list li,
+.kvt-peerloans li,
+.kvt-disputes li,
+.kvt-motions li,
+.kvt-diseases li,
+.kvt-units li,
+.kvt-ships li,
+.kvt-properties li,
+.kvt-companies li,
+.kvt-rentals li,
+.kvt-trades li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: var(--kvt-border);
+  border-radius: var(--kvt-radius-sm);
+  background: rgba(255, 255, 255, 0.015);
+  margin-bottom: 6px;
+}
+
+.kvt-settlementlist li:hover,
+.kvt-inventory li:hover,
+.kvt-market li:hover,
+.kvt-quests li:hover {
+  border-color: var(--kvt-brown-soft);
+}
+
+.kvt-sname {
+  font-weight: 600;
+  color: var(--kvt-parchment);
+}
+
+.kvt-sout {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--kvt-muted);
+}
+
+.kvt-kind {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--kvt-brown-soft);
+  color: var(--kvt-parchment);
+  background: var(--kvt-stone-light);
+}
+
+.kvt-kind-capital {
+  border-color: var(--kvt-gold);
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-kind-castle {
+  border-color: var(--kvt-bordo-light);
+}
+
+/* --- Görsel varlık galerisi (belge 17.4) --- */
+.kvt-assets-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kvt-assetlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.kvt-asset {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: var(--kvt-border);
+  border-radius: var(--kvt-radius-sm);
+}
+
+.kvt-assetfile {
+  font-size: 11px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.kvt-assetlicense {
+  font-size: 11px;
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-attributions {
+  font-size: 12px;
+  opacity: 0.8;
+  padding-left: 18px;
+}
+
+.kvt-datasaver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+/* --- Portre, ikon, veri tasarrufu (belge 17) --- */
+.kvt-portrait-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kvt-portrait,
+.kvt-avatar-lg {
+  border: 2px solid var(--kvt-brown);
+  border-radius: var(--kvt-radius);
+  background: #1b1512;
+}
+
+.kvt-avatar-lg {
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.kvt-itemicon {
+  vertical-align: middle;
+  margin-right: 6px;
+  border-radius: 4px;
+}
+
+/* --- Oynanış başlığı --- */
+.kvt-playhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.kvt-playhead h2 {
+  margin: 0;
+}
+
+.kvt-playactions,
+.kvt-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* --- Bildirimler --- */
 .kvt-notifications li {
   display: flex;
   align-items: center;
@@ -165,119 +677,54 @@ body {
   color: var(--kvt-gold, #c9a227);
 }
 
-/* Gorsel varlik galerisi (belge 17.4) ve veri tasarrufu modu (17.5). */
-.kvt-assets-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.kvt-assetlist {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-}
-
-.kvt-asset {
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  border: 1px solid var(--kvt-brown);
-  border-radius: 4px;
-}
-
-.kvt-assetfile {
-  font-size: 11px;
-  opacity: 0.7;
-  word-break: break-all;
-}
-
-.kvt-attributions {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-/* Yonetim konsolu (belge 20). */
+/* --- Yönetim konsolu (belge 20) --- */
 .kvt-admin table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 16px;
+  font-size: 0.92rem;
 }
 
 .kvt-admin th,
 .kvt-admin td {
   text-align: left;
-  padding: 6px 8px;
+  padding: 8px;
   border-bottom: 1px solid var(--kvt-brown);
+}
+
+.kvt-admin th {
+  color: var(--kvt-gold);
+  font-weight: 600;
+}
+
+.kvt-admin tbody tr:hover {
+  background: rgba(201, 162, 39, 0.06);
 }
 
 .kvt-admin caption {
   text-align: left;
   font-weight: 600;
   padding-bottom: 4px;
+  color: var(--kvt-parchment);
 }
 
-/* Portre, esya ikonlari ve veri tasarrufu (belge 17). */
-.kvt-portrait-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+.kvt-admin-accounts select {
+  background: var(--kvt-panel);
+  color: var(--kvt-text);
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius-sm);
+  padding: 6px 8px;
+  font-family: inherit;
+  min-height: 36px;
 }
 
-.kvt-portrait {
-  border: 2px solid var(--kvt-brown);
-  border-radius: 8px;
-  background: #1b1512;
+.kvt-protected {
+  color: var(--kvt-gold);
+  font-weight: 700;
+  margin-left: 6px;
 }
 
-.kvt-datasaver {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-
-.kvt-itemicon {
-  vertical-align: middle;
-  margin-right: 6px;
-  border-radius: 4px;
-}
-
-/* Hedef secici, karsilikli krediler, uyusmazlik ve onerge listeleri (belge 9, 11, 16). */
-.kvt-target {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.kvt-peerloans li,
-.kvt-disputes li,
-.kvt-motions li,
-.kvt-relations-list li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.kvt-notifications button {
-  margin-top: 6px;
-}
-
-.kvt-diseases li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
+/* --- Kişilik, hastalık, hedef --- */
 .kvt-personality ul {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -296,6 +743,7 @@ body {
 
 .kvt-personality progress {
   flex: 1;
+  accent-color: var(--kvt-gold);
 }
 
 .kvt-heir {
@@ -303,66 +751,66 @@ body {
   font-size: 0.9rem;
 }
 
-/* Oynanis basligi ve kategori sekmeleri: uzun sayfa yerine bolumlu gezinme. */
-.kvt-playhead {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 10px;
+.kvt-target {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
-.kvt-playhead h2 {
-  margin: 0;
-}
-
-.kvt-avatar-lg {
-  border: 2px solid var(--kvt-brown);
-  border-radius: 10px;
-  background: #1b1512;
-  flex-shrink: 0;
-}
-
-.kvt-where {
-  color: var(--kvt-parchment);
-  font-size: 0.9rem;
-  opacity: 0.85;
-}
-
-.kvt-tabs {
+.kvt-vitals,
+.kvt-injuries {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 14px;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--kvt-stone);
-  padding: 6px 0;
+  gap: 10px 18px;
+  font-size: 0.9rem;
 }
 
-.kvt-tab {
-  background: var(--kvt-stone-light);
-  color: var(--kvt-text);
-  border: 1px solid var(--kvt-brown);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-family: inherit;
-  font-size: 14px;
-  min-height: 40px;
+/* --- Görünüm düzenleyici --- */
+.kvt-apperance-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
 }
 
-.kvt-tab-active {
-  background: var(--kvt-bordo);
-  border-color: var(--kvt-gold);
-  color: var(--kvt-text);
-  font-weight: 600;
+.kvt-apperance-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  flex: 1;
+  min-width: 220px;
 }
 
-/* Bildirim balonlari: alt-ortada, sabit; oyuncuyu rahatsiz etmez, kaydirma yok. */
+.kvt-outfit-note {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 4px 0 0;
+}
+
+/* --- Durum mesajları --- */
+.kvt-error {
+  color: #ffd9dd;
+  background: rgba(90, 31, 43, 0.55);
+  border: 1px solid var(--kvt-bordo-light);
+  border-radius: var(--kvt-radius-sm);
+  padding: 10px 12px;
+}
+
+.kvt-ok {
+  color: #d7f0dd;
+  background: rgba(47, 74, 58, 0.5);
+  border: 1px solid #3f6b52;
+  border-radius: var(--kvt-radius-sm);
+  padding: 10px 12px;
+}
+
+/* --- Bildirim balonları --- */
 .kvt-toasts {
   position: fixed;
   left: 50%;
-  bottom: 72px;
+  bottom: 84px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -373,16 +821,16 @@ body {
 }
 
 .kvt-toast {
-  border-radius: 8px;
+  border-radius: var(--kvt-radius);
   padding: 12px 16px;
   font-size: 14px;
   border: 1px solid var(--kvt-gold);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--kvt-shadow);
   animation: kvt-toast-in 0.18s ease-out;
 }
 
 .kvt-toast-ok {
-  background: #2f4a3a;
+  background: var(--kvt-ok);
   color: var(--kvt-text);
 }
 
@@ -402,64 +850,30 @@ body {
   }
 }
 
-/* Gorunum duzenleyici: canli avatar + secim alanlari. */
-.kvt-apperance-editor {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  align-items: flex-start;
+/* --- Turnstile yerleşimi --- */
+.kvt-turnstile {
+  margin: 8px 0 4px;
+  min-height: 65px;
 }
 
-.kvt-apperance-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px 16px;
-  flex: 1;
-  min-width: 220px;
+/* --- Duyarlı ince ayar --- */
+@media (min-width: 720px) {
+  .kvt-main {
+    padding: 28px 24px 40px;
+  }
+
+  .kvt-title {
+    padding-top: 44px;
+  }
+
+  .kvt-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-.kvt-apperance-fields label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.9rem;
-}
-
-.kvt-outfit-note {
-  grid-column: 1 / -1;
-  font-size: 0.85rem;
-  opacity: 0.85;
-  margin: 4px 0 0;
-}
-
-.kvt-admin-actions {
-  margin: 16px 0;
-}
-
-.kvt-admin-actions button {
-  background: var(--kvt-bordo);
-  color: var(--kvt-text);
-  border: 1px solid var(--kvt-gold);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-family: inherit;
-  font-size: 15px;
-  margin-right: 8px;
-  min-height: 44px;
-}
-
-.kvt-admin-accounts select {
-  background: var(--kvt-panel);
-  color: var(--kvt-text);
-  border: 1px solid var(--kvt-gold);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-family: inherit;
-  min-height: 36px;
-}
-
-.kvt-protected {
-  color: var(--kvt-gold);
-  font-weight: 700;
-  margin-left: 6px;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

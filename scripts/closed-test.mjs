@@ -35,7 +35,7 @@ const round = (v) => Math.round(v * 1000) / 1000;
 
 async function main() {
   const steps = [];
-  const record = async (name, path, init = {}) => {
+  const record = async (name, path, init = {}, okStatuses = []) => {
     const start = process.hrtime.bigint();
     const res = await fetch(`${BASE}${path}`, init);
     const text = await res.text();
@@ -46,7 +46,7 @@ async function main() {
     } catch {
       json = null;
     }
-    steps.push({ name, path, status: res.status, ms: round(ms), ok: res.ok });
+    steps.push({ name, path, status: res.status, ms: round(ms), ok: res.ok || okStatuses.includes(res.status) });
     return { status: res.status, json, text };
   };
 
@@ -60,8 +60,39 @@ async function main() {
   const token = await sessionToken({ accountId, role: "player", issuedAt: Date.now(), expiresAt: Date.now() + 3_600_000 });
   const auth = { authorization: `Bearer ${token}`, "content-type": "application/json" };
 
-  // Yonetici oturumu (dunya tohumu ve yonetim uclari icin).
-  const adminToken = await sessionToken({ accountId: "kapali-admin", role: "admin", issuedAt: Date.now(), expiresAt: Date.now() + 3_600_000 });
+  // Yonetici oturumu: sentetik belirtec YETMEZ, cunku yonetim uclari rolu
+  // DB'den tazeler (yetki sizmasi onlenir). Bu yuzden gercek akis izlenir:
+  // kayit -> bootstrap-admin -> giris. Sabit e-posta/parola sayesinde tekrar
+  // calistirmalar da calisir (bootstrap 409, kayit email_taken donse de giris
+  // basarili olur).
+  const adminEmail = "kapali-admin@valedorn.tr";
+  await record(
+    "adminRegister",
+    "/api/auth/register",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: adminEmail, password: "cok-guclu-parola-1" }),
+    },
+    [409], // tekrar calistirmada hesap zaten var; beklenen durum
+  );
+  const bootstrapToken = process.env.BOOTSTRAP_ADMIN_TOKEN ?? "kapali-yerel-bootstrap";
+  await record(
+    "bootstrapAdmin",
+    "/api/auth/bootstrap-admin",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-bootstrap-token": bootstrapToken },
+      body: JSON.stringify({ email: adminEmail }),
+    },
+    [409], // tekrar calistirmada zaten yonetici var; beklenen durum
+  );
+  const adminLogin = await record("adminLogin", "/api/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: adminEmail, password: "cok-guclu-parola-1" }),
+  });
+  const adminToken = adminLogin.json?.token ?? "";
   const adminAuth = { authorization: `Bearer ${adminToken}`, "content-type": "application/json" };
 
   await record("seedWorld", "/api/admin/seed-world", { method: "POST", headers: adminAuth });

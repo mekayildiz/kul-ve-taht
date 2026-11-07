@@ -64,10 +64,17 @@ describe("HTTPS zorlamasi (E21.1)", () => {
     expect(res!.headers.get("location")).toBe("https://kulvetaht.dpdns.org/oyun?x=1");
   });
 
-  it("http URL semasi da yonlendirme tetikler", () => {
-    const request = new Request("http://kulvetah.local/api/health");
-    const res = httpsRedirect(request);
-    expect(res?.status).toBe(301);
-    expect(res?.headers.get("location")).toBe("https://kulvetah.local/api/health");
+  it("x-forwarded-proto: https istegini yonlendirmez", () => {
+    const request = new Request("http://kulvetaht.dpdns.org/api/health", {
+      headers: { "x-forwarded-proto": "https" },
+    });
+    expect(httpsRedirect(request)).toBeNull();
+  });
+
+  it("baslik yoksa yonlendirmez (yerel gelistirme http uzerinden calisir)", () => {
+    // `wrangler dev` yerelde x-forwarded-proto set etmez; istek http semasinda
+    // gelse bile yonlendirilmemeli, aksi halde yerel API erisilemez olur.
+    const request = new Request("http://localhost:8787/api/health");
+    expect(httpsRedirect(request)).toBeNull();
   });
 });
