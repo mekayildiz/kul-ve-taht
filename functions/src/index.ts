@@ -370,7 +370,7 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
 
 router.post("/api/auth/register", async ({ request, env }: Ctx) => {
   const body = (await request.json().catch(() => null)) as
-    | { email?: string; password?: string; locale?: "tr" | "en"; turnstileToken?: string }
+    | { email?: string; password?: string; turnstileToken?: string }
     | null;
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
@@ -389,7 +389,6 @@ router.post("/api/auth/register", async ({ request, env }: Ctx) => {
     {
       email: body.email,
       password: body.password,
-      ...(body.locale ? { locale: body.locale } : {}),
     },
     hasher,
   );

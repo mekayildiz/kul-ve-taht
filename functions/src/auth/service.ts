@@ -40,7 +40,6 @@ export type LoginResult =
 export interface RegisterInput {
   email: string;
   password: string;
-  locale?: "tr" | "en";
 }
 
 export async function registerAccount(
@@ -66,7 +65,7 @@ export async function registerAccount(
     email,
     passwordHash,
     "player",
-    input.locale ?? "tr",
+    "tr",
     "active",
     nowMs,
     nowMs,

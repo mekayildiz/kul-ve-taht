@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { tr } from "./tr";
-import { en } from "./en";
 import { DEFAULT_LOCALE, getDictionary } from "./index";
 
 /** Anahtar kumesini duz (noktali) yola cevirir. */
@@ -14,22 +13,17 @@ function flatten(value: object, prefix = ""): string[] {
 describe("i18n", () => {
   it("varsayilan dil Turkce'dir", () => {
     expect(DEFAULT_LOCALE).toBe("tr");
-    expect(getDictionary("tr").appTitle).toBe("Kül ve Taht");
-  });
-
-  it("TR ve EN ayni anahtar kumesine sahiptir (eksik ceviri yok)", () => {
-    expect(flatten(en).sort()).toEqual(flatten(tr).sort());
+    expect(getDictionary().appTitle).toBe("Kül ve Taht");
   });
 
   it("hicbir ceviri bos degildir", () => {
-    for (const value of Object.values(flatten(en))) {
+    for (const value of Object.values(flatten(tr))) {
       expect(value.length).toBeGreaterThan(0);
     }
   });
 
   it("mevsim ve yerlesim turleri cevrilmistir", () => {
-    expect(getDictionary("en").seasons.winter).toBe("Winter");
-    expect(getDictionary("en").kinds.castle).toBe("Castle");
-    expect(getDictionary("tr").kinds.castle).toBe("Kale");
+    expect(getDictionary().seasons.winter).toBe("Kış");
+    expect(getDictionary().kinds.castle).toBe("Kale");
   });
 });

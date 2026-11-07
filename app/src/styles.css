@@ -260,20 +260,8 @@ a {
   cursor: pointer;
 }
 
-.kvt-lang {
-  background: var(--kvt-brown);
-  color: var(--kvt-text);
-  border: 1px solid var(--kvt-gold);
-  border-radius: var(--kvt-radius-sm);
-  padding: 8px 14px;
-  font-size: 15px;
-  min-width: 48px;
-  min-height: 40px;
-  cursor: pointer;
-}
-
 /* --- Butonlar (genel) --- */
-.kvt-main button:not(.kvt-navbtn):not(.kvt-tab):not(.kvt-brand):not(.kvt-lang):not(.kvt-adminbtn) {
+.kvt-main button:not(.kvt-navbtn):not(.kvt-tab):not(.kvt-brand):not(.kvt-adminbtn) {
   background: linear-gradient(180deg, var(--kvt-bordo-light), var(--kvt-bordo));
   color: var(--kvt-text);
   border: 1px solid var(--kvt-gold);
@@ -848,6 +836,69 @@ a {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* --- Aksiyon sonucu karti (yasanan dunya: gercek geri bildirim) --- */
+.kvt-outcome {
+  margin: var(--kvt-gap) 0;
+  padding: 12px 14px;
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius);
+  background: var(--kvt-panel);
+  animation: kvt-toast-in 0.22s ease-out;
+}
+
+.kvt-outcome h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--kvt-gold-soft);
+  letter-spacing: 0.04em;
+}
+
+.kvt-outcome ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kvt-outcome li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--kvt-radius-sm);
+  background: var(--kvt-stone-light);
+  border: 1px solid var(--kvt-brown);
+  font-size: 14px;
+}
+
+.kvt-outcome li span {
+  color: var(--kvt-muted);
+}
+
+.kvt-outcome li strong {
+  font-size: 15px;
+}
+
+.kvt-outcome-gain strong {
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-outcome-loss strong,
+.kvt-outcome-bad strong {
+  color: #e08a8a;
+}
+
+.kvt-outcome-crit {
+  border-color: var(--kvt-gold);
+  background: var(--kvt-brown);
+}
+
+.kvt-outcome-crit strong {
+  color: var(--kvt-gold);
 }
 
 /* --- Turnstile yerleşimi --- */

@@ -5,7 +5,7 @@ import { AdminPanel } from "./AdminPanel";
 import { ApiClient } from "../api/client";
 import { getDictionary } from "../i18n";
 
-const t = getDictionary("tr");
+const t = getDictionary();
 
 function clientWith(handler: (path: string, init?: RequestInit) => Response): ApiClient {
   return new ApiClient({

@@ -741,12 +741,11 @@ export class ApiClient {
   register(
     email: string,
     password: string,
-    locale: "tr" | "en" = "tr",
     turnstileToken?: string,
   ): Promise<{ accountId: string }> {
     return this.request("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password, locale, ...(turnstileToken ? { turnstileToken } : {}) }),
+      body: JSON.stringify({ email, password, locale: "tr", ...(turnstileToken ? { turnstileToken } : {}) }),
     });
   }
 

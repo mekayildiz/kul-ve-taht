@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Dictionary } from "../i18n";
 import { CharacterAvatar } from "../components/CharacterAvatar";
 import { ToastStack, type ToastItem } from "../components/Toast";
+import { describeOutcome, outcomeSummary, type OutcomeLine } from "./playOutcome";
 import {
   ApiClient,
   ApiRequestError,
@@ -177,6 +178,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   });
   const [tab, setTab] = useState<PlayTab>("durum");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [lastOutcome, setLastOutcome] = useState<{ lines: OutcomeLine[]; at: number } | null>(null);
 
   // Islem bildirimleri sayfa ustunde birikmez; kisa omurlu balon olarak gosterilir.
   const notify = useCallback((kind: "ok" | "error", text: string) => {
@@ -254,10 +256,19 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const act = useCallback(
     (action: PlayAction, successMessage: string) => {
+      const before = state.play;
       client
         .playAction(token, character.id, action)
-        .then(() => {
-          notify("ok", successMessage);
+        .then((res) => {
+          // Sunucu yeni tam durumu dondurur; onceki durumla farkini gostererek
+          // gercek geri bildirim uret (altin, saglik, ganimet, yara...).
+          const lines = before ? describeOutcome(t, before, res.state, res.detail) : [];
+          if (lines.length > 0) {
+            setLastOutcome({ lines, at: Date.now() });
+            notify("ok", outcomeSummary(t, lines));
+          } else {
+            notify("ok", successMessage);
+          }
           load();
         })
         .catch((error: unknown) => {
@@ -271,7 +282,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           notify("error", map[code] ?? t.auth.errorGeneric);
         });
     },
-    [client, token, character.id, t, notify, load],
+    [client, token, character.id, t, notify, load, state.play],
   );
 
   if (state.loading && !state.play) return <p>{t.status.loading}</p>;
@@ -324,6 +335,20 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       </nav>
 
       <ToastStack items={toasts} />
+
+      {tab === "durum" && lastOutcome && lastOutcome.lines.length > 0 && (
+        <section className="kvt-outcome" aria-label={t.play.outcome.title}>
+          <h3>{t.play.outcome.title}</h3>
+          <ul>
+            {lastOutcome.lines.map((line, i) => (
+              <li key={`${line.label}-${i}`} className={`kvt-outcome-${line.tone}`}>
+                <span>{line.label}</span>
+                {line.value && <strong>{line.value}</strong>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {tab === "durum" && (
         <>

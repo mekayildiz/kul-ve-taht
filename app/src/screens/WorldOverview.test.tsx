@@ -5,7 +5,7 @@ import { WorldOverview } from "./WorldOverview";
 import { ApiClient } from "../api/client";
 import { getDictionary } from "../i18n";
 
-const t = getDictionary("tr");
+const t = getDictionary();
 
 function clientWith(handler: (path: string) => Response): ApiClient {
   return new ApiClient({
