@@ -74,6 +74,43 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
   D1/DO'yu hesap gerekmeden emüle eder. Yedekleme D1 Time Travel (ücretsiz, 30
   gün); ayrı Workflow veya R2 binding'i yoktur.
 
+## Güvenlik başlıkları ve HTTPS (belge 21.1)
+
+- **Statik varlıklar Worker betiğinden ÖNCE sunulur**, bu yüzden güvenlik
+  başlıkları **iki yerde** tanımlıdır: `functions/src/http/security.ts` (Worker
+  yanıtları: `/api/*`, 404, ön kontrol) ve `app/public/_headers` (HTML/JS/CSS).
+  Değerler **aynı** olmalı; birini değiştirince diğerini de güncelle.
+- `withSecurity()` tüm Worker yanıtlarına HSTS, CSP, X-Frame-Options,
+  Referrer-Policy, Permissions-Policy, COOP/CORP ekler. `httpsRedirect()` düz
+  HTTP'yi (`x-forwarded-proto: http`) 301 ile HTTPS'e taşır; panel ayarı
+  (Always Use HTTPS) gerekmez.
+- CSP'de **betik inline'a kapalı** (`script-src 'self'
+  https://challenges.cloudflare.com`); stil için `'unsafe-inline'` açıktır
+  (React). Turnstile kaynağı `script-src`/`connect-src`/`frame-src`'te açıktır.
+- Ayrıntı ve doğrulama: `docs/guvenlik-basliklari.md`. Test:
+  `functions/src/http/security.test.ts`.
+
+## Yerel gelistirme notlari (kapali test)
+
+- Yerel API icin once `npm run db:migrate:local` (aksi halde `no such table:
+  accounts`). `functions/.dev.vars` (git'e girmez) icinde
+  `SESSION_SECRET=yerel-gelistirme-anahtari-uretimde-degistirilir` ve
+  `BOOTSTRAP_ADMIN_TOKEN=kapali-yerel-bootstrap` gerekir. `.dev.vars` okunmasi
+  icin sunucu YENIDEN baslatilmalidir; eski surec portta kalirsa yeni degerler
+  yuklenmez (`pgrep -af "wrangler dev"` ile kontrol et).
+- `httpsRedirect` yalnizca `x-forwarded-proto: http` iken tetiklenir. Yerelde bu
+  baslik yoktur; yonlendirme yapilmaz, boylece HTTP uzerinden gelistirme surer.
+- Kapali test (`npm run test:closed`) sentetik admin token kullanamaz; yonetim
+  uclari rolu DB'den tazeler. Test gercek `bootstrap-admin` + giris akisini izler
+  ve tekrar calistirmada 409'u beklenen kabul eder. Beklenen: 17/17.
+
+## Arayuz temasi (belge 18.1)
+
+- Tek stil dosyasi `app/src/styles.css`; tum siniflar `kvt-` onekli. Harici
+  font/gorsel YOK: sistem serif yigini + inline SVG (`components/Crest.tsx`).
+  CSP bu yuzden `font-src 'self'`, `img-src 'self' data:` ile sinirlidir.
+- Dokunma hedefleri >= 44px; `prefers-reduced-motion` destegi var.
+
 ## Dunya simulasyonu (belge 8/9/19)
 
 - Katmanli NPC simulasyonu `functions/src/play/world-sim.ts` icindedir ve

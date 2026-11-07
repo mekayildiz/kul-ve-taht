@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { DEFAULT_LOCALE, getDictionary, type Locale } from "../i18n";
 import { ApiClient, type CharacterDto } from "../api/client";
+import { Crest } from "../components/Crest";
 import { AuthPanel } from "../screens/AuthPanel";
 import { WorldOverview } from "../screens/WorldOverview";
 import { CharacterSetup } from "../screens/CharacterSetup";
@@ -39,6 +40,19 @@ export function App(): JSX.Element {
         </button>
         <div className="kvt-topright">
           {account && <span className="kvt-account">{t.auth.loggedInAs}</span>}
+          {account && (
+            <button
+              type="button"
+              className="kvt-adminbtn"
+              onClick={() => {
+                setAccount(null);
+                setCharacter(null);
+                setScreen("title");
+              }}
+            >
+              {t.auth.logout}
+            </button>
+          )}
           {account && (
             <button
               type="button"
@@ -81,6 +95,7 @@ export function App(): JSX.Element {
       <main className="kvt-main">
         {screen === "title" && (
           <section className="kvt-title">
+            <Crest />
             <h1>{t.appTitle}</h1>
             <p className="kvt-slogan">{t.slogan}</p>
             <div className="kvt-actions">
