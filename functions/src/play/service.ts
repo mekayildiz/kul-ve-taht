@@ -25,6 +25,8 @@ import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, typ
 import { GUILDS, SPELLS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
 import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
 import { snapshotFrom, buildAbsenceReport, type AbsenceSnapshot, type AbsenceReport } from "./absence";
+import { buildDailyProgress, dailyProgressSummary } from "./daily-progress";
+import { notifyCharacter } from "../notify/notifications";
 
 export interface PlayState {
   characterId: string;
@@ -271,6 +273,7 @@ export async function advanceCharacterDay(
   }
 
   const wasAlive = state.health.alive;
+  const before = state.health;
   // Aclik ilerler; uzun sureli aclik sagliktan duser (belge 12.8).
   let health = advanceHunger(state.health, delta);
   health = { ...health, health: Math.max(0, health.health - starvationDamage(health)) };
@@ -284,6 +287,21 @@ export async function advanceCharacterDay(
     await execute(db, "UPDATE characters SET age_years = age_years + ? WHERE id = ?", years, characterId);
   }
   await execute(db, "UPDATE character_state SET last_advanced_day = ? WHERE character_id = ?", day, characterId);
+
+  // Oyuncu cevrimdisiyken olan degisimi bildirime cevir (belge 19). Ilk gun
+  // (last = 0) baslangic anidir; yaniltici bir ozet uretmemek icin atlanir.
+  if (last > 0) {
+    const progress = buildDailyProgress(before, state.health, delta, years);
+    if (progress) {
+      await notifyCharacter(
+        db,
+        characterId,
+        progress.died ? "character_death" : "daily_progress",
+        dailyProgressSummary(progress),
+        nowMs,
+      );
+    }
+  }
 
   let succession: Awaited<ReturnType<typeof settleDeath>> = null;
   if (wasAlive && !state.health.alive) {

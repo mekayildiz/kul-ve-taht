@@ -6,6 +6,8 @@
  * Bu yuzden oncelik esigi ve toplu ozetleme uygulanir.
  */
 
+import type { SqlDatabase } from "../db/client";
+
 export type NotificationKind =
   | "direct_message"
   | "trade_offer"
@@ -15,7 +17,9 @@ export type NotificationKind =
   | "war_peace"
   | "kingdom_decision"
   | "property_growth"
-  | "quest_world_event";
+  | "quest_world_event"
+  | "daily_progress"
+  | "character_death";
 
 /** Oncelik: 3 = kritik, 2 = onemli, 1 = bilgi, 0 = arka plan (varsayilan gizli). */
 export type NotificationPriority = 0 | 1 | 2 | 3;
@@ -40,6 +44,8 @@ export const KIND_PRIORITY: Record<NotificationKind, NotificationPriority> = {
   family_growth: 1,
   property_growth: 1,
   quest_world_event: 1,
+  daily_progress: 1,
+  character_death: 3,
 };
 
 /** Varsayilan gosterim esigi: 1 ve uzeri gosterilir; arka plan gizlenir. */
@@ -98,4 +104,37 @@ export function markRead(notifications: readonly Notification[], ids: readonly s
 /** Bildirim kirpma: en yeni N bildirim tutulur (depolama ve kota dostu). */
 export function trimNotifications(notifications: readonly Notification[], max = 100): Notification[] {
   return [...notifications].sort((a, b) => b.createdAtMs - a.createdAtMs).slice(0, max);
+}
+
+/**
+ * Karakterin sahibine bildirim yazar (belge 19). Sahip bulunamazsa sessizce
+ * doner; gunluk ilerleme gibi arka plan akislari bunu guvenle cagirabilir.
+ */
+export async function notifyCharacter(
+  db: SqlDatabase,
+  characterId: string,
+  kind: NotificationKind,
+  summary: string,
+  nowMs = Date.now(),
+): Promise<void> {
+  const owner = await db
+    .prepare("SELECT account_id FROM characters WHERE id = ?")
+    .bind(characterId)
+    .first<{ account_id: string }>();
+  if (!owner) return;
+  const notification = createNotification(kind, summary.slice(0, 200), nowMs);
+  await db
+    .prepare(
+      `INSERT INTO player_notifications (id, account_id, kind, priority, summary, read, created_at)
+       VALUES (?,?,?,?,?,0,?)`,
+    )
+    .bind(
+      notification.id,
+      owner.account_id,
+      notification.kind,
+      notification.priority,
+      notification.summary,
+      notification.createdAtMs,
+    )
+    .run();
 }
