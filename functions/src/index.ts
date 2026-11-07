@@ -35,6 +35,8 @@ import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 import {
   getPlayState,
+  readAbsence,
+  markSeen,
   advanceAllCharacters,
   performEat,
   performRest,
@@ -913,6 +915,10 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   }
   const state = await getPlayState(env.DB, params.characterId!);
   if (!state) return error("not_found", "Karakter bulunamadi.", 404);
+  // Yokluk ozeti: once rapor uretilir, sonra goruldu isaretlenir; boylece
+  // oyuncu raporu yalnizca BIR kez gorur (belge 6, 19).
+  const absence = await readAbsence(env.DB, params.characterId!, state);
+  await markSeen(env.DB, params.characterId!, state);
   const storage = await storageSummary(
     env.DB,
     params.characterId!,
@@ -959,6 +965,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   ]);
   return json({
     state,
+    absence,
     items: ITEMS,
     recipes: RECIPES,
     explorationSites: EXPLORATION_SITES,
@@ -1392,6 +1399,9 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
   // Etiket sunucuda eslesir; istemci ilerleme gonderemez (belge 21.1).
   const questTag = questTagFor(action, body);
   if (questTag) await advanceQuestByTag(env.DB, characterId, questTag).catch(() => undefined);
+
+  // Oyuncu etkin: yokluk anlik goruntusu tazelenir (belge 6, 19).
+  if (result.state) await markSeen(env.DB, characterId, result.state).catch(() => undefined);
 
   return json({ ok: true, state: result.state, detail: result.detail });
 });

@@ -479,8 +479,20 @@ export interface PersonalityDto {
   patience: number;
 }
 
+export interface AbsenceReportDto {
+  daysPassed: number;
+  goldDelta: number;
+  healthDelta: number;
+  hungerDelta: number;
+  fatigueDelta: number;
+  injuriesHealed: number;
+  injuriesGained: number;
+  died: boolean;
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
+  absence: AbsenceReportDto | null;
   items: ItemDefDto[];
   recipes: RecipeDto[];
   explorationSites: string[];

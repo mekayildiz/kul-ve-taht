@@ -901,6 +901,64 @@ a {
   color: var(--kvt-gold);
 }
 
+/* --- Yoklugunda raporu --- */
+.kvt-absence {
+  margin: var(--kvt-gap) 0;
+  padding: 12px 14px;
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius);
+  background: linear-gradient(180deg, var(--kvt-brown), var(--kvt-panel));
+  animation: kvt-toast-in 0.22s ease-out;
+}
+
+.kvt-absence header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kvt-absence h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--kvt-gold-soft);
+  letter-spacing: 0.04em;
+}
+
+.kvt-absence-close {
+  background: none;
+  border: none;
+  color: var(--kvt-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.kvt-absence ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kvt-absence li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--kvt-radius-sm);
+  background: var(--kvt-stone-light);
+  border: 1px solid var(--kvt-brown);
+  font-size: 14px;
+}
+
+.kvt-absence li span {
+  color: var(--kvt-muted);
+}
+
 /* --- Turnstile yerleşimi --- */
 .kvt-turnstile {
   margin: 8px 0 4px;

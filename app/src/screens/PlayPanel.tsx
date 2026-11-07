@@ -3,9 +3,11 @@ import type { Dictionary } from "../i18n";
 import { CharacterAvatar } from "../components/CharacterAvatar";
 import { ToastStack, type ToastItem } from "../components/Toast";
 import { describeOutcome, outcomeSummary, type OutcomeLine } from "./playOutcome";
+import { describeAbsence } from "./absenceReport";
 import {
   ApiClient,
   ApiRequestError,
+  type AbsenceReportDto,
   type AuctionDto,
   type CatalogDto,
   type CharacterDto,
@@ -179,6 +181,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   const [tab, setTab] = useState<PlayTab>("durum");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [lastOutcome, setLastOutcome] = useState<{ lines: OutcomeLine[]; at: number } | null>(null);
+  const [absence, setAbsence] = useState<AbsenceReportDto | null>(null);
 
   // Islem bildirimleri sayfa ustunde birikmez; kisa omurlu balon olarak gosterilir.
   const notify = useCallback((kind: "ok" | "error", text: string) => {
@@ -198,6 +201,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       client.notifications(token).catch(() => null),
     ])
       .then(([res, catalog, chat, quests, auctions, notifications]) => {
+        // Yokluk raporu yalnizca donusten sonraki ILK yanitta dolu gelir;
+        // sonraki yuklemelerde null olur. Bu yuzden null ile UZERINE YAZMA.
+        if (res.absence) setAbsence(res.absence);
         setState({
           play: res.state,
           items: res.items,
@@ -335,6 +341,25 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       </nav>
 
       <ToastStack items={toasts} />
+
+      {tab === "durum" && absence && (
+        <section className="kvt-absence" aria-label={t.play.absence.title}>
+          <header>
+            <h3>{t.play.absence.title}</h3>
+            <button type="button" className="kvt-absence-close" onClick={() => setAbsence(null)}>
+              ×
+            </button>
+          </header>
+          <ul>
+            {describeAbsence(t, absence).map((line, i) => (
+              <li key={`${line.label}-${i}`} className={`kvt-outcome-${line.tone}`}>
+                <span>{line.label}</span>
+                {line.value && <strong>{line.value}</strong>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {tab === "durum" && lastOutcome && lastOutcome.lines.length > 0 && (
         <section className="kvt-outcome" aria-label={t.play.outcome.title}>

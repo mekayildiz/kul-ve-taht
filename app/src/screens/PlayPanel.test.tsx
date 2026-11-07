@@ -54,6 +54,7 @@ function playState(overrides: Record<string, unknown> = {}) {
 
 const stateResponse = {
   state: playState(),
+  absence: null,
   items: [{ id: "bread", name: "Ekmek", category: "food", baseValue: 2, nutrition: 25 }],
   recipes: [{ id: "craft-bread", output: "bread", outputQuantity: 4, baseChance: 90 }],
   explorationSites: ["forest", "cave"],
@@ -97,6 +98,32 @@ describe("PlayPanel", () => {
     expect(screen.getByText("20")).toBeTruthy();
     await goto(t.play.tabs.hayat);
     expect(screen.getAllByText(/Ekmek/).length).toBeGreaterThan(0);
+  });
+
+  it("yokluk raporu geldiğinde kartı gösterir ve kapatılabilir", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          absence: {
+            daysPassed: 3,
+            goldDelta: 0,
+            healthDelta: 0,
+            hungerDelta: 40,
+            fatigueDelta: 0,
+            injuriesHealed: 1,
+            injuriesGained: 0,
+            died: false,
+          },
+        });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.absence.title)).toBeTruthy());
+    expect(screen.getByText(/3 oyun günü geçti/)).toBeTruthy();
+    expect(screen.getByText(/Açlığın arttı/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "×" }));
+    await waitFor(() => expect(screen.queryByText(t.play.absence.title)).toBeNull());
   });
 
   it("keşif aksiyonu gönderir ve durumu günceller", async () => {
