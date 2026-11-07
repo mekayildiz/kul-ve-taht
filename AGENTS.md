@@ -252,3 +252,10 @@ Sonrasinda tum rol dagitimi yonetim panelinden yapilir.
 Araştırma ve secenekler: `docs/ucretsiz-alan-adi-arastirmasi.md`. Ozet:
 gercek `.com` ucretsiz alinamaz; 0 TL icin mevcut `*.pages.dev` adresi veya
 DigitalPlat FreeDomain (`*.dpdns.org`) alt alan adi kullanilabilir.
+
+**Kurulu durum (canli):** `https://kulvetaht.dpdns.org` — DigitalPlat
+FreeDomain'den alinan alan adi Cloudflare'de tam (full) zone olarak tanimli
+(zone id `dd28c5c113f1076544eae95c3d1e55a3`) ve Worker'a **ozel alan adi**
+(Workers Custom Domain) olarak bagli: `kulvetaht.dpdns.org` →
+`kul-ve-taht-functions` (production). SSL sertifikasi Cloudflare tarafindan
+otomatik saglanir; HSTS etkindir. Kaynak: `docs/alan-adi-baglama-kilavuzu.md`.
