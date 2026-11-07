@@ -29,7 +29,8 @@
     "deploy:production": "node scripts/deploy-production.mjs",
     "deploy:web": "npm run build -w @kvt/app && wrangler pages deploy app/dist --project-name kul-ve-taht",
     "dev:api": "wrangler dev --local --config functions/wrangler.toml",
-    "sync:assets": "node scripts/sync-assets.mjs"
+    "sync:assets": "node scripts/sync-assets.mjs",
+    "smoke:live": "node scripts/smoke-live.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

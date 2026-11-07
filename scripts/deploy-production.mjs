@@ -143,6 +143,9 @@ if (url) {
   } catch (err) {
     console.log(`Saglik kontrolu yapilamadi (ag): ${err.message}`);
   }
+  // Sema/uygulama uyumsuzlugunu (ornek: uygulanmamis migration) yakalar.
+  console.log("Kimlik dogrulama duman testi (kayit -> giris -> /api/me)...");
+  execFileSync("node", ["scripts/smoke-live.mjs", url], { cwd: ROOT, stdio: "inherit" });
   console.log(
     [
       "",
