@@ -44,6 +44,8 @@ export const tr = {
     gameTime: "Oyun zamanı",
     year: "Yıl",
     day: "Gün",
+    eventLog: "Dünya Günlüğü",
+    eventLogEmpty: "Henüz kayda değer bir olay yok.",
   },
   seasons: {
     spring: "İlkbahar",

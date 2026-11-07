@@ -5,6 +5,7 @@ import {
   ApiRequestError,
   type AssetCatalogDto,
   type SettlementDto,
+  type WorldEventDto,
   type WorldSummaryDto,
   type WorldTimeDto,
 } from "../api/client";
@@ -18,6 +19,7 @@ interface State {
   summary: WorldSummaryDto | null;
   time: WorldTimeDto | null;
   settlements: SettlementDto[];
+  events: WorldEventDto[];
   assets: AssetCatalogDto | null;
   error: string | null;
   loading: boolean;
@@ -28,6 +30,7 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
     summary: null,
     time: null,
     settlements: [],
+    events: [],
     assets: null,
     error: null,
     loading: true,
@@ -43,11 +46,20 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
       client.worldSummary(),
       client.worldTime(),
       client.settlements(kingdom ? { kingdom } : {}),
+      client.worldEvents({ limit: 20 }).catch(() => ({ events: [] })),
       client.assetCatalog().catch(() => ({ count: 0, assets: [], attributions: [] })),
     ])
-      .then(([summary, time, settlements, assets]) => {
+      .then(([summary, time, settlements, events, assets]) => {
         if (cancelled) return;
-        setState({ summary, time, settlements: settlements.settlements, assets, error: null, loading: false });
+        setState({
+          summary,
+          time,
+          settlements: settlements.settlements,
+          events: events.events,
+          assets,
+          error: null,
+          loading: false,
+        });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -98,6 +110,25 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
           {t.seasons[state.time.season]}
         </p>
       )}
+
+      <section className="kvt-eventlog" aria-label={t.world.eventLog}>
+        <h3>{t.world.eventLog}</h3>
+        {state.events.length === 0 ? (
+          <p className="kvt-eventlog-empty">{t.world.eventLogEmpty}</p>
+        ) : (
+          <ul>
+            {state.events.map((e) => (
+              <li key={e.id} className={`kvt-event kvt-event-${e.tone}`}>
+                <span className="kvt-event-day">
+                  {t.world.day} {e.gameDay}
+                </span>
+                <span className="kvt-event-title">{e.title}</span>
+                {e.settlementName && <span className="kvt-event-place">{e.settlementName}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <label className="kvt-filter">
         {t.world.kingdoms}

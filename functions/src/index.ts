@@ -31,6 +31,7 @@ import { createGateHasher, type HashGateNamespace } from "./auth/hash-gate";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
 import { runWorldSimulation } from "./play/world-sim";
+import { readWorldEvents } from "./play/world-events";
 import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 import {
@@ -368,6 +369,21 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
     season: seasonFor(advanced.gameDay),
     advancedDays: advanced.advancedDays,
   });
+});
+
+router.get("/api/world/events", async ({ request, env }: Ctx) => {
+  if (!env?.DB) return json({ events: [] });
+  const url = new URL(request.url);
+  const limitRaw = Number.parseInt(url.searchParams.get("limit") ?? "30", 10);
+  const sinceRaw = Number.parseInt(url.searchParams.get("sinceGameDay") ?? "", 10);
+  const settlementId = url.searchParams.get("settlementId");
+  const options: { limit: number; sinceGameDay?: number; settlementId?: string } = {
+    limit: Number.isFinite(limitRaw) ? limitRaw : 30,
+  };
+  if (Number.isFinite(sinceRaw)) options.sinceGameDay = sinceRaw;
+  if (settlementId) options.settlementId = settlementId;
+  const events = await readWorldEvents(env.DB, options);
+  return json({ events });
 });
 
 router.post("/api/auth/register", async ({ request, env }: Ctx) => {

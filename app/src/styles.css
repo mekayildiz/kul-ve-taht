@@ -406,6 +406,79 @@ a {
   font-size: 0.9rem;
 }
 
+/* --- Dunya gunlugu --- */
+.kvt-eventlog {
+  margin: var(--kvt-gap) 0;
+  padding: 12px 14px;
+  border: 1px solid var(--kvt-brown);
+  border-radius: var(--kvt-radius);
+  background: var(--kvt-panel);
+}
+
+.kvt-eventlog h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--kvt-gold-soft);
+  letter-spacing: 0.04em;
+}
+
+.kvt-eventlog-empty {
+  margin: 0;
+  color: var(--kvt-muted);
+  font-size: 0.9rem;
+}
+
+.kvt-eventlog ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.kvt-event {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--kvt-radius-sm);
+  background: var(--kvt-stone-light);
+  border-left: 3px solid var(--kvt-muted);
+  font-size: 14px;
+}
+
+.kvt-event-day {
+  color: var(--kvt-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kvt-event-title {
+  color: var(--kvt-text);
+}
+
+.kvt-event-place {
+  margin-left: auto;
+  color: var(--kvt-gold-soft);
+  font-size: 0.85rem;
+}
+
+.kvt-event-bad {
+  border-left-color: #b5533f;
+}
+
+.kvt-event-good {
+  border-left-color: var(--kvt-gold);
+}
+
+.kvt-event-neutral {
+  border-left-color: var(--kvt-muted);
+}
+
 /* --- Sekmeler --- */
 .kvt-tabs {
   display: flex;

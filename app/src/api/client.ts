@@ -47,6 +47,17 @@ export interface WorldTimeDto {
   advancedDays: number;
 }
 
+export interface WorldEventDto {
+  id: string;
+  type: string;
+  settlementId: string | null;
+  settlementName: string | null;
+  severity: number;
+  gameDay: number;
+  title: string;
+  tone: "bad" | "good" | "neutral";
+}
+
 export interface SessionDto {
   token: string;
   expiresAt: number;
@@ -743,6 +754,16 @@ export class ApiClient {
 
   worldTime(): Promise<WorldTimeDto> {
     return this.request("/api/world/time");
+  }
+
+  /** Dunya gunlugu (belge 8.8, 12.5): savas, kitlik, veba gibi olaylar. */
+  worldEvents(options: { limit?: number; sinceGameDay?: number; settlementId?: string } = {}): Promise<{ events: WorldEventDto[] }> {
+    const params = new URLSearchParams();
+    if (options.limit) params.set("limit", String(options.limit));
+    if (typeof options.sinceGameDay === "number") params.set("sinceGameDay", String(options.sinceGameDay));
+    if (options.settlementId) params.set("settlementId", options.settlementId);
+    const query = params.toString();
+    return this.request(`/api/world/events${query ? `?${query}` : ""}`);
   }
 
   /** Dogum yeri bilgi paneli (belge 5.1): karsilastirilabilir arti/eksi. */

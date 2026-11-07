@@ -66,3 +66,40 @@ describe("WorldOverview gorsel varliklar (belge 17)", () => {
     await waitFor(() => expect(screen.getByText("icons/sword-64.webp")).toBeTruthy());
   });
 });
+
+describe("WorldOverview dunya gunlugu (belge 8.8)", () => {
+  it("olaylari gun, baslik ve yerlesimle listeler", async () => {
+    const events = {
+      events: [
+        { id: "e1", type: "famine", settlementId: "varkhenn-drahkmar", settlementName: "Drahkmar", severity: 2, gameDay: 42, title: "Kıtlık baş gösterdi", tone: "bad" },
+        { id: "e2", type: "peace", settlementId: null, settlementName: null, severity: 1, gameDay: 40, title: "Barış ilan edildi", tone: "good" },
+      ],
+    };
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/world/summary")) return json(summary);
+      if (path.startsWith("/api/world/time")) return json(time);
+      if (path.startsWith("/api/world/settlements")) return json(settlements);
+      if (path.startsWith("/api/world/events")) return json(events);
+      if (path.startsWith("/api/assets/catalog")) return json(assets);
+      return json({}, 404);
+    });
+    render(<WorldOverview t={t} client={client} />);
+    await waitFor(() => expect(screen.getByText(t.world.eventLog)).toBeTruthy());
+    expect(screen.getByText("Kıtlık baş gösterdi")).toBeTruthy();
+    expect(screen.getAllByText("Drahkmar").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Barış ilan edildi")).toBeTruthy();
+  });
+
+  it("olay yoksa bilgilendirme gosterir", async () => {
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/world/summary")) return json(summary);
+      if (path.startsWith("/api/world/time")) return json(time);
+      if (path.startsWith("/api/world/settlements")) return json(settlements);
+      if (path.startsWith("/api/world/events")) return json({ events: [] });
+      if (path.startsWith("/api/assets/catalog")) return json(assets);
+      return json({}, 404);
+    });
+    render(<WorldOverview t={t} client={client} />);
+    await waitFor(() => expect(screen.getByText(t.world.eventLogEmpty)).toBeTruthy());
+  });
+});
