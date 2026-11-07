@@ -90,6 +90,27 @@ Ayrıntı: `docs/yedekleme-durumu.md`. Her aşama sonunda bundle yenilenir.
 - Ayrıntı ve doğrulama: `docs/guvenlik-basliklari.md`. Test:
   `functions/src/http/security.test.ts`.
 
+## Yerel gelistirme notlari (kapali test)
+
+- Yerel API icin once `npm run db:migrate:local` (aksi halde `no such table:
+  accounts`). `functions/.dev.vars` (git'e girmez) icinde
+  `SESSION_SECRET=yerel-gelistirme-anahtari-uretimde-degistirilir` ve
+  `BOOTSTRAP_ADMIN_TOKEN=kapali-yerel-bootstrap` gerekir. `.dev.vars` okunmasi
+  icin sunucu YENIDEN baslatilmalidir; eski surec portta kalirsa yeni degerler
+  yuklenmez (`pgrep -af "wrangler dev"` ile kontrol et).
+- `httpsRedirect` yalnizca `x-forwarded-proto: http` iken tetiklenir. Yerelde bu
+  baslik yoktur; yonlendirme yapilmaz, boylece HTTP uzerinden gelistirme surer.
+- Kapali test (`npm run test:closed`) sentetik admin token kullanamaz; yonetim
+  uclari rolu DB'den tazeler. Test gercek `bootstrap-admin` + giris akisini izler
+  ve tekrar calistirmada 409'u beklenen kabul eder. Beklenen: 17/17.
+
+## Arayuz temasi (belge 18.1)
+
+- Tek stil dosyasi `app/src/styles.css`; tum siniflar `kvt-` onekli. Harici
+  font/gorsel YOK: sistem serif yigini + inline SVG (`components/Crest.tsx`).
+  CSP bu yuzden `font-src 'self'`, `img-src 'self' data:` ile sinirlidir.
+- Dokunma hedefleri >= 44px; `prefers-reduced-motion` destegi var.
+
 ## Dunya simulasyonu (belge 8/9/19)
 
 - Katmanli NPC simulasyonu `functions/src/play/world-sim.ts` icindedir ve
