@@ -406,6 +406,42 @@ a {
   font-size: 0.9rem;
 }
 
+/* --- Zaman gecisi vurgusu --- */
+.kvt-clock-flash {
+  animation: kvt-time-pulse 1.4s ease-out;
+}
+
+.kvt-timeflash {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--kvt-gold-soft);
+  color: #20160a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: kvt-time-fade 5s ease-out forwards;
+}
+
+@keyframes kvt-time-pulse {
+  0% {
+    color: var(--kvt-gold-soft);
+  }
+  100% {
+    color: var(--kvt-parchment);
+  }
+}
+
+@keyframes kvt-time-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* --- Dunya gunlugu --- */
 .kvt-eventlog {
   margin: var(--kvt-gap) 0;

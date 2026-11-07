@@ -102,4 +102,25 @@ describe("WorldOverview dunya gunlugu (belge 8.8)", () => {
     render(<WorldOverview t={t} client={client} />);
     await waitFor(() => expect(screen.getByText(t.world.eventLogEmpty)).toBeTruthy());
   });
+
+  it("dunya gunu ilerleyince kisa sureli vurgu gosterir (belge 8.8)", async () => {
+    let day = 42;
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/world/summary")) return json(summary);
+      if (path.startsWith("/api/world/time")) return json({ ...time, gameDay: day });
+      if (path.startsWith("/api/world/settlements")) return json(settlements);
+      if (path.startsWith("/api/world/events")) return json({ events: [] });
+      if (path.startsWith("/api/assets/catalog")) return json(assets);
+      return json({}, 404);
+    });
+    render(<WorldOverview t={t} client={client} />);
+    // Ilk yuklemede vurgu OLMAMALI.
+    await waitFor(() => expect(screen.getByText(t.world.eventLog)).toBeTruthy());
+    expect(screen.queryByText("3 gün geçti")).toBeNull();
+
+    // Filtre degisince yeniden yuklenir; dunya gunu ilerlemis olur.
+    day = 45;
+    await userEvent.selectOptions(screen.getByRole("combobox"), "varkhenn");
+    await waitFor(() => expect(screen.getByText("3 gün geçti")).toBeTruthy());
+  });
 });

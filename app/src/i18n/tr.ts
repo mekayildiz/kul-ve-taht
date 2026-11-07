@@ -46,6 +46,8 @@ export const tr = {
     day: "Gün",
     eventLog: "Dünya Günlüğü",
     eventLogEmpty: "Henüz kayda değer bir olay yok.",
+    timeAdvanced: (days: number) => (days === 1 ? "1 gün geçti" : `${days} gün geçti`),
+    seasonChanged: (season: string) => `Mevsim değişti: ${season}`,
   },
   seasons: {
     spring: "İlkbahar",

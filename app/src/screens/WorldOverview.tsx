@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dictionary } from "../i18n";
 import {
   ApiClient,
@@ -38,6 +38,9 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
   const [kingdom, setKingdom] = useState<string>("");
   // Veri tasarrufu modu (belge 17.5): kucuk turev gorseller istenir.
   const [dataSaver, setDataSaver] = useState<boolean>(false);
+  // Dunya saati ilerlediginde kisa sureli vurgu; "zaman akiyor" hissi verir.
+  const [timeFlash, setTimeFlash] = useState<{ days: number; seasonChanged: boolean } | null>(null);
+  const prevTimeRef = useRef<WorldTimeDto | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +54,13 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
     ])
       .then(([summary, time, settlements, events, assets]) => {
         if (cancelled) return;
+        // Ilk yuklemede vurgu YOK; yalnizca sonraki ilerlemelerde gosterilir.
+        const prev = prevTimeRef.current;
+        const advanced = prev ? time.gameDay - prev.gameDay : 0;
+        if (advanced > 0) {
+          setTimeFlash({ days: advanced, seasonChanged: prev?.season !== time.season });
+        }
+        prevTimeRef.current = time;
         setState({
           summary,
           time,
@@ -71,6 +81,13 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
       cancelled = true;
     };
   }, [client, kingdom, t]);
+
+  // Vurgu kalici kalmasin: animasyon bitince durumu temizle.
+  useEffect(() => {
+    if (!timeFlash) return;
+    const timer = setTimeout(() => setTimeFlash(null), 6000);
+    return () => clearTimeout(timer);
+  }, [timeFlash]);
 
   if (state.loading && !state.summary) return <p>{t.status.loading}</p>;
   if (state.error && !state.summary) {
@@ -105,9 +122,15 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
       </div>
 
       {state.time && (
-        <p className="kvt-clock">
+        <p className={`kvt-clock${timeFlash ? " kvt-clock-flash" : ""}`}>
           {t.world.gameTime}: {t.world.year} {state.time.gameYear}, {t.world.day} {state.time.gameDay} —{" "}
           {t.seasons[state.time.season]}
+          {timeFlash && (
+            <span className="kvt-timeflash" role="status">
+              {t.world.timeAdvanced(timeFlash.days)}
+              {timeFlash.seasonChanged ? ` · ${t.world.seasonChanged(t.seasons[state.time.season])}` : ""}
+            </span>
+          )}
         </p>
       )}
 
