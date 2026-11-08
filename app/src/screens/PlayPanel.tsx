@@ -5,6 +5,7 @@ import { ToastStack, type ToastItem } from "../components/Toast";
 import { describeOutcome, outcomeSummary, type OutcomeLine } from "./playOutcome";
 import { describeAbsence } from "./absenceReport";
 import { nextGoal } from "./nextGoal";
+import { progressionBars } from "./progression";
 import {
   ApiClient,
   ApiRequestError,
@@ -430,6 +431,30 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             <span>{t.play.storage}</span>
           </div>
         )}
+      </div>
+
+      <div className="kvt-progression" aria-label={t.play.progression}>
+        <h3>{t.play.progression}</h3>
+        <ul>
+          {progressionBars(play).map((bar) => (
+            <li key={bar.key}>
+              <span className="kvt-progression-label">
+                {bar.key === "mastery"
+                  ? t.play.progressionMastery
+                  : bar.key === "reputation"
+                    ? t.play.progressionReputation
+                    : t.play.progressionUnderworld}
+              </span>
+              <span className="kvt-progression-level">
+                {t.play.progressionLevel} {bar.level}
+              </span>
+              <progress max={bar.next} value={bar.current} />
+              <strong>
+                {bar.current}/{bar.next}
+              </strong>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {state.storage && state.storage.overflow > 0 && (

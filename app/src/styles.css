@@ -848,6 +848,48 @@ a {
   font-size: 0.9rem;
 }
 
+/* --- Gelisim cubuklari --- */
+.kvt-progression {
+  margin: var(--kvt-gap) 0;
+}
+
+.kvt-progression h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-progression ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.kvt-progression li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.kvt-progression-label {
+  flex: 0 0 auto;
+  color: var(--kvt-muted);
+}
+
+.kvt-progression-level {
+  flex: 0 0 auto;
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-progression progress {
+  flex: 1;
+  accent-color: var(--kvt-gold);
+}
+
 .kvt-target {
   display: inline-flex;
   flex-direction: column;

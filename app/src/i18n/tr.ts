@@ -296,6 +296,11 @@ export const tr = {
     collectRent: "Kirayı Topla",
     notifications: "Bildirimler",
     markRead: "Okundu",
+    progression: "Gelişim",
+    progressionLevel: "Seviye",
+    progressionMastery: "Silah Ustalığı",
+    progressionReputation: "İtibar",
+    progressionUnderworld: "Yeraltı Şöhreti",
     goalTitle: "Sıradaki hedef",
     goalGo: "Git",
     goals: {

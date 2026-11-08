@@ -519,4 +519,17 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     await userEvent.click(screen.getByRole("button", { name: t.play.goalGo }));
     await waitFor(() => expect(screen.getByRole("button", { name: t.play.tabs.hayat }).getAttribute("aria-pressed")).toBe("true"));
   });
+
+  it("durum sekmesinde gelişim çubuklarını gösterir (belge 5.5)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({ ...stateResponse, state: playState({ weaponMastery: 7, reputation: 25 }) });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.progression)).toBeTruthy());
+    expect(screen.getByText(t.play.progressionMastery)).toBeTruthy();
+    expect(screen.getByText("2/5")).toBeTruthy();
+  });
 });
