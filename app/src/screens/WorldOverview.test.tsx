@@ -103,6 +103,36 @@ describe("WorldOverview dunya gunlugu (belge 8.8)", () => {
     await waitFor(() => expect(screen.getByText(t.world.eventLogEmpty)).toBeTruthy());
   });
 
+  it("günlükte arama ve ton süzgeci çalışır (belge 19)", async () => {
+    const events = {
+      events: [
+        { id: "e1", type: "famine", settlementId: "varkhenn-drahkmar", settlementName: "Drahkmar", severity: 2, gameDay: 42, title: "Kıtlık baş gösterdi", tone: "bad" },
+        { id: "e2", type: "peace", settlementId: null, settlementName: null, severity: 1, gameDay: 40, title: "Barış ilan edildi", tone: "good" },
+      ],
+    };
+    const client = clientWith((path) => {
+      if (path.startsWith("/api/world/summary")) return json(summary);
+      if (path.startsWith("/api/world/time")) return json(time);
+      if (path.startsWith("/api/world/settlements")) return json(settlements);
+      if (path.startsWith("/api/world/events")) return json(events);
+      if (path.startsWith("/api/assets/catalog")) return json(assets);
+      return json({}, 404);
+    });
+    render(<WorldOverview t={t} client={client} />);
+    await waitFor(() => expect(screen.getByText("Kıtlık baş gösterdi")).toBeTruthy());
+
+    // Metin aramasi: yalnizca eslesen olay kalir.
+    await userEvent.type(screen.getByRole("searchbox"), "barış");
+    await waitFor(() => expect(screen.queryByText("Kıtlık baş gösterdi")).toBeNull());
+    expect(screen.getByText("Barış ilan edildi")).toBeTruthy();
+
+    // Temizle, sonra ton suzgeci: yalnizca kotu ton kalir.
+    await userEvent.clear(screen.getByRole("searchbox"));
+    await userEvent.click(screen.getByRole("button", { name: t.world.filterBad }));
+    await waitFor(() => expect(screen.queryByText("Barış ilan edildi")).toBeNull());
+    expect(screen.getByText("Kıtlık baş gösterdi")).toBeTruthy();
+  });
+
   it("dunya gunu ilerleyince kisa sureli vurgu gosterir (belge 8.8)", async () => {
     let day = 42;
     const client = clientWith((path) => {

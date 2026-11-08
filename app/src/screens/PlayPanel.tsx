@@ -8,6 +8,14 @@ import { nextGoal } from "./nextGoal";
 import { progressionBars } from "./progression";
 import { playSound, setSoundEnabled, soundEnabled, soundForOutcome } from "../components/sound";
 import {
+  firstSteps,
+  firstStepsComplete,
+  loadStepProgress,
+  saveStepProgress,
+  stepSignalForAction,
+  type StepProgress,
+} from "./firstSteps";
+import {
   ApiClient,
   ApiRequestError,
   type AbsenceReportDto,
@@ -186,6 +194,13 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   const [lastOutcome, setLastOutcome] = useState<{ lines: OutcomeLine[]; at: number } | null>(null);
   const [absence, setAbsence] = useState<AbsenceReportDto | null>(null);
   const [sound, setSound] = useState<boolean>(() => soundEnabled());
+  const [stepProgress, setStepProgress] = useState<StepProgress>(() => loadStepProgress(character.id));
+  const [guideHidden, setGuideHidden] = useState(false);
+
+  // Rehber ilerlemesini kalici kil (sayfa yenilense de kaybolmasin).
+  useEffect(() => {
+    saveStepProgress(character.id, stepProgress);
+  }, [character.id, stepProgress]);
 
   const toggleSound = useCallback(() => {
     setSound((prev) => {
@@ -295,6 +310,12 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           if (leveledUp) playSound("levelup");
           else if (lines.length > 0) playSound(soundForOutcome(lines.map((l) => l.tone)));
           else playSound("success");
+          // Rehber ilerlemesi: ilk aksiyon her zaman, kesif/av ise turune gore.
+          const signal = stepSignalForAction(action.action);
+          setStepProgress((prev) => ({
+            acted: true,
+            explored: prev.explored || signal === "explored",
+          }));
           load();
         })
         .catch((error: unknown) => {
@@ -325,6 +346,19 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   const play = state.play;
   const itemName = (id: string): string => state.items.find((i) => i.id === id)?.name ?? id;
   const itemCategory = (id: string): string | undefined => state.items.find((i) => i.id === id)?.category;
+  // Ilk adimlar rehberi (belge 19): gozlemlenebilir durumdan turetilir.
+  const bars = progressionBars(play);
+  const steps = firstSteps({
+    hasActed: stepProgress.acted,
+    hasEarnedGold: play.gold > 20,
+    hasTravelled: (character.current_settlement ?? character.birth_settlement) !== character.birth_settlement,
+    hasExplored: stepProgress.explored,
+    hasQuest: state.quests.length > 0,
+    progressionPoints: play.weaponMastery + play.reputation + play.underworldRep,
+  });
+  const guideComplete = firstStepsComplete(steps);
+  // Rehber tamamlaninca kendiliginden kaybolur; oyuncu erken de gizleyebilir.
+  const showGuide = !guideHidden && !guideComplete;
   // Bildirim ozeti eksik/bozuk gelebilir (uc nokta istege bagli); guvenli oku.
   const notifVisible = Array.isArray(state.notifications?.visible) ? state.notifications.visible : [];
   const appearance: AppearanceDto | null = state.appearance ?? null;
@@ -371,6 +405,30 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       </nav>
 
       <ToastStack items={toasts} />
+
+      {tab === "durum" && showGuide && (
+        <section className="kvt-guide" aria-label={t.play.guideTitle}>
+          <div className="kvt-guide-head">
+            <h3>{t.play.guideTitle}</h3>
+            <button type="button" className="kvt-guide-hide" onClick={() => setGuideHidden(true)}>
+              {t.play.guideHide}
+            </button>
+          </div>
+          <ol>
+            {steps.map((step) => (
+              <li
+                key={step.id}
+                className={`kvt-guide-step${step.done ? " kvt-guide-done" : ""}${step.current ? " kvt-guide-current" : ""}`}
+              >
+                <span className="kvt-guide-mark" aria-hidden="true">
+                  {step.done ? "✓" : step.current ? "▸" : "·"}
+                </span>
+                <span>{t.play.guideSteps[step.id]}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {tab === "durum" && (
         (() => {
@@ -464,7 +522,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       <div className="kvt-progression" aria-label={t.play.progression}>
         <h3>{t.play.progression}</h3>
         <ul>
-          {progressionBars(play).map((bar) => (
+          {bars.map((bar) => (
             <li key={bar.key}>
               <span className="kvt-progression-label">
                 {bar.key === "mastery"

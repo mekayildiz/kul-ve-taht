@@ -533,6 +533,19 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     expect(screen.getByText("2/5")).toBeTruthy();
   });
 
+  it("ilk adımlar rehberini gösterir ve gizletilebilir (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json({ ...stateResponse, state: playState() });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.guideTitle)).toBeTruthy());
+    expect(screen.getByText(t.play.guideSteps.firstAction)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: t.play.guideHide }));
+    await waitFor(() => expect(screen.queryByText(t.play.guideTitle)).toBeNull());
+  });
+
   it("ses düğmesi tercihi değiştirir ve hatırlar (belge 19)", async () => {
     const client = clientWith((path) => {
       if (path.endsWith("/state")) return json(stateResponse);
