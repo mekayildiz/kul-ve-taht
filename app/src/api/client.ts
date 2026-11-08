@@ -9,6 +9,8 @@
 export interface ApiError {
   code: string;
   message: string;
+  /** Sunucunun makine-okunur alt nedeni (ornek: no_feed, level_too_low). */
+  reason?: string;
 }
 
 export class ApiRequestError extends Error {
@@ -16,6 +18,7 @@ export class ApiRequestError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly reason?: string,
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -533,6 +536,8 @@ export interface PlayStateResponse {
   directory: PlayerSummaryDto[];
   personality: PersonalityDto;
   heir: string | null;
+  /** Karakterin bulundugu krallik; buyu yasaklari icin gerekir (belge 13). */
+  kingdomId?: string;
 }
 
 export interface StorageDto {
@@ -682,12 +687,12 @@ export type PlayAction =
 export interface CatalogDto {
   crops: { id: string; name: string; season: string }[];
   livestock: { id: string; name: string }[];
-  animals: { id: string; name: string }[];
-  magicPaths: { id: string; name: string; outlawedIn: string[] }[];
-  spells: { id: string; name: string; path: string; level: number }[];
+  animals: { id: string; name: string; tameable?: boolean }[];
+  magicPaths: { id: string; name: string; minLevel?: number; source?: string; outlawedIn: string[] }[];
+  spells: { id: string; name: string; path: string; level: number; cost?: number }[];
   guilds: { id: string; name: string; dues: number }[];
   activities: { kind: string; name: string; cost: number }[];
-  templeServices: { service: string; cost: number }[];
+  templeServices: { service: string; name?: string; cost: number }[];
   underworldActions: { action: string; name: string }[];
   appearance: AppearanceOptionsDto;
 }
@@ -729,7 +734,7 @@ export class ApiClient {
       } catch {
         // Govde JSON degilse varsayilan mesaj korunur.
       }
-      throw new ApiRequestError(response.status, detail.code, detail.message);
+      throw new ApiRequestError(response.status, detail.code, detail.message, detail.reason);
     }
 
     if (response.status === 204) return undefined as T;

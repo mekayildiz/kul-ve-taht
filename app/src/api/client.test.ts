@@ -53,6 +53,16 @@ describe("ApiClient", () => {
     await expect(client.worldSummary()).rejects.toMatchObject({ status: 429, code: "throttled" });
   });
 
+  it("hata govdesindeki reason alanini ApiRequestError'a tasir", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://x",
+      fetchImpl: fakeFetch(() =>
+        jsonResponse({ error: { code: "invalid_action", message: "olmadi", reason: "no_feed" } }, 400),
+      ),
+    });
+    await expect(client.worldSummary()).rejects.toMatchObject({ code: "invalid_action", reason: "no_feed" });
+  });
+
   it("kimlik dogrulama basligini gonderir", async () => {
     let authHeader: string | undefined;
     const client = new ApiClient({

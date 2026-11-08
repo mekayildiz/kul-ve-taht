@@ -605,7 +605,9 @@ a {
 .kvt-properties li,
 .kvt-companies li,
 .kvt-rentals li,
-.kvt-trades li {
+.kvt-trades li,
+.kvt-hunt li,
+.kvt-magic li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

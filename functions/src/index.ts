@@ -1011,6 +1011,8 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
     heir,
     storage,
     diplomacy: await diplomacyStances(),
+    // Buyu kurallari istemcide on kosul gosterebilsin diye (belge 13).
+    kingdomId,
   });
 });
 

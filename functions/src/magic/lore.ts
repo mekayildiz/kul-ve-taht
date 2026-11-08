@@ -84,6 +84,8 @@ export type TempleService = "healing" | "knowledge" | "shelter" | "protection";
 
 export interface TempleDef {
   service: TempleService;
+  /** Oyuncuya gorunen ad (katalogda tasinir). */
+  name: string;
   /** Hizmet maliyeti (altin); 0 ise bagis ile. */
   cost: number;
   /** Etki buyuklugu. */
@@ -94,10 +96,10 @@ export interface TempleDef {
  * Tapinak hizmetleri (belge 13.2): ayri inanc sistemi YOK; islevsel hizmet.
  */
 export const TEMPLE_SERVICES: readonly TempleDef[] = [
-  { service: "healing", cost: 10, effect: 30 },
-  { service: "knowledge", cost: 8, effect: 1 },
-  { service: "shelter", cost: 2, effect: 1 },
-  { service: "protection", cost: 5, effect: 10 },
+  { service: "healing", name: "Şifa", cost: 10, effect: 30 },
+  { service: "knowledge", name: "Bilgi", cost: 8, effect: 1 },
+  { service: "shelter", name: "Barınma", cost: 2, effect: 1 },
+  { service: "protection", name: "Koruma", cost: 5, effect: 10 },
 ];
 
 export function templeService(service: TempleService, gold: number): { ok: boolean; cost: number; effect: number; reason?: string } {

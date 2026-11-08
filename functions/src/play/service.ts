@@ -242,6 +242,9 @@ export async function performRest(db: SqlDatabase, characterId: string, hours: n
   if (!state.health.alive) return { ok: false, error: "dead" };
   const safeHours = Math.max(1, Math.min(12, Math.floor(hours)));
   state.health = rest(state.health, safeHours);
+  // Dinlenme buyu enerjisini de toparlar; aksi halde enerji harcayan oyuncu
+  // buyu yapamaz hale gelir ve geri kazanmanin HICBIR yolu kalmaz.
+  state.energy = Math.min(100, state.energy + safeHours * 8);
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { hours: safeHours } };
 }
@@ -677,7 +680,7 @@ export async function performHunt(
   roll = Math.random,
   nowMs = Date.now(),
 ): Promise<PlayResult> {
-  if (!ANIMALS.some((a) => a.id === animal)) return { ok: false, error: "invalid_action" };
+  if (!ANIMALS.some((a) => a.id === animal)) return { ok: false, error: "invalid_action", detail: { reason: "unknown_animal" } };
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   if (!state.health.alive) return { ok: false, error: "dead" };
@@ -716,8 +719,12 @@ export async function performTame(
   const hasFeed = state.inventory.some((e) => e.itemId === "bread" || e.itemId === "dried-meat");
   const check = tameAnimal(animal, state.weaponMastery, hasFeed);
   if (!check.ok) return { ok: false, error: "invalid_action", state, detail: { reason: check.reason } };
-  const removed = removeItem(state.inventory, "dried-meat", 1);
-  if (removed.ok) state.inventory = removed.entries!;
+  // Kontrol ekmek ya da kuru et kabul eder; tuketim de AYNI kumeden secilir.
+  // Aksi halde yalnizca ekmegi olan oyuncudan yem dusmez (sessiz hata).
+  const feedItem = state.inventory.some((e) => e.itemId === "dried-meat") ? "dried-meat" : "bread";
+  const removed = removeItem(state.inventory, feedItem, 1);
+  if (!removed.ok) return { ok: false, error: "invalid_action", state, detail: { reason: "no_feed" } };
+  state.inventory = removed.entries!;
   const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
   await execute(
     db,
@@ -809,14 +816,26 @@ export async function performTempleService(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const check = templeService(service, state.gold);
-  if (!check.ok) return { ok: false, error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action" };
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action",
+      state,
+      detail: { reason: check.reason },
+    };
+  }
   state.gold -= check.cost;
   if (service === "healing") {
     state.health = { ...state.health, health: Math.min(100, state.health.health + check.effect) };
   } else if (service === "protection") {
     state.reputation += check.effect;
   } else if (service === "knowledge") {
-    state.weaponMastery += check.effect;
+    // Tapinak "bilgi" hizmeti buyu bilgisini artirir (belge 13.2). Buyu
+    // seviyesinin baska artis yolu olmadigi icin bu, buyunun on kosuludur.
+    state.magicLevel += check.effect;
+  } else if (service === "shelter") {
+    // Barinma: bitkinlik duser. Onceden hicbir etkisi yoktu (sessiz hata).
+    state.health = rest(state.health, check.effect * 4);
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { service, cost: check.cost } };
@@ -866,7 +885,16 @@ export async function performActivity(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const result = joinActivity(kind, state.gold, roll);
-  if (!result.ok) return { ok: false, error: "not_enough_gold", state, detail: { reason: result.reason } };
+  // Yalnizca gercek "altin yetersiz" durumu not_enough_gold dondurur; diger
+  // nedenler (unknown_activity) invalid_action + reason olarak tasinir.
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action",
+      state,
+      detail: { reason: result.reason },
+    };
+  }
   state.gold = Math.max(0, state.gold + result.goldDelta);
   state.reputation += result.reputationDelta;
   state.weaponMastery += result.xp;
@@ -889,7 +917,7 @@ export async function performUnderworldAct(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const result = commitUnderworldAct(action, state.weaponMastery, settlementSecurity, gangAffiliation, roll);
-  if (!result.ok) return { ok: false, error: "invalid_action" };
+  if (!result.ok) return { ok: false, error: "invalid_action", state, detail: { reason: result.reason } };
   state.gold += result.reward;
   state.reputation += result.reputationDelta;
   state.underworldRep += result.success ? 3 : 1;
