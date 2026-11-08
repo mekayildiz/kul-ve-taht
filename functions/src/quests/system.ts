@@ -141,8 +141,8 @@ export function explore(site: ExplorationSite, preparedness: number, roll: () =>
     cave: [{ itemId: "iron-ore", quantity: 4 }],
     ruin: [{ itemId: "tome-of-medicine", quantity: 1 }],
     abandoned_castle: [{ itemId: "chainmail", quantity: 1 }],
-    hidden_region: [{ itemId: "healing-herb", quantity: 3 }],
-    rare_resource: [{ itemId: "iron-ore", quantity: 6 }],
+    hidden_region: [{ itemId: "healing-herb", quantity: 3 }, { itemId: "tome-of-arcana", quantity: 1 }],
+    rare_resource: [{ itemId: "iron-ore", quantity: 6 }, { itemId: "tome-of-spirits", quantity: 1 }],
   };
 
   return {

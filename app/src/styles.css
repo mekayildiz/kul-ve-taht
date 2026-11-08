@@ -406,6 +406,19 @@ a {
   font-size: 0.9rem;
 }
 
+.kvt-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--kvt-muted);
+}
+
+.kvt-slider input[type="range"] {
+  width: 100%;
+}
+
 /* --- Zaman gecisi vurgusu --- */
 .kvt-clock-flash {
   animation: kvt-time-pulse 1.4s ease-out;

@@ -36,6 +36,7 @@ export function learnHint(
   play: PlayStateDto,
   kingdomId: string,
   t: Dictionary,
+  training?: CatalogDto["magicTraining"],
 ): Hint {
   if ((path.outlawedIn ?? []).includes(kingdomId)) return { text: t.play.outlawedHere, blocked: true };
   if ((play.magicPaths ?? []).includes(path.id)) return { text: t.play.alreadyKnown, blocked: true };
@@ -43,14 +44,22 @@ export function learnHint(
   if ((play.magicLevel ?? 0) < minLevel) {
     return { text: `${t.play.minLevel}: ${minLevel}`, blocked: true };
   }
-  // Kaynak gereksinimi: usta/kitap varligi sunucuda dogrulanir; oyuncuya
-  // en azindan NE gerektigini soyleriz (aksi halde "yapilamaz" belirsiz kalir).
-  const sourceText: Record<string, string> = {
-    both: t.play.needSource_both,
-    training: t.play.needSource_training,
-    rare_book: t.play.needSource_rare_book,
-  };
-  return { text: sourceText[path.source ?? "both"] ?? null, blocked: false };
+  // Kaynak gereksinimi SUNUCUDA dogrulanir; oyuncuya hangi kaynagin
+  // gerektigini ve (varsa) usta kralligini soyleriz.
+  const masters = training?.masterKingdoms ?? [];
+  const hasMasterHere = masters.includes(kingdomId);
+  const book = training?.pathBooks?.[path.id];
+  const bookItem = (play.inventory ?? []).find((e) => e.itemId === book);
+  if (path.source === "rare_book" && !bookItem) {
+    return { text: t.play.needSource_rare_book, blocked: false };
+  }
+  if (path.source === "training" && !hasMasterHere) {
+    return { text: t.play.needSource_training, blocked: false };
+  }
+  if (path.source === "both" && !bookItem && !hasMasterHere) {
+    return { text: t.play.needSource_both, blocked: false };
+  }
+  return { text: null, blocked: false };
 }
 
 export function castHint(

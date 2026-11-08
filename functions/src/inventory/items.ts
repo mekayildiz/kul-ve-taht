@@ -48,6 +48,8 @@ export const ITEMS: ItemDef[] = [
   { id: "wool-cloak", name: "Yün Pelerin", category: "luxury", weight: 1, baseValue: 20, maxDurability: 60 },
   { id: "pack-horse", name: "Yük Atı", category: "mount", weight: 0, baseValue: 120, maxDurability: 100 },
   { id: "tome-of-medicine", name: "Tıp Kitabı", category: "book", weight: 1, baseValue: 90, maxDurability: 1 },
+  { id: "tome-of-arcana", name: "Büyü Kitabı", category: "book", weight: 1, baseValue: 120, maxDurability: 1 },
+  { id: "tome-of-spirits", name: "Ruh Kitabı", category: "book", weight: 1, baseValue: 180, maxDurability: 1 },
 ];
 
 const ITEM_MAP = new Map(ITEMS.map((i) => [i.id, i]));

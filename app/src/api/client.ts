@@ -616,6 +616,7 @@ export type PlayAction =
   | { action: "hunt"; animal: string; preparedness: number }
   | { action: "tame"; animal: string }
   | { action: "learnSpell"; path: string }
+  | { action: "trainSpell" }
   | { action: "castSpell"; spellId: string }
   | { action: "temple"; service: "healing" | "knowledge" | "shelter" | "protection" }
   | { action: "joinGuild"; guildId: string }
@@ -694,6 +695,7 @@ export interface CatalogDto {
   activities: { kind: string; name: string; cost: number }[];
   templeServices: { service: string; name?: string; cost: number }[];
   underworldActions: { action: string; name: string }[];
+  magicTraining?: { pathBooks: Record<string, string>; cost: number; masterKingdoms: string[] };
   appearance: AppearanceOptionsDto;
 }
 

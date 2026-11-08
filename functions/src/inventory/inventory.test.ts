@@ -65,7 +65,7 @@ describe("uretim (belge 12.7, 13.3)", () => {
 
   it("malzeme yoksa uretmez", () => {
     const recipe = recipeById("craft-sword")!;
-    const result = craft([], recipe, 5, ["smith"], 0.1);
+    const result = craft([], recipe, 5, ["blacksmith"], 0.1);
     expect(result.error).toBe("missing_materials");
   });
 
@@ -78,7 +78,7 @@ describe("uretim (belge 12.7, 13.3)", () => {
   it("alet yipranir", () => {
     const recipe = recipeById("craft-sword")!;
     const entries = [{ itemId: "iron-ore", quantity: 3, condition: 1 }, { itemId: "oak-wood", quantity: 1, condition: 1 }, { itemId: "woodcutter-axe", quantity: 1, condition: 100 }];
-    const result = craft(entries, recipe, 5, ["smith"], 0.1);
+    const result = craft(entries, recipe, 5, ["blacksmith"], 0.1);
     expect(result.toolWear).toBe(2);
     expect(result.entries?.find((e) => e.itemId === "woodcutter-axe")?.condition).toBe(98);
   });
@@ -86,8 +86,8 @@ describe("uretim (belge 12.7, 13.3)", () => {
   it("ustalik seviyesi basari sansini artirir", () => {
     const recipe = recipeById("craft-chainmail")!;
     const entries = [{ itemId: "iron-ore", quantity: 6, condition: 1 }, { itemId: "cloth", quantity: 2, condition: 1 }];
-    const lowSkill = craft(entries, recipe, 0, ["smith"], 0.7);
-    const highSkill = craft(entries, recipe, 8, ["smith"], 0.7);
+    const lowSkill = craft(entries, recipe, 0, ["blacksmith"], 0.7);
+    const highSkill = craft(entries, recipe, 8, ["blacksmith"], 0.7);
     expect(lowSkill.ok).toBe(false);
     expect(highSkill.ok).toBe(true);
   });

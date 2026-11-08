@@ -53,6 +53,7 @@ import {
   performHunt,
   performTame,
   performLearnSpell,
+  performTrainSpell,
   performCastSpell,
   performTempleService,
   performJoinGuild,
@@ -178,7 +179,7 @@ import {
 import { RECIPES } from "./inventory/crafting";
 import { EXPLORATION_SITES } from "./quests/system";
 import { CROPS, LIVESTOCK, ANIMALS } from "./livelihood/production";
-import { MAGIC_PATHS, SPELLS, GUILDS, ACTIVITIES, TEMPLE_SERVICES } from "./magic/lore";
+import { MAGIC_PATHS, SPELLS, GUILDS, ACTIVITIES, TEMPLE_SERVICES, PATH_BOOKS, TRAINING_COST, masterKingdoms } from "./magic/lore";
 import { UNDERWORLD_ACTIONS } from "./underworld/gangs";
 import { appearanceOptions } from "./character/appearance";
 import { buildDigest, type Notification } from "./notify/notifications";
@@ -1142,6 +1143,9 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
     case "learnSpell":
       result = await performLearnSpell(env.DB, characterId, String(body?.path ?? "elemental") as "elemental" | "spirit_caller" | "shamanism");
       break;
+    case "trainSpell":
+      result = await performTrainSpell(env.DB, characterId);
+      break;
     case "castSpell":
       result = await performCastSpell(env.DB, characterId, String(body?.spellId ?? ""));
       // Kara buyu yasakli krallikta suc sayilir; tam yargi akisi islenir (belge 13.1).
@@ -1492,6 +1496,8 @@ router.get("/api/catalog", () =>
     activities: ACTIVITIES,
     templeServices: TEMPLE_SERVICES,
     underworldActions: UNDERWORLD_ACTIONS,
+    // Buyu ogrenme on kosullari arayuzde gosterilebilsin (belge 13.1).
+    magicTraining: { pathBooks: PATH_BOOKS, cost: TRAINING_COST, masterKingdoms: masterKingdoms() },
     appearance: appearanceOptions(),
   }),
 );

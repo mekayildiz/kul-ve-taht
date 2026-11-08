@@ -6,6 +6,8 @@
  * degildir; sifa, bilgi, barinma ve koruma islevi gorur. Sonuclar sunucuda.
  */
 
+import { KINGDOMS } from "../world/kingdoms";
+
 export type MagicPath = "elemental" | "spirit_caller" | "shamanism";
 
 export interface MagicPathDef {
@@ -21,9 +23,43 @@ export interface MagicPathDef {
 
 export const MAGIC_PATHS: readonly MagicPathDef[] = [
   { id: "elemental", name: "Element Büyücülüğü", minLevel: 0, source: "both", outlawedIn: [] },
-  { id: "shamanism", name: "Şamanlık", minLevel: 0, source: "training", outlawedIn: [] },
+  { id: "shamanism", name: "Şamanlık", minLevel: 0, source: "both", outlawedIn: [] },
   { id: "spirit_caller", name: "Ruh Çağırma", minLevel: 20, source: "rare_book", outlawedIn: ["varkhenn", "caelvar"] },
 ];
+
+/**
+ * Her yolu acan KITAP (belge 13.1). Oyuncunun envanterinde o yolun kitabi
+ * varsa "rare_book"/"both" kaynagi karsilanir. Onceden yalnizca tek bir kitap
+ * (tome-of-medicine) taniniyordu; diger yollar kitapsiz kaliyordu.
+ */
+export const PATH_BOOKS: Record<MagicPath, string> = {
+  elemental: "tome-of-arcana",
+  shamanism: "tome-of-medicine",
+  spirit_caller: "tome-of-spirits",
+};
+
+/** Usta egitimi ucreti (altin); her seans buyu bilgisi kazandirir. */
+export const TRAINING_COST = 15;
+
+/** Krallik "Büyü bilgisi" kaynagina sahipse usta (egitmen) bulundurur (belge 13.1). */
+export function masterKingdoms(): string[] {
+  return KINGDOMS.filter((k) => k.resources.includes("Büyü bilgisi")).map((k) => k.id);
+}
+
+/** Verilen krallikta usta var mi? */
+export function hasSpellMaster(kingdomId: string): boolean {
+  return Boolean(kingdomId) && masterKingdoms().includes(kingdomId);
+}
+
+/**
+ * Usta egitimi: usta bulunan krallikta altin karsiliginda buyu bilgisi.
+ * "training" kaynagini gercek, oyuncunun tetikledigi bir aksiyona cevirir.
+ */
+export function canTrainSpell(gold: number, hasMaster: boolean): { ok: boolean; reason?: string } {
+  if (!hasMaster) return { ok: false, reason: "no_master" };
+  if (gold < TRAINING_COST) return { ok: false, reason: "not_enough_gold" };
+  return { ok: true };
+}
 
 export interface SpellDef {
   id: string;
