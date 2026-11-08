@@ -402,6 +402,60 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     expect((sent[0] as { ids: string[] }).ids).toEqual(["n1"]);
   });
 
+  it("başarımları listeler ve özet panelini açar (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+
+    // Basarimlar durum sekmesinde gorunur.
+    await waitFor(() => expect(screen.getByText(t.play.achievements)).toBeTruthy());
+    expect(screen.getByText(t.play.achievementNames.ilkKazanc)).toBeTruthy();
+
+    // Ozet paneli dugmeyle acilir ve kapanir.
+    await userEvent.click(screen.getByRole("button", { name: t.play.summaryOpen }));
+    expect(screen.getByRole("dialog", { name: t.play.summaryTitle })).toBeTruthy();
+    expect(screen.getByText(t.play.summaryItems.kazan)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: t.play.summaryClose }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: t.play.summaryTitle })).toBeNull());
+  });
+
+  it("bildirimleri gruplara ayırır ve tümünü gösterir (belge 19)", async () => {
+    const digest = {
+      visible: [
+        { id: "n1", kind: "direct_message", priority: 3, summary: "Mektup geldi", createdAtMs: 1, read: false },
+        { id: "n2", kind: "trade_offer", priority: 2, summary: "Takas teklifi", createdAtMs: 2, read: false },
+        { id: "n3", kind: "trade_completed", priority: 2, summary: "Takas tamam", createdAtMs: 3, read: true },
+        { id: "n4", kind: "trade_offer", priority: 2, summary: "Takas teklifi 2", createdAtMs: 4, read: true },
+        { id: "n5", kind: "trade_offer", priority: 2, summary: "Takas teklifi 3", createdAtMs: 5, read: true },
+        { id: "n6", kind: "daily_progress", priority: 1, summary: "Gün geçti", createdAtMs: 6, read: true },
+      ],
+      backgroundSummary: null,
+      unreadCount: 2,
+    };
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      if (path.startsWith("/api/notifications")) return json(digest);
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    await goto(t.play.tabs.hayat);
+
+    await waitFor(() => expect(screen.getByText(t.play.notificationGroups.messages)).toBeTruthy());
+    expect(screen.getByText(t.play.notificationGroups.trades)).toBeTruthy();
+    expect(screen.getByText(t.play.notificationGroups.personal)).toBeTruthy();
+
+    // Ticaret grubunda 4 bildirim var; ilk 3'u gosterilir, gerisi dugmeyle acilir.
+    expect(screen.queryByText("Takas teklifi 3")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: `${t.play.showAllNotifications} (4)` }));
+    expect(screen.getByText("Takas teklifi 3")).toBeTruthy();
+  });
+
   it("hedef secici diger oyunculari listeler ve takas teklifi gonderir (belge 16)", async () => {
     const sent: string[] = [];
     const client = clientWith((path, init) => {

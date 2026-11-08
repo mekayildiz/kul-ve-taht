@@ -16,6 +16,15 @@ import {
   type StepProgress,
 } from "./firstSteps";
 import {
+  achievementInputFrom,
+  achievementSummary,
+  achievementsFor,
+  loadSeenAchievements,
+  newlyUnlocked,
+  saveSeenAchievements,
+} from "./achievements";
+import { groupNotifications, unreadTotal } from "./notificationGroups";
+import {
   ApiClient,
   ApiRequestError,
   type AbsenceReportDto,
@@ -196,6 +205,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   const [sound, setSound] = useState<boolean>(() => soundEnabled());
   const [stepProgress, setStepProgress] = useState<StepProgress>(() => loadStepProgress(character.id));
   const [guideHidden, setGuideHidden] = useState(false);
+  const [seenAchievements, setSeenAchievements] = useState<string[]>(() => loadSeenAchievements(character.id));
+  const [showSummary, setShowSummary] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
   // Rehber ilerlemesini kalici kil (sayfa yenilense de kaybolmasin).
   useEffect(() => {
@@ -218,6 +230,18 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     setToasts((prev) => [...prev, { id, kind, text }]);
     setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 4000);
   }, []);
+
+  // Yeni acilan basarimlari bir kez kutla (belge 19).
+  useEffect(() => {
+    if (!state.play) return;
+    const unlocked = newlyUnlocked(seenAchievements, achievementsFor(achievementInputFrom(state)));
+    if (unlocked.length === 0) return;
+    for (const id of unlocked) notify("ok", `${t.play.achievementUnlocked}: ${t.play.achievementNames[id]}`);
+    playSound("levelup");
+    const next = [...seenAchievements, ...unlocked];
+    setSeenAchievements(next);
+    saveSeenAchievements(character.id, next);
+  }, [state, seenAchievements, character.id, t, notify]);
 
   const load = useCallback(() => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
@@ -361,6 +385,12 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   const showGuide = !guideHidden && !guideComplete;
   // Bildirim ozeti eksik/bozuk gelebilir (uc nokta istege bagli); guvenli oku.
   const notifVisible = Array.isArray(state.notifications?.visible) ? state.notifications.visible : [];
+  // Bildirimler gruba ayrilir (belge 19): onemli olan gurultuden ayrilir.
+  const notifGroups = groupNotifications(notifVisible);
+  const notifUnread = unreadTotal(notifVisible);
+  // Basarimlar durumdan turetilir; sunucuda kayit yok (belge 19).
+  const achievements = achievementsFor(achievementInputFrom(state));
+  const achSummary = achievementSummary(achievements);
   const appearance: AppearanceDto | null = state.appearance ?? null;
 
   return (
@@ -381,6 +411,13 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         </div>
         <button
           type="button"
+          className="kvt-summary-open"
+          onClick={() => setShowSummary(true)}
+        >
+          {t.play.summaryOpen}
+        </button>
+        <button
+          type="button"
           className="kvt-sound-toggle"
           aria-pressed={sound}
           title={sound ? t.play.soundOn : t.play.soundOff}
@@ -389,6 +426,26 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           {sound ? "🔊" : "🔇"} {t.play.sound}
         </button>
       </div>
+
+      {showSummary && (
+        <section className="kvt-summary" role="dialog" aria-label={t.play.summaryTitle}>
+          <div className="kvt-summary-head">
+            <h3>{t.play.summaryTitle}</h3>
+            <button type="button" className="kvt-summary-close" onClick={() => setShowSummary(false)}>
+              {t.play.summaryClose}
+            </button>
+          </div>
+          <p className="kvt-summary-intro">{t.play.summaryIntro}</p>
+          <dl className="kvt-summary-groups">
+            {(["hayattaKal", "kazan", "kesfet", "yuksel", "sosyal"] as const).map((group) => (
+              <div key={group} className="kvt-summary-group">
+                <dt>{t.play.summaryGroups[group]}</dt>
+                <dd>{t.play.summaryItems[group]}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       <nav className="kvt-tabs" aria-label={t.play.tabsLabel}>
         {PLAY_TABS.map((key) => (
@@ -427,6 +484,37 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
               </li>
             ))}
           </ol>
+        </section>
+      )}
+
+      {tab === "durum" && (
+        <section className="kvt-achv" aria-label={t.play.achievements}>
+          <div className="kvt-achv-head">
+            <h3>{t.play.achievements}</h3>
+            <span className="kvt-achv-count">
+              {t.play.achievementsProgress(achSummary.unlocked, achSummary.total)}
+            </span>
+          </div>
+          <ul className="kvt-achv-list">
+            {achievements.map((a) => (
+              <li
+                key={a.id}
+                className={`kvt-achv-item${a.unlocked ? " kvt-achv-unlocked" : ""}`}
+                title={t.play.achievementDescs[a.id]}
+              >
+                <span className="kvt-achv-mark" aria-hidden="true">
+                  {a.unlocked ? "★" : "☆"}
+                </span>
+                <span className="kvt-achv-name">{t.play.achievementNames[a.id]}</span>
+                <span className="kvt-achv-desc">{t.play.achievementDescs[a.id]}</span>
+                {!a.unlocked && (
+                  <span className="kvt-achv-bar" aria-hidden="true">
+                    <span style={{ width: `${Math.round(a.ratio * 100)}%` }} />
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -1041,27 +1129,58 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
         <section className="kvt-notifications" aria-label={t.play.notifications}>
           <h3>
             {t.play.notifications}
-            {(state.notifications.unreadCount ?? 0) > 0 && <span className="kvt-badge"> ({state.notifications.unreadCount})</span>}
+            {(state.notifications.unreadCount ?? notifUnread) > 0 && (
+              <span className="kvt-badge"> ({state.notifications.unreadCount ?? notifUnread})</span>
+            )}
           </h3>
           {notifVisible.length > 0 && (
-            <ul>
-              {notifVisible.map((n) => (
-                <li key={n.id} className={n.read ? "kvt-notif-read" : "kvt-notif-unread"}>
-                  <span>{n.summary}</span>
-                  {!n.read && (
-                    <button
-                      type="button"
-                      aria-label={`${t.play.markRead}: ${n.summary}`}
-                      onClick={() => {
-                        void client.markNotificationsRead(token, [n.id]).then(() => load());
-                      }}
-                    >
-                      {t.play.markRead}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <div className="kvt-notif-groups">
+              {notifGroups.map((group) => {
+                const expanded = expandedGroups.includes(group.id);
+                const shown = expanded ? group.items : group.items.slice(0, 3);
+                return (
+                  <section key={group.id} className="kvt-notif-group">
+                    <h4 className="kvt-notif-group-head">
+                      {t.play.notificationGroups[group.id]}
+                      {group.unread > 0 && <span className="kvt-badge"> ({group.unread})</span>}
+                    </h4>
+                    <ul>
+                      {shown.map((n) => (
+                        <li key={n.id} className={n.read ? "kvt-notif-read" : "kvt-notif-unread"}>
+                          <span>{n.summary}</span>
+                          {!n.read && (
+                            <button
+                              type="button"
+                              aria-label={`${t.play.markRead}: ${n.summary}`}
+                              onClick={() => {
+                                void client.markNotificationsRead(token, [n.id]).then(() => load());
+                              }}
+                            >
+                              {t.play.markRead}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {group.items.length > 3 && (
+                      <button
+                        type="button"
+                        className="kvt-notif-more"
+                        onClick={() =>
+                          setExpandedGroups((prev) =>
+                            expanded ? prev.filter((x) => x !== group.id) : [...prev, group.id],
+                          )
+                        }
+                      >
+                        {expanded
+                          ? t.play.showLessNotifications
+                          : `${t.play.showAllNotifications} (${group.items.length})`}
+                      </button>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
           )}
           {state.notifications.backgroundSummary && (
             <p className="kvt-notif-bg">

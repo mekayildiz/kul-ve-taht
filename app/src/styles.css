@@ -1331,6 +1331,154 @@ a {
   min-height: 65px;
 }
 
+/* --- Basarimlar (belge 19) --- */
+.kvt-achv {
+  margin: 0 0 var(--kvt-gap);
+  padding: 12px 14px;
+  border: 1px solid var(--kvt-brown);
+  border-radius: var(--kvt-radius);
+  background: var(--kvt-panel);
+}
+
+.kvt-achv-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kvt-achv-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.kvt-achv-count {
+  font-size: 0.8rem;
+  color: var(--kvt-muted);
+}
+
+.kvt-achv-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.kvt-achv-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+  color: var(--kvt-muted);
+}
+
+.kvt-achv-unlocked {
+  color: var(--kvt-parchment);
+}
+
+.kvt-achv-mark {
+  grid-row: span 2;
+  color: var(--kvt-brown);
+}
+
+.kvt-achv-unlocked .kvt-achv-mark {
+  color: var(--kvt-gold);
+}
+
+.kvt-achv-name {
+  font-weight: 600;
+}
+
+.kvt-achv-desc {
+  grid-column: 2;
+  font-size: 0.8rem;
+  color: var(--kvt-muted);
+}
+
+.kvt-achv-bar {
+  grid-column: 2;
+  display: block;
+  height: 4px;
+  margin-top: 2px;
+  background: var(--kvt-stone-light);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.kvt-achv-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--kvt-gold-soft);
+}
+
+/* --- Neler yapabilirim ozeti (belge 19) --- */
+.kvt-summary-open {
+  flex: 0 0 auto;
+}
+
+.kvt-summary {
+  margin: 0 0 var(--kvt-gap);
+  padding: 14px 16px;
+  border: 1px solid var(--kvt-gold);
+  border-radius: var(--kvt-radius);
+  background: var(--kvt-panel);
+}
+
+.kvt-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kvt-summary-head h3 {
+  margin: 0;
+}
+
+.kvt-summary-intro {
+  margin: 8px 0 12px;
+  color: var(--kvt-muted);
+}
+
+.kvt-summary-groups {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.kvt-summary-group dt {
+  font-weight: 600;
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-summary-group dd {
+  margin: 2px 0 0;
+  color: var(--kvt-parchment);
+}
+
+/* --- Bildirim gruplari (belge 19) --- */
+.kvt-notif-group {
+  margin-top: 10px;
+}
+
+.kvt-notif-group-head {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--kvt-gold-soft);
+}
+
+.kvt-notif-more {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: var(--kvt-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* --- Duyarlı ince ayar --- */
 /* Mobil: parmakla dokunma hedefleri en az 44px olsun (belge 19). */
 @media (max-width: 719px) {
