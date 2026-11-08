@@ -1010,7 +1010,53 @@ a {
   color: var(--kvt-gold);
 }
 
-/* --- Yoklugunda raporu --- */
+/* --- Siradaki hedef --- */
+.kvt-goal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 var(--kvt-gap);
+  padding: 10px 14px;
+  border: 1px solid var(--kvt-brown);
+  border-left-width: 4px;
+  border-radius: var(--kvt-radius);
+  background: var(--kvt-panel);
+}
+
+.kvt-goal-label {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kvt-muted);
+}
+
+.kvt-goal p {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--kvt-parchment);
+}
+
+.kvt-goal-go {
+  flex: 0 0 auto;
+}
+
+.kvt-goal-crit {
+  border-left-color: #b3423a;
+}
+
+.kvt-goal-warn {
+  border-left-color: #c98a2e;
+}
+
+.kvt-goal-good {
+  border-left-color: var(--kvt-gold-soft);
+}
+
+.kvt-goal-info {
+  border-left-color: var(--kvt-brown);
+}
+
 .kvt-absence {
   margin: var(--kvt-gap) 0;
   padding: 12px 14px;

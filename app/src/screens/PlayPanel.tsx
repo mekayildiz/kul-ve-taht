@@ -4,6 +4,7 @@ import { CharacterAvatar } from "../components/CharacterAvatar";
 import { ToastStack, type ToastItem } from "../components/Toast";
 import { describeOutcome, outcomeSummary, type OutcomeLine } from "./playOutcome";
 import { describeAbsence } from "./absenceReport";
+import { nextGoal } from "./nextGoal";
 import {
   ApiClient,
   ApiRequestError,
@@ -341,6 +342,33 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       </nav>
 
       <ToastStack items={toasts} />
+
+      {tab === "durum" && (
+        (() => {
+          const goal = nextGoal({
+            play,
+            untreatedInjuries: play.health.injuries.filter((i) => !i.treated).length,
+            activeQuests: state.quests.filter((q) => q.status === "active").length,
+            claimableQuests: state.quests.filter(
+              (q) => q.status === "active" && q.objectives.every((o) => o.progress >= o.required),
+            ).length,
+            foodCount: play.inventory.filter(
+              (e) => e.quantity > 0 && state.items.find((i) => i.id === e.itemId)?.category === "food",
+            ).length,
+          });
+          return (
+            <section className={`kvt-goal kvt-goal-${goal.tone}`} aria-label={t.play.goalTitle}>
+              <span className="kvt-goal-label">{t.play.goalTitle}</span>
+              <p>{t.play.goals[goal.key as keyof typeof t.play.goals]}</p>
+              {goal.tab !== "durum" && (
+                <button type="button" className="kvt-goal-go" onClick={() => setTab(goal.tab)}>
+                  {t.play.goalGo}
+                </button>
+              )}
+            </section>
+          );
+        })()
+      )}
 
       {tab === "durum" && absence && (
         <section className="kvt-absence" aria-label={t.play.absence.title}>

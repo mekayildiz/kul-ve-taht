@@ -488,4 +488,35 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     await userEvent.click(screen.getByText("Teklif Ver"));
     await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "bidAuction")).toBe(true));
   });
+
+  it("durum sekmesinde sıradaki hedefi gösterir (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          state: playState({ health: { health: 90, hunger: 85, fatigue: 0, alive: true, injuries: [], diseases: [] } }),
+        });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.goalTitle)).toBeTruthy());
+    expect(screen.getByText(t.play.goals.eat)).toBeTruthy();
+  });
+
+  it("hedef kartındaki Git düğmesi ilgili sekmeye geçirir", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          state: playState({ health: { health: 90, hunger: 85, fatigue: 0, alive: true, injuries: [], diseases: [] } }),
+        });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.goalTitle)).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: t.play.goalGo }));
+    await waitFor(() => expect(screen.getByRole("button", { name: t.play.tabs.hayat }).getAttribute("aria-pressed")).toBe("true"));
+  });
 });
