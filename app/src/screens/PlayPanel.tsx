@@ -24,6 +24,8 @@ import {
   saveSeenAchievements,
 } from "./achievements";
 import { groupNotifications, unreadTotal } from "./notificationGroups";
+import { actionErrorText } from "./actionError";
+import { castHint, learnHint, tameHint } from "./actionHints";
 import {
   ApiClient,
   ApiRequestError,
@@ -105,6 +107,7 @@ interface State {
   directory: PlayerSummaryDto[];
   personality: PersonalityDto;
   heir: string | null;
+  kingdomId: string;
   target: string;
   dataSaver: boolean;
   quests: QuestLogEntryDto[];
@@ -186,6 +189,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     directory: [],
     personality: { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
     heir: null,
+    kingdomId: "varkhenn",
     target: "",
     dataSaver: false,
     quests: [],
@@ -199,6 +203,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
     loading: true,
   });
   const [tab, setTab] = useState<PlayTab>("durum");
+  // Av/kesif hazirlik ve yeralti guvenlik secimi oyuncuya birakilir (belge 12.3).
+  const [preparedness, setPreparedness] = useState(40);
+  const [security, setSecurity] = useState(50);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [lastOutcome, setLastOutcome] = useState<{ lines: OutcomeLine[]; at: number } | null>(null);
   const [absence, setAbsence] = useState<AbsenceReportDto | null>(null);
@@ -289,6 +296,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           directory: res.directory ?? [],
           personality: res.personality ?? { courage: 50, mercy: 50, ambition: 50, loyalty: 50, discipline: 50, patience: 50 },
           heir: res.heir ?? null,
+          kingdomId: res.kingdomId ?? character.current_settlement?.split("-")[0] ?? "varkhenn",
           quests: quests?.log ?? [],
           questCatalog: quests?.catalog ?? [],
           auctions: auctions?.auctions ?? [],
@@ -343,14 +351,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           load();
         })
         .catch((error: unknown) => {
-          const code = error instanceof ApiRequestError ? error.code : "unknown";
-          const map: Record<string, string> = {
-            not_enough_gold: t.play.errorNoGold,
-            invalid_action: t.play.errorInvalid,
-            unknown_item: t.play.errorUnknownItem,
-            dead: t.play.errorDead,
-          };
-          notify("error", map[code] ?? t.auth.errorGeneric);
+          // Sunucu "reason" alt nedenini gonderir; aciklama istemcide uretilir.
+          const text = actionErrorText(error, t);
+          notify("error", text.unknownReason ? `${text.message} (${text.unknownReason})` : text.message);
           playSound("error");
         });
     },
@@ -368,6 +371,8 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   if (!state.play) return <p>{t.status.offline}</p>;
 
   const play = state.play;
+  // Katalog alanlari JSX kapanislarinda da kullanilir; burada bir kez oku.
+  const magicTraining = state.catalog?.magicTraining;
   const itemName = (id: string): string => state.items.find((i) => i.id === id)?.name ?? id;
   const itemCategory = (id: string): string | undefined => state.items.find((i) => i.id === id)?.category;
   // Ilk adimlar rehberi (belge 19): gozlemlenebilir durumdan turetilir.
@@ -743,13 +748,25 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           <button
             key={site}
             type="button"
-            onClick={() => act({ action: "explore", site, preparedness: 30 }, t.play.explored)}
+            onClick={() => act({ action: "explore", site, preparedness }, t.play.explored)}
             disabled={!play.health.alive}
           >
             {t.play.explore}: {site}
           </button>
         ))}
       </div>
+      <label className="kvt-slider">
+        <span>
+          {t.play.preparedness}: {preparedness}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={preparedness}
+          onChange={(e) => setPreparedness(Number(e.target.value))}
+        />
+      </label>
       <h3>{t.play.inventory}</h3>
       <ul className="kvt-inventory">
         {play.inventory.map((entry) => (
@@ -777,7 +794,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
       <h3>{t.play.market}</h3>
       <ul className="kvt-market">
-        {state.items.slice(0, 6).map((item) => (
+        {state.items.map((item) => (
           <li key={item.id}>
             <span>
               {item.name} — {state.marketQuote?.itemId === item.id ? state.marketQuote.buy : item.baseValue} {t.play.gold}
@@ -850,52 +867,97 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           </ul>
 
           <h3>{t.play.hunt}</h3>
+          <label className="kvt-slider">
+            <span>
+              {t.play.preparedness}: {preparedness}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={preparedness}
+              onChange={(e) => setPreparedness(Number(e.target.value))}
+            />
+          </label>
           <ul className="kvt-hunt">
-            {state.catalog.animals.map((animal) => (
-              <li key={animal.id}>
-                <span>{animal.name}</span>
-                <button
-                  type="button"
-                  onClick={() => act({ action: "hunt", animal: animal.id, preparedness: 40 }, t.play.hunted)}
-                  disabled={!play.health.alive}
-                >
-                  {t.play.hunt}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => act({ action: "tame", animal: animal.id }, t.play.tamed)}
-                  disabled={!play.health.alive}
-                >
-                  {t.play.tame}
-                </button>
-              </li>
-            ))}
+            {state.catalog.animals.map((animal) => {
+              const hint = tameHint(animal, play, t);
+              return (
+                <li key={animal.id}>
+                  <span>
+                    {animal.name}
+                    {animal.tameable === false ? ` (${t.play.notTameable})` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => act({ action: "hunt", animal: animal.id, preparedness }, t.play.hunted)}
+                    disabled={!play.health.alive}
+                  >
+                    {t.play.hunt}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => act({ action: "tame", animal: animal.id }, t.play.tamed)}
+                    disabled={!play.health.alive || hint.blocked}
+                    title={hint.text ?? undefined}
+                  >
+                    {t.play.tame}
+                  </button>
+                  {hint.text ? <small className="kvt-hint"> {hint.text}</small> : null}
+                </li>
+              );
+            })}
           </ul>
 
           <h3>{t.play.magic}</h3>
+          <p className="kvt-hint">
+            {t.play.magicTrainingHint.replace("{cost}", String(magicTraining?.cost ?? 15))}
+          </p>
+          <button
+            type="button"
+            onClick={() => act({ action: "trainSpell" }, t.play.trained)}
+            disabled={!play.health.alive}
+            title={t.play.magicTrainingHint.replace("{cost}", String(magicTraining?.cost ?? 15))}
+          >
+            {t.play.trainSpell}
+          </button>
           <ul className="kvt-magic">
-            {state.catalog.magicPaths.map((path) => (
-              <li key={path.id}>
-                <span>{path.name}</span>
-                <button type="button" onClick={() => act({ action: "learnSpell", path: path.id }, t.play.learned)}>
-                  {t.play.learnSpell}
-                </button>
-              </li>
-            ))}
-            {state.catalog.spells.slice(0, 4).map((spell) => (
-              <li key={spell.id}>
-                <span>
-                  {spell.name} (L{spell.level})
-                </span>
-                <button
-                  type="button"
-                  onClick={() => act({ action: "castSpell", spellId: spell.id }, t.play.cast)}
-                  disabled={!play.health.alive}
-                >
-                  {t.play.castSpell}
-                </button>
-              </li>
-            ))}
+            {state.catalog.magicPaths.map((path) => {
+              const hint = learnHint(path, play, state.kingdomId, t, magicTraining);
+              return (
+                <li key={path.id}>
+                  <span>{path.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => act({ action: "learnSpell", path: path.id }, t.play.learned)}
+                    disabled={hint.blocked}
+                    title={hint.text ?? undefined}
+                  >
+                    {t.play.learnSpell}
+                  </button>
+                  {hint.text ? <small className="kvt-hint"> {hint.text}</small> : null}
+                </li>
+              );
+            })}
+            {state.catalog.spells.slice(0, 4).map((spell) => {
+              const hint = castHint(spell, play, t);
+              return (
+                <li key={spell.id}>
+                  <span>
+                    {spell.name} (L{spell.level})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => act({ action: "castSpell", spellId: spell.id }, t.play.cast)}
+                    disabled={!play.health.alive || hint.blocked}
+                    title={hint.text ?? undefined}
+                  >
+                    {t.play.castSpell}
+                  </button>
+                  {hint.text ? <small className="kvt-hint"> {hint.text}</small> : null}
+                </li>
+              );
+            })}
           </ul>
 
           <h3>{t.play.temple}</h3>
@@ -903,7 +965,7 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             {state.catalog.templeServices.map((svc) => (
               <li key={svc.service}>
                 <span>
-                  {svc.service} — {svc.cost} {t.play.gold}
+                  {svc.name ?? svc.service} — {svc.cost} {t.play.gold}
                 </span>
                 <button
                   type="button"
@@ -976,13 +1038,25 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           </ul>
 
           <h3>{t.play.underworld}</h3>
+          <label className="kvt-slider">
+            <span>
+              {t.play.security}: {security}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={security}
+              onChange={(e) => setSecurity(Number(e.target.value))}
+            />
+          </label>
           <ul className="kvt-underworld">
             {state.catalog.underworldActions.map((ua) => (
               <li key={ua.action}>
                 <span>{ua.name}</span>
                 <button
                   type="button"
-                  onClick={() => act({ action: "underworld", underworldAction: ua.action, security: 50 }, t.play.committed)}
+                  onClick={() => act({ action: "underworld", underworldAction: ua.action, security }, t.play.committed)}
                   disabled={!play.health.alive}
                 >
                   {t.play.underworld}

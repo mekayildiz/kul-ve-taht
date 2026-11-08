@@ -20,13 +20,13 @@ import { planTravel, lodgingCost, type TravelConditions } from "../travel/travel
 import { explore, type ExplorationSite, EXPLORATION_SITES } from "../quests/system";
 import { buyPrice, sellPrice, type MarketState } from "../economy/market";
 import { SETTLEMENTS } from "../world/settlements";
-import { KINGDOMS } from "../world/kingdoms";
 import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, type CropId, type Season, type Weather } from "../livelihood/production";
-import { GUILDS, SPELLS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
+import { GUILDS, SPELLS, PATH_BOOKS, TRAINING_COST, canLearnSpell, canTrainSpell, hasSpellMaster, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
 import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
 import { snapshotFrom, buildAbsenceReport, type AbsenceSnapshot, type AbsenceReport } from "./absence";
 import { buildDailyProgress, dailyProgressSummary } from "./daily-progress";
 import { notifyCharacter } from "../notify/notifications";
+import { gainExpertiseXp, type ExpertisePath } from "../character/expertise";
 
 export interface PlayState {
   characterId: string;
@@ -242,6 +242,9 @@ export async function performRest(db: SqlDatabase, characterId: string, hours: n
   if (!state.health.alive) return { ok: false, error: "dead" };
   const safeHours = Math.max(1, Math.min(12, Math.floor(hours)));
   state.health = rest(state.health, safeHours);
+  // Dinlenme buyu enerjisini de toparlar; aksi halde enerji harcayan oyuncu
+  // buyu yapamaz hale gelir ve geri kazanmanin HICBIR yolu kalmaz.
+  state.energy = Math.min(100, state.energy + safeHours * 8);
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { hours: safeHours } };
 }
@@ -404,7 +407,10 @@ export async function performCraft(
   const recipe = recipeById(recipeId);
   if (!recipe) return { ok: false, error: "no_such_recipe" };
   const known = await knownExpertise(db, characterId);
-  const result = craft(state.inventory, recipe, state.weaponMastery, known, roll());
+  // Ustalik seviyesi tarifin yolundan okunur (varsa); yoksa genel seviye.
+  const path = recipe.requiresExpertise ?? "craftsman";
+  const lvl = await expertiseLevel(db, characterId, path);
+  const result = craft(state.inventory, recipe, lvl, known, roll());
   if (!result.ok) {
     if (result.entries) {
       state.inventory = result.entries;
@@ -413,8 +419,10 @@ export async function performCraft(
     return { ok: false, error: "invalid_action", state, detail: { reason: result.error } };
   }
   state.inventory = result.entries!;
+  // Uretim ustalik kazandirir: her deneme (basari dahil) XP verir.
+  const xp = await gainExpertise(db, characterId, path, 8);
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { produced: result.produced } };
+  return { ok: true, state, detail: { produced: result.produced, expertiseLevel: xp.level } };
 }
 
 async function knownExpertise(db: SqlDatabase, characterId: string): Promise<string[]> {
@@ -423,6 +431,49 @@ async function knownExpertise(db: SqlDatabase, characterId: string): Promise<str
     .bind(characterId)
     .all<{ expertise: string }>();
   return rows.results.map((r) => r.expertise);
+}
+
+/** Bir uzmanlik yolundaki seviye (yoksa 0). */
+export async function expertiseLevel(db: SqlDatabase, characterId: string, path: string): Promise<number> {
+  const row = await queryOne<{ level: number }>(
+    db,
+    "SELECT level FROM character_expertise WHERE character_id = ? AND expertise = ?",
+    characterId,
+    path,
+  );
+  return row?.level ?? 0;
+}
+
+/**
+ * Uzmanlik tecrubesi ekler ve seviyeyi esik asildikca artirir (belge 5.7).
+ *
+ * Onceden `character_expertise` tablosu yalnizca okunuyordu; level/xp hicbir
+ * zaman artmiyordu (satirlar 0'da kaliyordu). Bu, ilerlemenin TEK yoludur.
+ */
+export async function gainExpertise(
+  db: SqlDatabase,
+  characterId: string,
+  path: string,
+  xp: number,
+): Promise<{ level: number; gained: boolean }> {
+  const row = await queryOne<{ level: number; xp: number }>(
+    db,
+    "SELECT level, xp FROM character_expertise WHERE character_id = ? AND expertise = ?",
+    characterId,
+    path,
+  );
+  const before = { path: path as ExpertisePath, level: row?.level ?? 0, xp: row?.xp ?? 0 };
+  const after = gainExpertiseXp(before, xp);
+  await execute(
+    db,
+    `INSERT INTO character_expertise (character_id, expertise, level, xp) VALUES (?,?,?,?)
+     ON CONFLICT(character_id, expertise) DO UPDATE SET level=excluded.level, xp=excluded.xp`,
+    characterId,
+    path,
+    after.level,
+    after.xp,
+  );
+  return { level: after.level, gained: after.level > before.level };
 }
 
 export async function performWork(db: SqlDatabase, characterId: string, profession: string, hours: number, nowMs = Date.now()): Promise<PlayResult> {
@@ -437,15 +488,25 @@ export async function performWork(db: SqlDatabase, characterId: string, professi
     characterId,
   );
   let bonus = 0;
+  let guildId: string | null = null;
+  let trainingBonus = 0;
   if (guildRow) {
     const memberDays = Math.max(0, Math.floor((nowMs - guildRow.joined_at) / 86_400_000));
-    bonus = guildBenefits(guildRow.guild_id, memberDays).workBonus;
+    const benefits = guildBenefits(guildRow.guild_id, memberDays);
+    bonus = benefits.workBonus;
+    guildId = guildRow.guild_id;
+    trainingBonus = benefits.trainingBonus;
   }
-  const base = workIncome(profession, state.weaponMastery, safeHours);
+  // Calisma kazanci MESLEK ustaligina baglidir; onceden weaponMastery
+  // kullaniliyordu ve uzmanlik hic artmiyordu. Lonca mesleki EGITIM verdigi
+  // icin (belge 13.3) uye kendi mesleginde calisirken daha hizli ustalasir.
+  const xpGain = Math.round(safeHours * (guildId ? 2 : 1) * (1 + trainingBonus / 100));
+  const profXp = await gainExpertise(db, characterId, profession, xpGain);
+  const base = workIncome(profession, profXp.level, safeHours);
   const income = Math.round(base * (1 + bonus));
   state.gold += income;
   await saveState(db, state, nowMs);
-  return { ok: true, state, detail: { income, guildBonus: bonus } };
+  return { ok: true, state, detail: { income, guildBonus: bonus, trainingBonus, expertiseLevel: profXp.level } };
 }
 
 export async function performTravel(
@@ -677,7 +738,7 @@ export async function performHunt(
   roll = Math.random,
   nowMs = Date.now(),
 ): Promise<PlayResult> {
-  if (!ANIMALS.some((a) => a.id === animal)) return { ok: false, error: "invalid_action" };
+  if (!ANIMALS.some((a) => a.id === animal)) return { ok: false, error: "invalid_action", detail: { reason: "unknown_animal" } };
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   if (!state.health.alive) return { ok: false, error: "dead" };
@@ -716,8 +777,12 @@ export async function performTame(
   const hasFeed = state.inventory.some((e) => e.itemId === "bread" || e.itemId === "dried-meat");
   const check = tameAnimal(animal, state.weaponMastery, hasFeed);
   if (!check.ok) return { ok: false, error: "invalid_action", state, detail: { reason: check.reason } };
-  const removed = removeItem(state.inventory, "dried-meat", 1);
-  if (removed.ok) state.inventory = removed.entries!;
+  // Kontrol ekmek ya da kuru et kabul eder; tuketim de AYNI kumeden secilir.
+  // Aksi halde yalnizca ekmegi olan oyuncudan yem dusmez (sessiz hata).
+  const feedItem = state.inventory.some((e) => e.itemId === "dried-meat") ? "dried-meat" : "bread";
+  const removed = removeItem(state.inventory, feedItem, 1);
+  if (!removed.ok) return { ok: false, error: "invalid_action", state, detail: { reason: "no_feed" } };
+  state.inventory = removed.entries!;
   const clock = await queryOne<{ game_day: number }>(db, "SELECT game_day FROM world_clock WHERE id = 1");
   await execute(
     db,
@@ -734,6 +799,16 @@ export async function performTame(
 
 // --- Buyu, tapinak, lonca ve sehir yasami (E8, belge 13, 15) ---
 
+/** Karakterin bulundugu krallik kimligi (yerlesim yoksa bos). */
+async function currentKingdomId(db: SqlDatabase, characterId: string): Promise<string> {
+  const row = await queryOne<{ current_settlement: string | null }>(
+    db,
+    "SELECT current_settlement FROM characters WHERE id = ?",
+    characterId,
+  );
+  return SETTLEMENTS.find((s) => s.id === row?.current_settlement)?.kingdomId ?? "";
+}
+
 /** Buyu ogrenme: kaynak, seviye ve krallik yasagi SUNUCUDA dogrulanir. */
 export async function performLearnSpell(
   db: SqlDatabase,
@@ -743,15 +818,10 @@ export async function performLearnSpell(
 ): Promise<PlayResult> {
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
-  const character = await queryOne<{ current_settlement: string | null }>(
-    db,
-    "SELECT current_settlement FROM characters WHERE id = ?",
-    characterId,
-  );
-  const settlement = SETTLEMENTS.find((s) => s.id === character?.current_settlement);
-  const kingdomId = settlement?.kingdomId ?? "";
-  const hasBook = state.inventory.some((e) => e.itemId === "tome-of-medicine");
-  const hasMaster = Boolean(kingdomId && KINGDOMS.some((k) => k.id === kingdomId && k.resources.includes("Büyü bilgisi")));
+  const kingdomId = await currentKingdomId(db, characterId);
+  // Kaynak: yolun KENDI kitabi (PATH_BOOKS) veya usta bulunan krallik.
+  const hasBook = state.inventory.some((e) => e.itemId === PATH_BOOKS[path]);
+  const hasMaster = hasSpellMaster(kingdomId);
   const check = canLearnSpell(path, state.magicLevel, kingdomId, hasBook, hasMaster);
   if (!check.ok) return { ok: false, error: "invalid_action", state, detail: { reason: check.reason } };
   if (state.magicPaths.includes(path)) return { ok: false, error: "invalid_action", state, detail: { reason: "already_known" } };
@@ -759,6 +829,31 @@ export async function performLearnSpell(
   state.magicLevel += 1;
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { path, magicLevel: state.magicLevel } };
+}
+
+/**
+ * Usta egitimi (belge 13.1): usta bulunan kralliklarda altin karsiliginda
+ * buyu bilgisi. "training" kaynagini gercek, oyuncunun tetikledigi bir
+ * aksiyona cevirir ve buyu seviyesini ilerletir (buyu acmanin yolu).
+ */
+export async function performTrainSpell(db: SqlDatabase, characterId: string, nowMs = Date.now()): Promise<PlayResult> {
+  const state = await loadState(db, characterId, nowMs);
+  if (!state) return { ok: false, error: "character_not_found" };
+  if (!state.health.alive) return { ok: false, error: "dead" };
+  const hasMaster = hasSpellMaster(await currentKingdomId(db, characterId));
+  const check = canTrainSpell(state.gold, hasMaster);
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action",
+      state,
+      detail: { reason: check.reason },
+    };
+  }
+  state.gold -= TRAINING_COST;
+  state.magicLevel += 1;
+  await saveState(db, state, nowMs);
+  return { ok: true, state, detail: { magicLevel: state.magicLevel, cost: TRAINING_COST } };
 }
 
 /** Buyu kullanma: enerji duser; sifa buyusu saglik/yaralari iyilestirir. */
@@ -809,14 +904,26 @@ export async function performTempleService(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const check = templeService(service, state.gold);
-  if (!check.ok) return { ok: false, error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action" };
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: check.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action",
+      state,
+      detail: { reason: check.reason },
+    };
+  }
   state.gold -= check.cost;
   if (service === "healing") {
     state.health = { ...state.health, health: Math.min(100, state.health.health + check.effect) };
   } else if (service === "protection") {
     state.reputation += check.effect;
   } else if (service === "knowledge") {
-    state.weaponMastery += check.effect;
+    // Tapinak "bilgi" hizmeti buyu bilgisini artirir (belge 13.2). Buyu
+    // seviyesinin baska artis yolu olmadigi icin bu, buyunun on kosuludur.
+    state.magicLevel += check.effect;
+  } else if (service === "shelter") {
+    // Barinma: bitkinlik duser. Onceden hicbir etkisi yoktu (sessiz hata).
+    state.health = rest(state.health, check.effect * 4);
   }
   await saveState(db, state, nowMs);
   return { ok: true, state, detail: { service, cost: check.cost } };
@@ -866,7 +973,16 @@ export async function performActivity(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const result = joinActivity(kind, state.gold, roll);
-  if (!result.ok) return { ok: false, error: "not_enough_gold", state, detail: { reason: result.reason } };
+  // Yalnizca gercek "altin yetersiz" durumu not_enough_gold dondurur; diger
+  // nedenler (unknown_activity) invalid_action + reason olarak tasinir.
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.reason === "not_enough_gold" ? "not_enough_gold" : "invalid_action",
+      state,
+      detail: { reason: result.reason },
+    };
+  }
   state.gold = Math.max(0, state.gold + result.goldDelta);
   state.reputation += result.reputationDelta;
   state.weaponMastery += result.xp;
@@ -889,7 +1005,7 @@ export async function performUnderworldAct(
   const state = await loadState(db, characterId, nowMs);
   if (!state) return { ok: false, error: "character_not_found" };
   const result = commitUnderworldAct(action, state.weaponMastery, settlementSecurity, gangAffiliation, roll);
-  if (!result.ok) return { ok: false, error: "invalid_action" };
+  if (!result.ok) return { ok: false, error: "invalid_action", state, detail: { reason: result.reason } };
   state.gold += result.reward;
   state.reputation += result.reputationDelta;
   state.underworldRep += result.success ? 3 : 1;

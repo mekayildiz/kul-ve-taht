@@ -22,8 +22,10 @@ export interface Recipe {
 }
 
 export const RECIPES: Recipe[] = [
-  { id: "craft-sword", output: "iron-sword", outputQuantity: 1, inputs: [{ itemId: "iron-ore", quantity: 3 }, { itemId: "oak-wood", quantity: 1 }], requiresExpertise: "smith", requiresTool: "woodcutter-axe", baseChance: 80 },
-  { id: "craft-chainmail", output: "chainmail", outputQuantity: 1, inputs: [{ itemId: "iron-ore", quantity: 6 }, { itemId: "cloth", quantity: 2 }], requiresExpertise: "smith", baseChance: 65 },
+  // "requiresExpertise" degerleri GERCEK uzmanlik sozluguyle ayni olmali:
+  // lonca katilimi character_expertise'e lonca meslegini yazar (belge 13.3).
+  { id: "craft-sword", output: "iron-sword", outputQuantity: 1, inputs: [{ itemId: "iron-ore", quantity: 3 }, { itemId: "oak-wood", quantity: 1 }], requiresExpertise: "blacksmith", requiresTool: "woodcutter-axe", baseChance: 80 },
+  { id: "craft-chainmail", output: "chainmail", outputQuantity: 1, inputs: [{ itemId: "iron-ore", quantity: 6 }, { itemId: "cloth", quantity: 2 }], requiresExpertise: "blacksmith", baseChance: 65 },
   { id: "craft-leather-armor", output: "leather-armor", outputQuantity: 1, inputs: [{ itemId: "cloth", quantity: 3 }], baseChance: 85 },
   { id: "craft-bandage", output: "bandage", outputQuantity: 3, inputs: [{ itemId: "cloth", quantity: 1 }], baseChance: 95 },
   { id: "craft-healing-herb", output: "healing-herb", outputQuantity: 2, inputs: [{ itemId: "oak-wood", quantity: 1 }], requiresExpertise: "herbalist", baseChance: 70 },
