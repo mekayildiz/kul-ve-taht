@@ -31,10 +31,13 @@ import { createGateHasher, type HashGateNamespace } from "./auth/hash-gate";
 import { createCharacter, type CreateCharacterInput } from "./character/service";
 import { seedWorld } from "./world/seed";
 import { runWorldSimulation } from "./play/world-sim";
+import { readWorldEvents } from "./play/world-events";
 import { recordUsage, quotaReport } from "./quota/usage";
 import { birthplacePanel, allBirthplacePanels, mapData } from "./world/birthplace";
 import {
   getPlayState,
+  readAbsence,
+  markSeen,
   advanceAllCharacters,
   performEat,
   performRest,
@@ -368,9 +371,24 @@ router.get("/api/world/time", async ({ env }: Ctx) => {
   });
 });
 
+router.get("/api/world/events", async ({ request, env }: Ctx) => {
+  if (!env?.DB) return json({ events: [] });
+  const url = new URL(request.url);
+  const limitRaw = Number.parseInt(url.searchParams.get("limit") ?? "30", 10);
+  const sinceRaw = Number.parseInt(url.searchParams.get("sinceGameDay") ?? "", 10);
+  const settlementId = url.searchParams.get("settlementId");
+  const options: { limit: number; sinceGameDay?: number; settlementId?: string } = {
+    limit: Number.isFinite(limitRaw) ? limitRaw : 30,
+  };
+  if (Number.isFinite(sinceRaw)) options.sinceGameDay = sinceRaw;
+  if (settlementId) options.settlementId = settlementId;
+  const events = await readWorldEvents(env.DB, options);
+  return json({ events });
+});
+
 router.post("/api/auth/register", async ({ request, env }: Ctx) => {
   const body = (await request.json().catch(() => null)) as
-    | { email?: string; password?: string; locale?: "tr" | "en"; turnstileToken?: string }
+    | { email?: string; password?: string; turnstileToken?: string }
     | null;
   if (!body?.email || !body.password) {
     return error("invalid_body", "E-posta ve parola zorunludur.", 400);
@@ -389,7 +407,6 @@ router.post("/api/auth/register", async ({ request, env }: Ctx) => {
     {
       email: body.email,
       password: body.password,
-      ...(body.locale ? { locale: body.locale } : {}),
     },
     hasher,
   );
@@ -914,6 +931,10 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   }
   const state = await getPlayState(env.DB, params.characterId!);
   if (!state) return error("not_found", "Karakter bulunamadi.", 404);
+  // Yokluk ozeti: once rapor uretilir, sonra goruldu isaretlenir; boylece
+  // oyuncu raporu yalnizca BIR kez gorur (belge 6, 19).
+  const absence = await readAbsence(env.DB, params.characterId!, state);
+  await markSeen(env.DB, params.characterId!, state);
   const storage = await storageSummary(
     env.DB,
     params.characterId!,
@@ -960,6 +981,7 @@ router.get("/api/play/:characterId/state", async ({ params, request, env }: Ctx)
   ]);
   return json({
     state,
+    absence,
     items: ITEMS,
     recipes: RECIPES,
     explorationSites: EXPLORATION_SITES,
@@ -1393,6 +1415,9 @@ router.post("/api/play/:characterId/action", async ({ params, request, env }: Ct
   // Etiket sunucuda eslesir; istemci ilerleme gonderemez (belge 21.1).
   const questTag = questTagFor(action, body);
   if (questTag) await advanceQuestByTag(env.DB, characterId, questTag).catch(() => undefined);
+
+  // Oyuncu etkin: yokluk anlik goruntusu tazelenir (belge 6, 19).
+  if (result.state) await markSeen(env.DB, characterId, result.state).catch(() => undefined);
 
   return json({ ok: true, state: result.state, detail: result.detail });
 });

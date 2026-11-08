@@ -1,15 +1,13 @@
 import { tr } from "./tr";
-import { en } from "./en";
 
-export type Locale = "tr" | "en";
-
-export const dictionaries = { tr, en };
 export type Dictionary = typeof tr;
 
-export const DEFAULT_LOCALE: Locale = "tr";
+/** Arayuz dili yalnizca Turkce'dir; tek sozluk yeterlidir. */
+export const DEFAULT_LOCALE = "tr" as const;
 
-export function getDictionary(locale: Locale): Dictionary {
-  return locale === "en" ? en : tr;
+export function getDictionary(): Dictionary {
+  return tr;
 }
 
-export { tr, en };
+export { tr };
+

@@ -15,7 +15,7 @@ import {
   type Family,
   type FamilyMember,
 } from "../family/dynasty";
-import { notifyCharacter } from "./multiplayer";
+import { notifyCharacter } from "../notify/notifications";
 
 export interface SuccessionResult {
   familyId: string;

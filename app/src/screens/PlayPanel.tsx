@@ -2,9 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import type { Dictionary } from "../i18n";
 import { CharacterAvatar } from "../components/CharacterAvatar";
 import { ToastStack, type ToastItem } from "../components/Toast";
+import { describeOutcome, outcomeSummary, type OutcomeLine } from "./playOutcome";
+import { describeAbsence } from "./absenceReport";
+import { nextGoal } from "./nextGoal";
+import { progressionBars } from "./progression";
+import { playSound, setSoundEnabled, soundEnabled, soundForOutcome } from "../components/sound";
 import {
   ApiClient,
   ApiRequestError,
+  type AbsenceReportDto,
   type AuctionDto,
   type CatalogDto,
   type CharacterDto,
@@ -177,6 +183,19 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
   });
   const [tab, setTab] = useState<PlayTab>("durum");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [lastOutcome, setLastOutcome] = useState<{ lines: OutcomeLine[]; at: number } | null>(null);
+  const [absence, setAbsence] = useState<AbsenceReportDto | null>(null);
+  const [sound, setSound] = useState<boolean>(() => soundEnabled());
+
+  const toggleSound = useCallback(() => {
+    setSound((prev) => {
+      const next = !prev;
+      setSoundEnabled(next);
+      // Acilirken hemen bir ornek ton: oyuncu sesin geldigini duyar.
+      if (next) playSound("success");
+      return next;
+    });
+  }, []);
 
   // Islem bildirimleri sayfa ustunde birikmez; kisa omurlu balon olarak gosterilir.
   const notify = useCallback((kind: "ok" | "error", text: string) => {
@@ -196,6 +215,9 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       client.notifications(token).catch(() => null),
     ])
       .then(([res, catalog, chat, quests, auctions, notifications]) => {
+        // Yokluk raporu yalnizca donusten sonraki ILK yanitta dolu gelir;
+        // sonraki yuklemelerde null olur. Bu yuzden null ile UZERINE YAZMA.
+        if (res.absence) setAbsence(res.absence);
         setState({
           play: res.state,
           items: res.items,
@@ -254,10 +276,25 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
 
   const act = useCallback(
     (action: PlayAction, successMessage: string) => {
+      const before = state.play;
       client
         .playAction(token, character.id, action)
-        .then(() => {
-          notify("ok", successMessage);
+        .then((res) => {
+          // Sunucu yeni tam durumu dondurur; onceki durumla farkini gostererek
+          // gercek geri bildirim uret (altin, saglik, ganimet, yara...).
+          const lines = before ? describeOutcome(t, before, res.state, res.detail) : [];
+          if (lines.length > 0) {
+            setLastOutcome({ lines, at: Date.now() });
+            notify("ok", outcomeSummary(t, lines));
+          } else {
+            notify("ok", successMessage);
+          }
+          // Sesli geri bildirim (belge 19): once seviye atlama, sonra sonuc tonu.
+          const after = progressionBars(res.state);
+          const leveledUp = before ? after.some((bar, i) => bar.level > progressionBars(before)[i]!.level) : false;
+          if (leveledUp) playSound("levelup");
+          else if (lines.length > 0) playSound(soundForOutcome(lines.map((l) => l.tone)));
+          else playSound("success");
           load();
         })
         .catch((error: unknown) => {
@@ -269,9 +306,10 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             dead: t.play.errorDead,
           };
           notify("error", map[code] ?? t.auth.errorGeneric);
+          playSound("error");
         });
     },
-    [client, token, character.id, t, notify, load],
+    [client, token, character.id, t, notify, load, state.play],
   );
 
   if (state.loading && !state.play) return <p>{t.status.loading}</p>;
@@ -307,6 +345,15 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
           </h2>
           <span className="kvt-where">{character.current_settlement ?? character.birth_settlement}</span>
         </div>
+        <button
+          type="button"
+          className="kvt-sound-toggle"
+          aria-pressed={sound}
+          title={sound ? t.play.soundOn : t.play.soundOff}
+          onClick={toggleSound}
+        >
+          {sound ? "🔊" : "🔇"} {t.play.sound}
+        </button>
       </div>
 
       <nav className="kvt-tabs" aria-label={t.play.tabsLabel}>
@@ -324,6 +371,66 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
       </nav>
 
       <ToastStack items={toasts} />
+
+      {tab === "durum" && (
+        (() => {
+          const goal = nextGoal({
+            play,
+            untreatedInjuries: play.health.injuries.filter((i) => !i.treated).length,
+            activeQuests: state.quests.filter((q) => q.status === "active").length,
+            claimableQuests: state.quests.filter(
+              (q) => q.status === "active" && q.objectives.every((o) => o.progress >= o.required),
+            ).length,
+            foodCount: play.inventory.filter(
+              (e) => e.quantity > 0 && state.items.find((i) => i.id === e.itemId)?.category === "food",
+            ).length,
+          });
+          return (
+            <section className={`kvt-goal kvt-goal-${goal.tone}`} aria-label={t.play.goalTitle}>
+              <span className="kvt-goal-label">{t.play.goalTitle}</span>
+              <p>{t.play.goals[goal.key as keyof typeof t.play.goals]}</p>
+              {goal.tab !== "durum" && (
+                <button type="button" className="kvt-goal-go" onClick={() => setTab(goal.tab)}>
+                  {t.play.goalGo}
+                </button>
+              )}
+            </section>
+          );
+        })()
+      )}
+
+      {tab === "durum" && absence && (
+        <section className="kvt-absence" aria-label={t.play.absence.title}>
+          <header>
+            <h3>{t.play.absence.title}</h3>
+            <button type="button" className="kvt-absence-close" onClick={() => setAbsence(null)}>
+              ×
+            </button>
+          </header>
+          <ul>
+            {describeAbsence(t, absence).map((line, i) => (
+              <li key={`${line.label}-${i}`} className={`kvt-outcome-${line.tone}`}>
+                <span>{line.label}</span>
+                {line.value && <strong>{line.value}</strong>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {tab === "durum" && lastOutcome && lastOutcome.lines.length > 0 && (
+        <section key={lastOutcome.at} className="kvt-outcome kvt-outcome-pop" aria-label={t.play.outcome.title}>
+          <h3>{t.play.outcome.title}</h3>
+          <ul>
+            {lastOutcome.lines.map((line, i) => (
+              <li key={`${line.label}-${i}`} className={`kvt-outcome-${line.tone}`}>
+                <span>{line.label}</span>
+                {line.value && <strong>{line.value}</strong>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {tab === "durum" && (
         <>
@@ -352,6 +459,30 @@ export function PlayPanel({ t, client, token, character }: PlayPanelProps): JSX.
             <span>{t.play.storage}</span>
           </div>
         )}
+      </div>
+
+      <div className="kvt-progression" aria-label={t.play.progression}>
+        <h3>{t.play.progression}</h3>
+        <ul>
+          {progressionBars(play).map((bar) => (
+            <li key={bar.key}>
+              <span className="kvt-progression-label">
+                {bar.key === "mastery"
+                  ? t.play.progressionMastery
+                  : bar.key === "reputation"
+                    ? t.play.progressionReputation
+                    : t.play.progressionUnderworld}
+              </span>
+              <span className="kvt-progression-level">
+                {t.play.progressionLevel} {bar.level}
+              </span>
+              <progress max={bar.next} value={bar.current} />
+              <strong>
+                {bar.current}/{bar.next}
+              </strong>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {state.storage && state.storage.overflow > 0 && (

@@ -43,7 +43,7 @@ export function AuthPanel({ t, client, onAuthenticated }: AuthPanelProps): JSX.E
     setMessage(null);
     try {
       if (mode === "register") {
-        await client.register(email, password, "tr", turnstileToken || undefined);
+        await client.register(email, password, turnstileToken || undefined);
       }
       const session = await client.login(email, password, turnstileToken || undefined);
       const me = await client.me(session.token);

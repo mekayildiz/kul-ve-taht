@@ -45,7 +45,6 @@ describe("Brevo e-posta gonderimi", () => {
   });
 
   it("dogrulama e-postasi kodu icerir", () => {
-    expect(verificationEmail("123456", "tr")).toContain("123456");
-    expect(verificationEmail("654321", "en")).toContain("654321");
+    expect(verificationEmail("123456")).toContain("123456");
   });
 });

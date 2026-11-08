@@ -13,7 +13,7 @@ import { loadState, saveState, type PlayResult } from "./service";
 import { areMutualFriends } from "./multiplayer-extras";
 import { MAX_MESSAGE_LENGTH, validateMessage, canSendToChannel, canJoinGroup, type ChannelKind, type ChatChannel, type Group } from "../social/social";
 import { canMarry, MARRIAGE_MIN_AGE, DAYS_TO_ADULTHOOD, type FamilyMember } from "../family/dynasty";
-import { createNotification, type NotificationKind } from "../notify/notifications";
+import { notifyCharacter } from "../notify/notifications";
 
 // --- Sohbet (belge 16.2) ---
 
@@ -243,36 +243,6 @@ export async function performSendMessage(
     await notifyCharacter(db, recipientId, "direct_message", "Yeni ozel mesaj aldiniz.", nowMs);
   }
   return { ok: true, state, detail: { kind, scopeId, length: body.trim().length } };
-}
-
-// --- Bildirim yayma (belge 19) ---
-
-/**
- * Bir karakterin hesabina bildirim yazar. Tur ve oncelik notify/notifications
- * modulundeki KIND_PRIORITY tablosundan gelir; arka plan turleri (oncelik 0)
- * varsayilan olarak ozette gizlenir.
- */
-export async function notifyCharacter(
-  db: SqlDatabase,
-  characterId: string,
-  kind: NotificationKind,
-  summary: string,
-  nowMs = Date.now(),
-): Promise<void> {
-  const owner = await queryOne<{ account_id: string }>(db, "SELECT account_id FROM characters WHERE id = ?", characterId);
-  if (!owner) return;
-  const notification = createNotification(kind, summary.slice(0, 200), nowMs);
-  await execute(
-    db,
-    `INSERT INTO player_notifications (id, account_id, kind, priority, summary, read, created_at)
-     VALUES (?,?,?,?,?,0,?)`,
-    notification.id,
-    owner.account_id,
-    notification.kind,
-    notification.priority,
-    notification.summary,
-    notification.createdAtMs,
-  );
 }
 
 // --- Aile, evlilik, cocuk ve hanedan (belge 7) ---

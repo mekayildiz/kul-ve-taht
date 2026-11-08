@@ -40,7 +40,7 @@ async function post(path, body) {
 const email = `duman-${Date.now()}@valedorn.tr`;
 const password = "cok-guclu-parola-1";
 
-const reg = await post("/api/auth/register", { email, password, locale: "tr" });
+const reg = await post("/api/auth/register", { email, password });
 console.log(`kayit -> ${reg.status}`);
 if (reg.status !== 201) fail(`kayit 201 bekleniyordu, ${reg.status} alindi: ${reg.text.slice(0, 200)}`);
 

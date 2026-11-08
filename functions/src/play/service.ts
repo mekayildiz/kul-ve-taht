@@ -24,6 +24,9 @@ import { KINGDOMS } from "../world/kingdoms";
 import { ANIMALS, hunt as resolveHunt, plantCrop, tameAnimal, type AnimalId, type CropId, type Season, type Weather } from "../livelihood/production";
 import { GUILDS, SPELLS, canLearnSpell, castSpell, isDarkMagicCrime, joinActivity, templeService, canJoinGuild, guildBenefits, type ActivityKind, type MagicPath, type TempleService } from "../magic/lore";
 import { commitUnderworldAct, type UnderworldAction } from "../underworld/gangs";
+import { snapshotFrom, buildAbsenceReport, type AbsenceSnapshot, type AbsenceReport } from "./absence";
+import { buildDailyProgress, dailyProgressSummary } from "./daily-progress";
+import { notifyCharacter } from "../notify/notifications";
 
 export interface PlayState {
   characterId: string;
@@ -179,6 +182,42 @@ export async function getPlayState(db: SqlDatabase, characterId: string, nowMs =
   return loadState(db, characterId, nowMs);
 }
 
+/**
+ * Son gorulme anindan bu yana olusan degisimi raporlar (belge 6, 19).
+ * Anlik goruntu yoksa (ilk gorulme) `null` doner.
+ */
+export async function readAbsence(
+  db: SqlDatabase,
+  characterId: string,
+  state: PlayState,
+): Promise<AbsenceReport | null> {
+  const row = await queryOne<{ last_seen_json: string | null }>(
+    db,
+    "SELECT last_seen_json FROM character_state WHERE character_id = ?",
+    characterId,
+  );
+  if (!row?.last_seen_json) return null;
+  const before = JSON.parse(row.last_seen_json) as AbsenceSnapshot;
+  const after = snapshotFrom({ day: await gameDayNumber(db), gold: state.gold, health: state.health });
+  return buildAbsenceReport(before, after);
+}
+
+/** Oyuncunun goruldugunu isaretler; bir sonraki yokluk icin anlik goruntu alir. */
+export async function markSeen(
+  db: SqlDatabase,
+  characterId: string,
+  state: PlayState,
+): Promise<void> {
+  const snapshot = snapshotFrom({ day: await gameDayNumber(db), gold: state.gold, health: state.health });
+  await execute(
+    db,
+    "UPDATE character_state SET last_seen_day = ?, last_seen_json = ? WHERE character_id = ?",
+    snapshot.day,
+    JSON.stringify(snapshot),
+    characterId,
+  );
+}
+
 function hasMount(inventory: InventoryEntry[]): boolean {
   return inventory.some((e) => e.itemId === "pack-horse");
 }
@@ -234,6 +273,7 @@ export async function advanceCharacterDay(
   }
 
   const wasAlive = state.health.alive;
+  const before = state.health;
   // Aclik ilerler; uzun sureli aclik sagliktan duser (belge 12.8).
   let health = advanceHunger(state.health, delta);
   health = { ...health, health: Math.max(0, health.health - starvationDamage(health)) };
@@ -247,6 +287,21 @@ export async function advanceCharacterDay(
     await execute(db, "UPDATE characters SET age_years = age_years + ? WHERE id = ?", years, characterId);
   }
   await execute(db, "UPDATE character_state SET last_advanced_day = ? WHERE character_id = ?", day, characterId);
+
+  // Oyuncu cevrimdisiyken olan degisimi bildirime cevir (belge 19). Ilk gun
+  // (last = 0) baslangic anidir; yaniltici bir ozet uretmemek icin atlanir.
+  if (last > 0) {
+    const progress = buildDailyProgress(before, state.health, delta, years);
+    if (progress) {
+      await notifyCharacter(
+        db,
+        characterId,
+        progress.died ? "character_death" : "daily_progress",
+        dailyProgressSummary(progress),
+        nowMs,
+      );
+    }
+  }
 
   let succession: Awaited<ReturnType<typeof settleDeath>> = null;
   if (wasAlive && !state.health.alive) {

@@ -6,7 +6,7 @@ import { ApiClient } from "../api/client";
 import { getDictionary } from "../i18n";
 import type { CharacterDto } from "../api/client";
 
-const t = getDictionary("tr");
+const t = getDictionary();
 
 function clientWith(handler: (path: string, init?: RequestInit) => Response): ApiClient {
   return new ApiClient({
@@ -54,6 +54,7 @@ function playState(overrides: Record<string, unknown> = {}) {
 
 const stateResponse = {
   state: playState(),
+  absence: null,
   items: [{ id: "bread", name: "Ekmek", category: "food", baseValue: 2, nutrition: 25 }],
   recipes: [{ id: "craft-bread", output: "bread", outputQuantity: 4, baseChance: 90 }],
   explorationSites: ["forest", "cave"],
@@ -97,6 +98,32 @@ describe("PlayPanel", () => {
     expect(screen.getByText("20")).toBeTruthy();
     await goto(t.play.tabs.hayat);
     expect(screen.getAllByText(/Ekmek/).length).toBeGreaterThan(0);
+  });
+
+  it("yokluk raporu geldiğinde kartı gösterir ve kapatılabilir", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          absence: {
+            daysPassed: 3,
+            goldDelta: 0,
+            healthDelta: 0,
+            hungerDelta: 40,
+            fatigueDelta: 0,
+            injuriesHealed: 1,
+            injuriesGained: 0,
+            died: false,
+          },
+        });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.absence.title)).toBeTruthy());
+    expect(screen.getByText(/3 oyun günü geçti/)).toBeTruthy();
+    expect(screen.getByText(/Açlığın arttı/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "×" }));
+    await waitFor(() => expect(screen.queryByText(t.play.absence.title)).toBeNull());
   });
 
   it("keşif aksiyonu gönderir ve durumu günceller", async () => {
@@ -460,5 +487,64 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     await waitFor(() => expect(screen.getByText("Teklif Ver")).toBeInTheDocument());
     await userEvent.click(screen.getByText("Teklif Ver"));
     await waitFor(() => expect(sent.some((b) => (b as { action: string }).action === "bidAuction")).toBe(true));
+  });
+
+  it("durum sekmesinde sıradaki hedefi gösterir (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          state: playState({ health: { health: 90, hunger: 85, fatigue: 0, alive: true, injuries: [], diseases: [] } }),
+        });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.goalTitle)).toBeTruthy());
+    expect(screen.getByText(t.play.goals.eat)).toBeTruthy();
+  });
+
+  it("hedef kartındaki Git düğmesi ilgili sekmeye geçirir", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({
+          ...stateResponse,
+          state: playState({ health: { health: 90, hunger: 85, fatigue: 0, alive: true, injuries: [], diseases: [] } }),
+        });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.goalTitle)).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: t.play.goalGo }));
+    await waitFor(() => expect(screen.getByRole("button", { name: t.play.tabs.hayat }).getAttribute("aria-pressed")).toBe("true"));
+  });
+
+  it("durum sekmesinde gelişim çubuklarını gösterir (belge 5.5)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state"))
+        return json({ ...stateResponse, state: playState({ weaponMastery: 7, reputation: 25 }) });
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText(t.play.progression)).toBeTruthy());
+    expect(screen.getByText(t.play.progressionMastery)).toBeTruthy();
+    expect(screen.getByText("2/5")).toBeTruthy();
+  });
+
+  it("ses düğmesi tercihi değiştirir ve hatırlar (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    const toggle = screen.getByRole("button", { name: new RegExp(t.play.sound) });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(toggle);
+    await waitFor(() => expect(toggle.getAttribute("aria-pressed")).toBe("false"));
+    expect(localStorage.getItem("kvt.sound")).toBe("off");
   });
 });

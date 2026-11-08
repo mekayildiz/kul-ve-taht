@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { DEFAULT_LOCALE, getDictionary, type Locale } from "../i18n";
+import { getDictionary } from "../i18n";
 import { ApiClient, type CharacterDto } from "../api/client";
 import { Crest } from "../components/Crest";
 import { AuthPanel } from "../screens/AuthPanel";
@@ -19,7 +19,6 @@ const API_BASE_URL =
   (import.meta.env.PROD ? "" : "http://localhost:8787");
 
 export function App(): JSX.Element {
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [screen, setScreen] = useState<Screen>("title");
   const [account, setAccount] = useState<{
     token: string;
@@ -27,7 +26,7 @@ export function App(): JSX.Element {
     role: "player" | "moderator" | "admin";
   } | null>(null);
   const [character, setCharacter] = useState<CharacterDto | null>(null);
-  const t = useMemo(() => getDictionary(locale), [locale]);
+  const t = useMemo(() => getDictionary(), []);
   const client = useMemo(() => new ApiClient({ baseUrl: API_BASE_URL }), []);
   // Yonetim paneli moderator ve admin'e gorunur; yazma yalnizca admin'de.
   const canManage = account?.role === "admin" || account?.role === "moderator";
@@ -81,14 +80,6 @@ export function App(): JSX.Element {
               {t.nav.admin}
             </button>
           )}
-          <button
-            type="button"
-            className="kvt-lang"
-            onClick={() => setLocale((prev) => (prev === "tr" ? "en" : "tr"))}
-            aria-label="Dil değiştir / Switch language"
-          >
-            {locale === "tr" ? "TR" : "EN"}
-          </button>
         </div>
       </header>
 

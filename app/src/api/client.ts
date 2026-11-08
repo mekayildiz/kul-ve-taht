@@ -47,6 +47,17 @@ export interface WorldTimeDto {
   advancedDays: number;
 }
 
+export interface WorldEventDto {
+  id: string;
+  type: string;
+  settlementId: string | null;
+  settlementName: string | null;
+  severity: number;
+  gameDay: number;
+  title: string;
+  tone: "bad" | "good" | "neutral";
+}
+
 export interface SessionDto {
   token: string;
   expiresAt: number;
@@ -479,8 +490,20 @@ export interface PersonalityDto {
   patience: number;
 }
 
+export interface AbsenceReportDto {
+  daysPassed: number;
+  goldDelta: number;
+  healthDelta: number;
+  hungerDelta: number;
+  fatigueDelta: number;
+  injuriesHealed: number;
+  injuriesGained: number;
+  died: boolean;
+}
+
 export interface PlayStateResponse {
   state: PlayStateDto;
+  absence: AbsenceReportDto | null;
   items: ItemDefDto[];
   recipes: RecipeDto[];
   explorationSites: string[];
@@ -733,6 +756,16 @@ export class ApiClient {
     return this.request("/api/world/time");
   }
 
+  /** Dunya gunlugu (belge 8.8, 12.5): savas, kitlik, veba gibi olaylar. */
+  worldEvents(options: { limit?: number; sinceGameDay?: number; settlementId?: string } = {}): Promise<{ events: WorldEventDto[] }> {
+    const params = new URLSearchParams();
+    if (options.limit) params.set("limit", String(options.limit));
+    if (typeof options.sinceGameDay === "number") params.set("sinceGameDay", String(options.sinceGameDay));
+    if (options.settlementId) params.set("settlementId", options.settlementId);
+    const query = params.toString();
+    return this.request(`/api/world/events${query ? `?${query}` : ""}`);
+  }
+
   /** Dogum yeri bilgi paneli (belge 5.1): karsilastirilabilir arti/eksi. */
   birthplace(settlementId: string): Promise<import("../screens/CharacterSetup").BirthplacePanelDto> {
     return this.request(`/api/world/birthplaces?id=${encodeURIComponent(settlementId)}`);
@@ -741,12 +774,11 @@ export class ApiClient {
   register(
     email: string,
     password: string,
-    locale: "tr" | "en" = "tr",
     turnstileToken?: string,
   ): Promise<{ accountId: string }> {
     return this.request("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password, locale, ...(turnstileToken ? { turnstileToken } : {}) }),
+      body: JSON.stringify({ email, password, locale: "tr", ...(turnstileToken ? { turnstileToken } : {}) }),
     });
   }
 
