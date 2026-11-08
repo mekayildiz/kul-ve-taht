@@ -532,4 +532,19 @@ describe("PlayPanel görev ve açık artırma (belge 12.4, 9.3)", () => {
     expect(screen.getByText(t.play.progressionMastery)).toBeTruthy();
     expect(screen.getByText("2/5")).toBeTruthy();
   });
+
+  it("ses düğmesi tercihi değiştirir ve hatırlar (belge 19)", async () => {
+    const client = clientWith((path) => {
+      if (path.endsWith("/state")) return json(stateResponse);
+      if (path.startsWith("/api/quests")) return json({ catalog: [], log: [] });
+      return json({}, 404);
+    });
+    render(<PlayPanel t={t} client={client} token="tok" character={character} />);
+    await waitFor(() => expect(screen.getByText("Kael Veyr")).toBeTruthy());
+    const toggle = screen.getByRole("button", { name: new RegExp(t.play.sound) });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(toggle);
+    await waitFor(() => expect(toggle.getAttribute("aria-pressed")).toBe("false"));
+    expect(localStorage.getItem("kvt.sound")).toBe("off");
+  });
 });

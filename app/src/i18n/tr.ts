@@ -301,6 +301,9 @@ export const tr = {
     progressionMastery: "Silah Ustalığı",
     progressionReputation: "İtibar",
     progressionUnderworld: "Yeraltı Şöhreti",
+    sound: "Ses",
+    soundOn: "Ses açık",
+    soundOff: "Ses kapalı",
     goalTitle: "Sıradaki hedef",
     goalGo: "Git",
     goals: {

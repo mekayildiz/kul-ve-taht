@@ -740,6 +740,41 @@ a {
   margin: 0;
 }
 
+/* Ses ac/kapa: basligin sagina yaslanir. */
+.kvt-sound-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--kvt-border, #5a4a2a);
+  border-radius: var(--kvt-radius-sm);
+  color: var(--kvt-muted);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.kvt-sound-toggle[aria-pressed="true"] {
+  color: var(--kvt-gold);
+  border-color: var(--kvt-gold);
+}
+
+/* Aksiyon sonucu geldiginde kart hafifce one cikar (belge 19).
+   `key` degistigi icin animasyon her yeni sonucta yeniden oynar. */
+.kvt-outcome-pop {
+  animation: kvt-outcome-pop 420ms ease-out;
+}
+
+@keyframes kvt-outcome-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .kvt-playactions,
 .kvt-admin-actions {
   display: flex;
