@@ -44,6 +44,13 @@ npm run deploy:web       # Cloudflare Pages yayını (ücretsiz katman)
 
 Yayın adımları: `docs/yayin-kilavuzu.md`.
 
+> **Üretim yayını:** tek adım `npm run deploy:production`. Bu betik migration'ları
+> uzak D1'e uygular, sonra Worker'ı dağıtır ve canlı duman testini koşar.
+> `wrangler deploy` **tek başına** migration uygulamaz; yeni bir migration
+> eklendiyse önce `npm run db:migrate:remote` çalıştırılmalıdır. Aksi halde
+> `/api/health` ve giriş yeşil kalır ama oyun durumu ucu 500 verir (eksik
+> kolon/tablo). `npm run smoke:live <adres>` bu yolu kapsar.
+
 ## Kurallar
 
 - **Test edilmeyen görev "tamamlandı" işaretlenmez.**

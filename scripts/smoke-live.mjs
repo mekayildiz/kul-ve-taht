@@ -21,10 +21,10 @@ function fail(msg) {
   process.exit(1);
 }
 
-async function post(path, body) {
+async function post(path, body, headers = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
   const text = await res.text();
@@ -54,5 +54,53 @@ const meRes = await fetch(`${BASE}/api/me`, { headers: { authorization: `Bearer 
 const meText = await meRes.text();
 console.log(`me -> ${meRes.status}`);
 if (meRes.status !== 200) fail(`/api/me 200 bekleniyordu, ${meRes.status} alindi: ${meText.slice(0, 200)}`);
+
+const auth = { authorization: `Bearer ${login.json.token}`, "content-type": "application/json" };
+
+// Karakter olusturma: en sik kirilan yol (nitelik/yerlesim semasi).
+const attributes = {
+  strength: 8,
+  endurance: 8,
+  agility: 8,
+  intellect: 8,
+  perception: 8,
+  charisma: 8,
+  leadership: 8,
+};
+const create = await post(
+  "/api/characters",
+  {
+    givenName: "Duman",
+    surname: "Testi",
+    gender: "male",
+    birthSettlement: "varkhenn-drahkmar",
+    attributes,
+  },
+  auth,
+);
+console.log(`karakter -> ${create.status}`);
+if (create.status !== 201 || !create.json?.characterId) {
+  fail(`karakter 201 + characterId bekleniyordu, ${create.status} alindi: ${create.text.slice(0, 200)}`);
+}
+const characterId = create.json.characterId;
+
+// Oyun durumu: uygulanmamis migration (eksik tablo/kolon) BURADA patlar.
+// /api/health ve giris uclari saglikli kalsa bile bu yol kirilabilir.
+const stateRes = await fetch(`${BASE}/api/play/${characterId}/state`, { headers: auth });
+const stateText = await stateRes.text();
+console.log(`durum -> ${stateRes.status}`);
+if (stateRes.status !== 200) {
+  fail(
+    `play state 200 bekleniyordu, ${stateRes.status} alindi: ${stateText.slice(0, 200)}. ` +
+      "Muhtemelen uzak D1'e uygulanmamis migration var (npm run db:migrate:remote).",
+  );
+}
+
+// Yardimci uclar: oynanis ekrani bunlari paralel cagirir.
+for (const path of ["/api/catalog", `/api/quests?characterId=${characterId}`, "/api/notifications"]) {
+  const res = await fetch(`${BASE}${path}`, { headers: auth });
+  console.log(`${path} -> ${res.status}`);
+  if (res.status !== 200) fail(`${path} 200 bekleniyordu, ${res.status} alindi.`);
+}
 
 console.log(`DUMAN TESTI GECTI (${BASE})`);
