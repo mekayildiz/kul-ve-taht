@@ -10,6 +10,8 @@ import {
   type WorldTimeDto,
 } from "../api/client";
 
+import { filterEvents, type EventToneFilter } from "./eventFilter";
+
 export interface WorldOverviewProps {
   t: Dictionary;
   client: ApiClient;
@@ -36,6 +38,9 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
     loading: true,
   });
   const [kingdom, setKingdom] = useState<string>("");
+  // Gunlukte arama ve ton suzgeci (belge 19): 20 olay arasinda kaybolmayi onler.
+  const [eventQuery, setEventQuery] = useState<string>("");
+  const [eventTone, setEventTone] = useState<EventToneFilter>("all");
   // Veri tasarrufu modu (belge 17.5): kucuk turev gorseller istenir.
   const [dataSaver, setDataSaver] = useState<boolean>(false);
   // Dunya saati ilerlediginde kisa sureli vurgu; "zaman akiyor" hissi verir.
@@ -98,6 +103,9 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
     );
   }
 
+  // Gunluk suzgeci: metin + ton birlikte uygulanir; siralama korunur.
+  const visibleEvents = filterEvents({ events: state.events, query: eventQuery, tone: eventTone });
+
   return (
     <section className="kvt-world">
       <div className="kvt-stats">
@@ -136,11 +144,43 @@ export function WorldOverview({ t, client }: WorldOverviewProps): JSX.Element {
 
       <section className="kvt-eventlog" aria-label={t.world.eventLog}>
         <h3>{t.world.eventLog}</h3>
+        <div className="kvt-eventlog-tools">
+          <label className="kvt-eventlog-search">
+            <span className="kvt-sr-only">{t.world.search}</span>
+            <input
+              type="search"
+              value={eventQuery}
+              placeholder={t.world.searchPlaceholder}
+              onChange={(e) => setEventQuery(e.target.value)}
+            />
+          </label>
+          <div className="kvt-eventlog-tones" role="group" aria-label={t.world.search}>
+            {(["all", "bad", "good", "neutral"] as const).map((tone) => (
+              <button
+                key={tone}
+                type="button"
+                className={`kvt-tone-chip${eventTone === tone ? " kvt-tone-chip-active" : ""}`}
+                aria-pressed={eventTone === tone}
+                onClick={() => setEventTone(tone)}
+              >
+                {tone === "all"
+                  ? t.world.filterAll
+                  : tone === "bad"
+                    ? t.world.filterBad
+                    : tone === "good"
+                      ? t.world.filterGood
+                      : t.world.filterNeutral}
+              </button>
+            ))}
+          </div>
+        </div>
         {state.events.length === 0 ? (
           <p className="kvt-eventlog-empty">{t.world.eventLogEmpty}</p>
+        ) : visibleEvents.length === 0 ? (
+          <p className="kvt-eventlog-empty">{t.world.searchEmpty}</p>
         ) : (
           <ul>
-            {state.events.map((e) => (
+            {visibleEvents.map((e) => (
               <li key={e.id} className={`kvt-event kvt-event-${e.tone}`}>
                 <span className="kvt-event-day">
                   {t.world.day} {e.gameDay}
